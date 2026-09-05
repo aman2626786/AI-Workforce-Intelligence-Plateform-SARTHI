@@ -1,0 +1,1165 @@
+{
+  "SKL_001": {
+    "name": "Python",
+    "category": "Programming",
+    "aliases": [
+      "python",
+      "python3",
+      "py"
+    ]
+  },
+  "SKL_002": {
+    "name": "SQL",
+    "category": "Database",
+    "aliases": [
+      "sql",
+      "structured query language",
+      "ansi sql",
+      "pl/sql",
+      "t-sql"
+    ]
+  },
+  "SKL_003": {
+    "name": "Machine Learning",
+    "category": "AI/ML",
+    "aliases": [
+      "machine learning",
+      "ml",
+      "machine-learning"
+    ]
+  },
+  "SKL_004": {
+    "name": "Deep Learning",
+    "category": "AI/ML",
+    "aliases": [
+      "deep learning",
+      "dl",
+      "neural networks",
+      "deep neural networks"
+    ]
+  },
+  "SKL_005": {
+    "name": "Generative AI",
+    "category": "AI/ML",
+    "aliases": [
+      "generative ai",
+      "genai",
+      "gen ai",
+      "large language models",
+      "llm",
+      "llms",
+      "prompt engineering"
+    ]
+  },
+  "SKL_006": {
+    "name": "Natural Language Processing",
+    "category": "AI/ML",
+    "aliases": [
+      "natural language processing",
+      "nlp",
+      "text analytics"
+    ]
+  },
+  "SKL_007": {
+    "name": "Computer Vision",
+    "category": "AI/ML",
+    "aliases": [
+      "computer vision",
+      "cv",
+      "image processing",
+      "opencv"
+    ]
+  },
+  "SKL_008": {
+    "name": "Pandas",
+    "category": "Libraries",
+    "aliases": [
+      "pandas",
+      "pd"
+    ]
+  },
+  "SKL_009": {
+    "name": "NumPy",
+    "category": "Libraries",
+    "aliases": [
+      "numpy",
+      "np"
+    ]
+  },
+  "SKL_010": {
+    "name": "Scikit-Learn",
+    "category": "Libraries",
+    "aliases": [
+      "scikit-learn",
+      "sklearn",
+      "scikitlearn"
+    ]
+  },
+  "SKL_011": {
+    "name": "TensorFlow",
+    "category": "Frameworks",
+    "aliases": [
+      "tensorflow",
+      "tf"
+    ]
+  },
+  "SKL_012": {
+    "name": "PyTorch",
+    "category": "Frameworks",
+    "aliases": [
+      "pytorch",
+      "torch"
+    ]
+  },
+  "SKL_013": {
+    "name": "Power BI",
+    "category": "Data Analytics",
+    "aliases": [
+      "power bi",
+      "powerbi",
+      "power-bi",
+      "dax"
+    ]
+  },
+  "SKL_014": {
+    "name": "Tableau",
+    "category": "Data Analytics",
+    "aliases": [
+      "tableau",
+      "tableau desktop",
+      "tableau server"
+    ]
+  },
+  "SKL_015": {
+    "name": "Excel",
+    "category": "Data Analytics",
+    "aliases": [
+      "excel",
+      "ms excel",
+      "microsoft excel",
+      "advanced excel",
+      "vba",
+      "pivot tables"
+    ]
+  },
+  "SKL_016": {
+    "name": "PostgreSQL",
+    "category": "Database",
+    "aliases": [
+      "postgresql",
+      "postgres",
+      "psql"
+    ]
+  },
+  "SKL_017": {
+    "name": "MySQL",
+    "category": "Database",
+    "aliases": [
+      "mysql",
+      "my-sql"
+    ]
+  },
+  "SKL_018": {
+    "name": "MongoDB",
+    "category": "Database",
+    "aliases": [
+      "mongodb",
+      "mongo",
+      "nosql"
+    ]
+  },
+  "SKL_019": {
+    "name": "Redis",
+    "category": "Database",
+    "aliases": [
+      "redis"
+    ]
+  },
+  "SKL_020": {
+    "name": "Snowflake",
+    "category": "Cloud",
+    "aliases": [
+      "snowflake",
+      "snowflake cloud"
+    ]
+  },
+  "SKL_021": {
+    "name": "Google BigQuery",
+    "category": "Cloud",
+    "aliases": [
+      "bigquery",
+      "google bigquery",
+      "bq"
+    ]
+  },
+  "SKL_022": {
+    "name": "Amazon Web Services (AWS)",
+    "category": "Cloud",
+    "aliases": [
+      "aws",
+      "amazon web services",
+      "ec2",
+      "s3",
+      "lambda",
+      "aws redshift"
+    ]
+  },
+  "SKL_023": {
+    "name": "Google Cloud Platform (GCP)",
+    "category": "Cloud",
+    "aliases": [
+      "gcp",
+      "google cloud",
+      "google cloud platform"
+    ]
+  },
+  "SKL_024": {
+    "name": "Microsoft Azure",
+    "category": "Cloud",
+    "aliases": [
+      "azure",
+      "microsoft azure",
+      "azure data factory",
+      "synapse"
+    ]
+  },
+  "SKL_025": {
+    "name": "Docker",
+    "category": "DevOps",
+    "aliases": [
+      "docker",
+      "docker compose",
+      "containerization"
+    ]
+  },
+  "SKL_026": {
+    "name": "Kubernetes",
+    "category": "DevOps",
+    "aliases": [
+      "kubernetes",
+      "k8s"
+    ]
+  },
+  "SKL_027": {
+    "name": "Git",
+    "category": "Tools",
+    "aliases": [
+      "git",
+      "github",
+      "gitlab",
+      "version control"
+    ]
+  },
+  "SKL_028": {
+    "name": "CI/CD",
+    "category": "DevOps",
+    "aliases": [
+      "ci/cd",
+      "ci cd",
+      "continuous integration",
+      "github actions",
+      "jenkins"
+    ]
+  },
+  "SKL_029": {
+    "name": "Linux",
+    "category": "Tools",
+    "aliases": [
+      "linux",
+      "ubuntu",
+      "bash",
+      "shell scripting",
+      "unix"
+    ]
+  },
+  "SKL_030": {
+    "name": "JavaScript",
+    "category": "Programming",
+    "aliases": [
+      "javascript",
+      "js",
+      "ecmascript"
+    ]
+  },
+  "SKL_031": {
+    "name": "TypeScript",
+    "category": "Programming",
+    "aliases": [
+      "typescript",
+      "ts"
+    ]
+  },
+  "SKL_032": {
+    "name": "React",
+    "category": "Web Development",
+    "aliases": [
+      "react",
+      "react.js",
+      "reactjs"
+    ]
+  },
+  "SKL_033": {
+    "name": "Node.js",
+    "category": "Web Development",
+    "aliases": [
+      "node.js",
+      "nodejs",
+      "node"
+    ]
+  },
+  "SKL_034": {
+    "name": "Express.js",
+    "category": "Web Development",
+    "aliases": [
+      "express.js",
+      "express",
+      "expressjs"
+    ]
+  },
+  "SKL_035": {
+    "name": "Next.js",
+    "category": "Web Development",
+    "aliases": [
+      "next.js",
+      "nextjs",
+      "next"
+    ]
+  },
+  "SKL_036": {
+    "name": "HTML/CSS",
+    "category": "Web Development",
+    "aliases": [
+      "html",
+      "html5",
+      "css",
+      "css3",
+      "sass",
+      "tailwind css",
+      "tailwindcss"
+    ]
+  },
+  "SKL_037": {
+    "name": "FastAPI",
+    "category": "Frameworks",
+    "aliases": [
+      "fastapi",
+      "fast-api"
+    ]
+  },
+  "SKL_038": {
+    "name": "Flask",
+    "category": "Frameworks",
+    "aliases": [
+      "flask"
+    ]
+  },
+  "SKL_039": {
+    "name": "Django",
+    "category": "Frameworks",
+    "aliases": [
+      "django"
+    ]
+  },
+  "SKL_040": {
+    "name": "Java",
+    "category": "Programming",
+    "aliases": [
+      "java",
+      "core java",
+      "j2ee"
+    ]
+  },
+  "SKL_041": {
+    "name": "Spring Boot",
+    "category": "Frameworks",
+    "aliases": [
+      "spring boot",
+      "springboot",
+      "spring framework"
+    ]
+  },
+  "SKL_042": {
+    "name": "C++",
+    "category": "Programming",
+    "aliases": [
+      "c++",
+      "cpp"
+    ]
+  },
+  "SKL_043": {
+    "name": "C",
+    "category": "Programming",
+    "aliases": [
+      "c language",
+      "c programming"
+    ]
+  },
+  "SKL_044": {
+    "name": "Data Structures & Algorithms",
+    "category": "Computer Science",
+    "aliases": [
+      "data structures",
+      "algorithms",
+      "dsa",
+      "data structures and algorithms"
+    ]
+  },
+  "SKL_045": {
+    "name": "Object-Oriented Programming (OOP)",
+    "category": "Computer Science",
+    "aliases": [
+      "oop",
+      "oops",
+      "object oriented programming",
+      "object-oriented programming"
+    ]
+  },
+  "SKL_046": {
+    "name": "RESTful APIs",
+    "category": "Web Development",
+    "aliases": [
+      "rest api",
+      "restful api",
+      "rest apis",
+      "restful web services",
+      "api development"
+    ]
+  },
+  "SKL_047": {
+    "name": "GraphQL",
+    "category": "Web Development",
+    "aliases": [
+      "graphql",
+      "graph-ql"
+    ]
+  },
+  "SKL_048": {
+    "name": "Apache Spark",
+    "category": "Data Science",
+    "aliases": [
+      "spark",
+      "pyspark",
+      "apache spark"
+    ]
+  },
+  "SKL_049": {
+    "name": "Apache Kafka",
+    "category": "DevOps",
+    "aliases": [
+      "kafka",
+      "apache kafka"
+    ]
+  },
+  "SKL_050": {
+    "name": "Hadoop",
+    "category": "Data Science",
+    "aliases": [
+      "hadoop",
+      "mapreduce",
+      "hdfs"
+    ]
+  },
+  "SKL_051": {
+    "name": "R Programming",
+    "category": "Programming",
+    "aliases": [
+      "r language",
+      "r programming",
+      "rstudio"
+    ]
+  },
+  "SKL_052": {
+    "name": "Matplotlib",
+    "category": "Libraries",
+    "aliases": [
+      "matplotlib"
+    ]
+  },
+  "SKL_053": {
+    "name": "Seaborn",
+    "category": "Libraries",
+    "aliases": [
+      "seaborn",
+      "sns"
+    ]
+  },
+  "SKL_054": {
+    "name": "Plotly",
+    "category": "Libraries",
+    "aliases": [
+      "plotly"
+    ]
+  },
+  "SKL_055": {
+    "name": "Statistics",
+    "category": "Data Science",
+    "aliases": [
+      "statistics",
+      "statistical analysis",
+      "biostatistics",
+      "probability and statistics",
+      "hypothesis testing",
+      "a/b testing"
+    ]
+  },
+  "SKL_056": {
+    "name": "Data Analysis",
+    "category": "Data Analytics",
+    "aliases": [
+      "data analysis",
+      "data analytics",
+      "exploratory data analysis",
+      "eda"
+    ]
+  },
+  "SKL_057": {
+    "name": "Data Cleaning",
+    "category": "Data Analytics",
+    "aliases": [
+      "data cleaning",
+      "data preprocessing",
+      "data wrangling"
+    ]
+  },
+  "SKL_058": {
+    "name": "Business Intelligence (BI)",
+    "category": "Data Analytics",
+    "aliases": [
+      "business intelligence",
+      "bi reporting",
+      "dashboarding"
+    ]
+  },
+  "SKL_059": {
+    "name": "Data Storytelling",
+    "category": "Soft Skills",
+    "aliases": [
+      "data storytelling",
+      "executive presentations",
+      "stakeholder reporting"
+    ]
+  },
+  "SKL_060": {
+    "name": "Cybersecurity",
+    "category": "Cybersecurity",
+    "aliases": [
+      "cybersecurity",
+      "information security",
+      "infosec",
+      "network security",
+      "penetration testing",
+      "vulnerability assessment"
+    ]
+  },
+  "SKL_061": {
+    "name": "Postman",
+    "category": "Tools",
+    "aliases": [
+      "postman",
+      "api testing"
+    ]
+  },
+  "SKL_062": {
+    "name": "Jupyter Notebook",
+    "category": "Tools",
+    "aliases": [
+      "jupyter",
+      "jupyter notebook",
+      "google colab",
+      "colab"
+    ]
+  },
+  "SKL_063": {
+    "name": "XGBoost",
+    "category": "Libraries",
+    "aliases": [
+      "xgboost",
+      "lightgbm",
+      "catboost"
+    ]
+  },
+  "SKL_064": {
+    "name": "LangChain",
+    "category": "Frameworks",
+    "aliases": [
+      "langchain",
+      "llamaindex",
+      "rag",
+      "retrieval augmented generation"
+    ]
+  },
+  "SKL_065": {
+    "name": "Hugging Face",
+    "category": "Libraries",
+    "aliases": [
+      "hugging face",
+      "huggingface",
+      "transformers"
+    ]
+  },
+  "SKL_066": {
+    "name": "Agile / Scrum",
+    "category": "Soft Skills",
+    "aliases": [
+      "agile",
+      "scrum",
+      "kanban",
+      "jira"
+    ]
+  },
+  "SKL_067": {
+    "name": "Problem Solving",
+    "category": "Soft Skills",
+    "aliases": [
+      "problem solving",
+      "critical thinking",
+      "analytical skills"
+    ]
+  },
+  "SKL_068": {
+    "name": "Communication Skills",
+    "category": "Soft Skills",
+    "aliases": [
+      "communication",
+      "communication skills",
+      "team collaboration"
+    ]
+  },
+  "SKL_069": {
+    "name": "Streamlit",
+    "category": "Libraries",
+    "aliases": [
+      "streamlit"
+    ]
+  },
+  "SKL_070": {
+    "name": "Firebase",
+    "category": "Database",
+    "aliases": [
+      "firebase",
+      "google firebase"
+    ]
+  },
+  "SKL_071": {
+    "name": "n8n",
+    "category": "Tools",
+    "aliases": [
+      "n8n",
+      "n8n.io"
+    ]
+  },
+  "SKL_072": {
+    "name": "Selenium",
+    "category": "Tools",
+    "aliases": [
+      "selenium",
+      "selenium webdriver"
+    ]
+  },
+  "SKL_073": {
+    "name": "BeautifulSoup",
+    "category": "Libraries",
+    "aliases": [
+      "beautifulsoup",
+      "bs4",
+      "beautiful soup",
+      "beautifulsoup4"
+    ]
+  },
+  "SKL_074": {
+    "name": "Tailwind CSS",
+    "category": "Web Development",
+    "aliases": [
+      "tailwind",
+      "tailwind css",
+      "tailwindcss"
+    ]
+  },
+  "SKL_075": {
+    "name": "Socket.IO",
+    "category": "Web Development",
+    "aliases": [
+      "socket.io",
+      "socketio",
+      "websockets",
+      "websocket"
+    ]
+  },
+  "SKL_076": {
+    "name": "MERN Stack",
+    "category": "Web Development",
+    "aliases": [
+      "mern",
+      "mern stack"
+    ]
+  },
+  "SKL_077": {
+    "name": "GitHub",
+    "category": "Tools",
+    "aliases": [
+      "github"
+    ]
+  },
+  "SKL_078": {
+    "name": "VS Code",
+    "category": "Tools",
+    "aliases": [
+      "vs code",
+      "vscode",
+      "visual studio code"
+    ]
+  },
+  "SKL_079": {
+    "name": "Google Colab",
+    "category": "Tools",
+    "aliases": [
+      "google colab",
+      "colab"
+    ]
+  },
+  "SKL_080": {
+    "name": "Kaggle",
+    "category": "Tools",
+    "aliases": [
+      "kaggle"
+    ]
+  },
+  "SKL_081": {
+    "name": "Exploratory Data Analysis",
+    "category": "Data Science",
+    "aliases": [
+      "eda",
+      "exploratory data analysis"
+    ]
+  },
+  "SKL_082": {
+    "name": "Feature Engineering",
+    "category": "Data Science",
+    "aliases": [
+      "feature engineering"
+    ]
+  },
+  "SKL_083": {
+    "name": "Data Visualization",
+    "category": "Data Analytics",
+    "aliases": [
+      "data visualization",
+      "data visualisation"
+    ]
+  },
+  "SKL_084": {
+    "name": "Text Classification",
+    "category": "AI/ML",
+    "aliases": [
+      "text classification"
+    ]
+  },
+  "SKL_085": {
+    "name": "Market Research",
+    "category": "Business",
+    "aliases": [
+      "market research"
+    ]
+  },
+  "SKL_086": {
+    "name": "Product Positioning",
+    "category": "Business",
+    "aliases": [
+      "product positioning"
+    ]
+  },
+  "SKL_087": {
+    "name": "Product Management",
+    "category": "Business",
+    "aliases": [
+      "product management",
+      "product development",
+      "product-focused execution"
+    ]
+  },
+  "SKL_088": {
+    "name": "Strategic Planning",
+    "category": "Business",
+    "aliases": [
+      "strategic planning"
+    ]
+  },
+  "SKL_089": {
+    "name": "Team Leadership",
+    "category": "Soft Skills",
+    "aliases": [
+      "team leadership",
+      "team coordination",
+      "team management"
+    ]
+  },
+  "SKL_090": {
+    "name": "Event Management",
+    "category": "Business",
+    "aliases": [
+      "event management"
+    ]
+  },
+  "SKL_091": {
+    "name": "Public Speaking",
+    "category": "Soft Skills",
+    "aliases": [
+      "public speaking"
+    ]
+  },
+  "SKL_092": {
+    "name": "Presentation Skills",
+    "category": "Soft Skills",
+    "aliases": [
+      "presentation",
+      "presentation skills",
+      "presenting ideas"
+    ]
+  },
+  "SKL_093": {
+    "name": "PowerPoint",
+    "category": "Tools",
+    "aliases": [
+      "powerpoint",
+      "ms powerpoint",
+      "microsoft powerpoint",
+      "ppt"
+    ]
+  },
+  "SKL_094": {
+    "name": "Google Workspace",
+    "category": "Tools",
+    "aliases": [
+      "google workspace",
+      "g suite"
+    ]
+  },
+  "SKL_095": {
+    "name": "Business Communication",
+    "category": "Soft Skills",
+    "aliases": [
+      "business communication",
+      "client communication",
+      "content communication"
+    ]
+  },
+  "SKL_096": {
+    "name": "Cross-Functional Collaboration",
+    "category": "Soft Skills",
+    "aliases": [
+      "cross-functional collaboration",
+      "cross functional collaboration"
+    ]
+  },
+  "SKL_097": {
+    "name": "JSON Web Tokens (JWT)",
+    "category": "Cybersecurity",
+    "aliases": [
+      "jwt",
+      "jwt authentication",
+      "json web token"
+    ]
+  },
+  "SKL_098": {
+    "name": "Customer Needs Analysis",
+    "category": "Business",
+    "aliases": [
+      "customer needs understanding",
+      "customer needs analysis",
+      "user requirements",
+      "user needs"
+    ]
+  },
+  "SKL_099": {
+    "name": "Community Building",
+    "category": "Business",
+    "aliases": [
+      "community building",
+      "community growth"
+    ]
+  },
+  "SKL_100": {
+    "name": "Relationship Building",
+    "category": "Soft Skills",
+    "aliases": [
+      "relationship building",
+      "client relationship"
+    ]
+  },
+  "SKL_101": {
+    "name": "PHP",
+    "category": "Programming",
+    "aliases": [
+      "php"
+    ]
+  },
+  "SKL_102": {
+    "name": "Instagram Management",
+    "category": "Marketing",
+    "aliases": [
+      "instagram management",
+      "instagram marketing",
+      "instagram"
+    ]
+  },
+  "SKL_103": {
+    "name": "Social Media Management",
+    "category": "Marketing",
+    "aliases": [
+      "social media management",
+      "social media",
+      "social media marketing",
+      "smm"
+    ]
+  },
+  "SKL_104": {
+    "name": "Content Creation",
+    "category": "Marketing",
+    "aliases": [
+      "content creation",
+      "content planning",
+      "content designing",
+      "creative content",
+      "post designing"
+    ]
+  },
+  "SKL_105": {
+    "name": "Video Editing",
+    "category": "Design",
+    "aliases": [
+      "video editing",
+      "video designing",
+      "reels"
+    ]
+  },
+  "SKL_106": {
+    "name": "Audience Engagement",
+    "category": "Marketing",
+    "aliases": [
+      "audience engagement"
+    ]
+  },
+  "SKL_107": {
+    "name": "Event Promotion",
+    "category": "Marketing",
+    "aliases": [
+      "event promotion"
+    ]
+  },
+  "SKL_108": {
+    "name": "Creative Thinking",
+    "category": "Soft Skills",
+    "aliases": [
+      "creative thinking"
+    ]
+  },
+  "SKL_109": {
+    "name": "Teamwork & Collaboration",
+    "category": "Soft Skills",
+    "aliases": [
+      "teamwork & collaboration",
+      "teamwork",
+      "collaboration"
+    ]
+  },
+  "SKL_110": {
+    "name": "Adaptability",
+    "category": "Soft Skills",
+    "aliases": [
+      "adaptability",
+      "adaptable"
+    ]
+  },
+  "SKL_111": {
+    "name": "C++",
+    "category": "Programming",
+    "aliases": [
+      "c++",
+      "cpp",
+      "c / c++",
+      "c/c++",
+      "modern c++"
+    ]
+  },
+  "SKL_112": {
+    "name": "ROS",
+    "category": "Robotics",
+    "aliases": [
+      "ros",
+      "robot operating system",
+      "ros1",
+      "ros 1"
+    ]
+  },
+  "SKL_113": {
+    "name": "ROS2",
+    "category": "Robotics",
+    "aliases": [
+      "ros2",
+      "ros 2",
+      "robot operating system 2"
+    ]
+  },
+  "SKL_114": {
+    "name": "SLAM",
+    "category": "Robotics",
+    "aliases": [
+      "slam",
+      "simultaneous localization and mapping",
+      "visual slam",
+      "vslam",
+      "lidar slam"
+    ]
+  },
+  "SKL_115": {
+    "name": "Gazebo",
+    "category": "Robotics",
+    "aliases": [
+      "gazebo",
+      "gazebo simulation",
+      "robot simulation"
+    ]
+  },
+  "SKL_116": {
+    "name": "Kinematics & Dynamics",
+    "category": "Robotics",
+    "aliases": [
+      "kinematics",
+      "robot kinematics",
+      "forward kinematics",
+      "inverse kinematics",
+      "robot dynamics",
+      "motion planning",
+      "path planning"
+    ]
+  },
+  "SKL_117": {
+    "name": "Embedded C",
+    "category": "Embedded Systems",
+    "aliases": [
+      "embedded c",
+      "embedded c/c++",
+      "c programming"
+    ]
+  },
+  "SKL_118": {
+    "name": "RTOS",
+    "category": "Embedded Systems",
+    "aliases": [
+      "rtos",
+      "freertos",
+      "real-time operating system",
+      "real time os",
+      "zephyr rtos"
+    ]
+  },
+  "SKL_119": {
+    "name": "Microcontrollers",
+    "category": "Embedded Systems",
+    "aliases": [
+      "microcontroller",
+      "microcontrollers",
+      "stm32",
+      "arduino",
+      "esp32",
+      "arm cortex",
+      "pic microcontroller",
+      "avr"
+    ]
+  },
+  "SKL_120": {
+    "name": "PCB Design",
+    "category": "Hardware",
+    "aliases": [
+      "pcb design",
+      "printed circuit board",
+      "altium",
+      "altium designer",
+      "kicad",
+      "eagle pcb",
+      "circuit design"
+    ]
+  },
+  "SKL_121": {
+    "name": "Sensors & Actuators",
+    "category": "Robotics",
+    "aliases": [
+      "sensors",
+      "actuators",
+      "imu",
+      "lidar",
+      "sonar",
+      "servo motors",
+      "stepper motors",
+      "encoders"
+    ]
+  },
+  "SKL_122": {
+    "name": "Communication Protocols",
+    "category": "Embedded Systems",
+    "aliases": [
+      "i2c",
+      "spi",
+      "uart",
+      "can bus",
+      "can protocol",
+      "modbus",
+      "rs485",
+      "mqtt"
+    ]
+  },
+  "SKL_123": {
+    "name": "PID Control & Control Systems",
+    "category": "Control Systems",
+    "aliases": [
+      "pid control",
+      "pid controller",
+      "control systems",
+      "feedback control",
+      "state space control"
+    ]
+  },
+  "SKL_124": {
+    "name": "MATLAB & Simulink",
+    "category": "Tools",
+    "aliases": [
+      "matlab",
+      "simulink",
+      "matlab simulink"
+    ]
+  },
+  "SKL_125": {
+    "name": "PLC & SCADA",
+    "category": "Automation",
+    "aliases": [
+      "plc",
+      "programmable logic controller",
+      "scada",
+      "ladder logic",
+      "siemens plc",
+      "allen bradley"
+    ]
+  },
+  "SKL_126": {
+    "name": "OpenCV",
+    "category": "Libraries",
+    "aliases": [
+      "opencv",
+      "open-cv",
+      "opencv-python",
+      "opencv c++"
+    ]
+  },
+  "SKL_127": {
+    "name": "SolidWorks & CAD",
+    "category": "Hardware",
+    "aliases": [
+      "solidworks",
+      "cad",
+      "autocad",
+      "fusion 360",
+      "3d cad",
+      "3d printing"
+    ]
+  }
+}

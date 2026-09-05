@@ -1,0 +1,203 @@
+{
+  "roles": {
+    "data_scientist": {
+      "canonical_name": "Data Scientist",
+      "category": "Data Science & AI",
+      "queries": [
+        "data scientist",
+        "machine learning scientist",
+        "ai scientist",
+        "applied scientist"
+      ],
+      "aliases": [
+        "data scientist",
+        "data science engineer",
+        "applied data scientist",
+        "associate data scientist",
+        "senior data scientist",
+        "principal data scientist",
+        "staff data scientist",
+        "lead data scientist"
+      ]
+    },
+    "data_analyst": {
+      "canonical_name": "Data Analyst",
+      "category": "Data Analytics",
+      "queries": [
+        "data analyst",
+        "business intelligence analyst",
+        "analytics consultant"
+      ],
+      "aliases": [
+        "data analyst",
+        "bi analyst",
+        "business analyst",
+        "business intelligence analyst",
+        "junior data analyst",
+        "senior data analyst",
+        "marketing analyst",
+        "operations analyst"
+      ]
+    },
+    "machine_learning_engineer": {
+      "canonical_name": "Machine Learning Engineer",
+      "category": "Data Science & AI",
+      "queries": [
+        "machine learning engineer",
+        "ml engineer",
+        "deep learning engineer"
+      ],
+      "aliases": [
+        "machine learning engineer",
+        "ml engineer",
+        "deep learning engineer",
+        "computer vision engineer",
+        "nlp engineer",
+        "mlops engineer"
+      ]
+    },
+    "ai_engineer": {
+      "canonical_name": "AI Engineer",
+      "category": "Data Science & AI",
+      "queries": [
+        "ai engineer",
+        "generative ai engineer",
+        "llm engineer"
+      ],
+      "aliases": [
+        "ai engineer",
+        "artificial intelligence engineer",
+        "generative ai engineer",
+        "llm engineer",
+        "genai engineer"
+      ]
+    },
+    "software_engineer": {
+      "canonical_name": "Software Engineer",
+      "category": "Software Engineering",
+      "queries": [
+        "software engineer",
+        "software developer",
+        "application developer"
+      ],
+      "aliases": [
+        "software engineer",
+        "software developer",
+        "member of technical staff",
+        "mts",
+        "sde",
+        "sde 1",
+        "sde 2",
+        "sde i",
+        "sde ii",
+        "systems engineer"
+      ]
+    },
+    "backend_developer": {
+      "canonical_name": "Backend Developer",
+      "category": "Software Engineering",
+      "queries": [
+        "backend developer",
+        "backend engineer",
+        "python backend developer",
+        "node.js backend developer"
+      ],
+      "aliases": [
+        "backend developer",
+        "backend engineer",
+        "server engineer",
+        "api developer",
+        "python developer",
+        "java developer",
+        "golang developer"
+      ]
+    },
+    "frontend_developer": {
+      "canonical_name": "Frontend Developer",
+      "category": "Software Engineering",
+      "queries": [
+        "frontend developer",
+        "frontend engineer",
+        "react developer",
+        "ui engineer"
+      ],
+      "aliases": [
+        "frontend developer",
+        "frontend engineer",
+        "web developer",
+        "ui developer",
+        "react developer",
+        "vue developer",
+        "angular developer"
+      ]
+    },
+    "full_stack_developer": {
+      "canonical_name": "Full Stack Developer",
+      "category": "Software Engineering",
+      "queries": [
+        "full stack developer",
+        "full stack engineer",
+        "mern stack developer"
+      ],
+      "aliases": [
+        "full stack developer",
+        "full stack engineer",
+        "fullstack developer",
+        "fullstack engineer",
+        "mern developer"
+      ]
+    },
+    "cloud_engineer": {
+      "canonical_name": "Cloud Engineer",
+      "category": "Cloud & Infrastructure",
+      "queries": [
+        "cloud engineer",
+        "aws cloud engineer",
+        "azure cloud engineer"
+      ],
+      "aliases": [
+        "cloud engineer",
+        "cloud architect",
+        "aws engineer",
+        "azure engineer",
+        "gcp engineer",
+        "cloud infrastructure engineer"
+      ]
+    },
+    "devops_engineer": {
+      "canonical_name": "DevOps Engineer",
+      "category": "Cloud & Infrastructure",
+      "queries": [
+        "devops engineer",
+        "site reliability engineer",
+        "platform engineer"
+      ],
+      "aliases": [
+        "devops engineer",
+        "sre",
+        "site reliability engineer",
+        "platform engineer",
+        "infrastructure engineer",
+        "devsecops engineer"
+      ]
+    },
+    "cybersecurity_analyst": {
+      "canonical_name": "Cybersecurity Analyst",
+      "category": "Cybersecurity",
+      "queries": [
+        "cybersecurity analyst",
+        "security engineer",
+        "information security analyst"
+      ],
+      "aliases": [
+        "cybersecurity analyst",
+        "cyber security analyst",
+        "information security analyst",
+        "soc analyst",
+        "security engineer",
+        "infosec analyst",
+        "penetration tester"
+      ]
+    }
+  }
+}

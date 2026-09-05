@@ -1,0 +1,397 @@
+{
+  "families": [
+    {
+      "id": "FAM_DATA",
+      "code": "DATA",
+      "name": "Data & Analytics",
+      "description": "Roles focused on data analysis, business intelligence, data engineering, and data science."
+    },
+    {
+      "id": "FAM_AI_ML",
+      "code": "AI_ML",
+      "name": "AI & Machine Learning",
+      "description": "Roles designing, building, and deploying artificial intelligence and machine learning models."
+    },
+    {
+      "id": "FAM_SWE",
+      "code": "SWE",
+      "name": "Software Engineering",
+      "description": "Roles developing web, mobile, backend, and full-stack software applications."
+    },
+    {
+      "id": "FAM_CLOUD_DEVOPS",
+      "code": "DEVOPS",
+      "name": "Cloud & DevOps",
+      "description": "Roles managing cloud infrastructure, deployment pipelines, site reliability, and automation."
+    },
+    {
+      "id": "FAM_SECURITY",
+      "code": "SECURITY",
+      "name": "Cybersecurity",
+      "description": "Roles safeguarding IT infrastructure, application security, and network defenses."
+    },
+    {
+      "id": "FAM_PRODUCT",
+      "code": "PRODUCT",
+      "name": "Product & Quality Assurance",
+      "description": "Roles driving product strategy, requirements, and software testing quality."
+    },
+    {
+      "id": "FAM_ROBOTICS_EMBEDDED",
+      "code": "ROBOTICS_EMBEDDED",
+      "name": "Robotics & Embedded Systems",
+      "description": "Roles focused on robotics hardware/software, embedded firmware, IoT, automation, and mechatronics."
+    }
+  ],
+  "roles": [
+    {
+      "id": "ROL_DATA_ANALYST",
+      "family_id": "FAM_DATA",
+      "code": "DATA_ANALYST",
+      "name": "Data Analyst",
+      "description": "Extracts insights from structured data using SQL, Excel, and visualization tools.",
+      "aliases": [
+        "data analyst",
+        "junior data analyst",
+        "senior data analyst",
+        "lead data analyst",
+        "marketing analyst",
+        "operations analyst",
+        "financial data analyst",
+        "product data analyst"
+      ],
+      "queries": ["data analyst", "analytics specialist", "reporting analyst"]
+    },
+    {
+      "id": "ROL_DATA_SCIENTIST",
+      "family_id": "FAM_DATA",
+      "code": "DATA_SCIENTIST",
+      "name": "Data Scientist",
+      "description": "Applies statistical modeling, predictive analytics, and machine learning to business problems.",
+      "aliases": [
+        "data scientist",
+        "associate data scientist",
+        "senior data scientist",
+        "principal data scientist",
+        "lead data scientist",
+        "applied data scientist"
+      ],
+      "queries": ["data scientist", "data science researcher"]
+    },
+    {
+      "id": "ROL_BI_ANALYST",
+      "family_id": "FAM_DATA",
+      "code": "BI_ANALYST",
+      "name": "BI Analyst",
+      "description": "Designs and develops executive dashboards, reporting models, and KPI pipelines.",
+      "aliases": [
+        "bi analyst",
+        "business intelligence analyst",
+        "bi developer",
+        "power bi developer",
+        "tableau developer",
+        "business intelligence specialist"
+      ],
+      "queries": ["bi analyst", "business intelligence", "power bi", "tableau"]
+    },
+    {
+      "id": "ROL_BUSINESS_ANALYST",
+      "family_id": "FAM_DATA",
+      "code": "BUSINESS_ANALYST",
+      "name": "Business Analyst",
+      "description": "Bridges the gap between business stakeholders and technology teams.",
+      "aliases": [
+        "business analyst",
+        "it business analyst",
+        "technical business analyst",
+        "senior business analyst"
+      ],
+      "queries": ["business analyst", "business systems analyst"]
+    },
+    {
+      "id": "ROL_DATA_ENGINEER",
+      "family_id": "FAM_DATA",
+      "code": "DATA_ENGINEER",
+      "name": "Data Engineer",
+      "description": "Constructs robust data pipelines, ETL flows, and distributed data lakes/warehouses.",
+      "aliases": [
+        "data engineer",
+        "big data engineer",
+        "senior data engineer",
+        "lead data engineer",
+        "data platform engineer",
+        "etl developer"
+      ],
+      "queries": ["data engineer", "etl engineer", "spark engineer"]
+    },
+    {
+      "id": "ROL_ML_ENGINEER",
+      "family_id": "FAM_AI_ML",
+      "code": "ML_ENGINEER",
+      "name": "Machine Learning Engineer",
+      "description": "Designs, trains, optimizes, and productionizes machine learning architectures.",
+      "aliases": [
+        "machine learning engineer",
+        "ml engineer",
+        "deep learning engineer",
+        "applied ml engineer",
+        "senior ml engineer"
+      ],
+      "queries": ["machine learning engineer", "ml engineer", "deep learning"]
+    },
+    {
+      "id": "ROL_AI_ENGINEER",
+      "family_id": "FAM_AI_ML",
+      "code": "AI_ENGINEER",
+      "name": "AI Engineer",
+      "description": "Builds AI systems, generative workflows, neural networks, and intelligent agents.",
+      "aliases": [
+        "ai engineer",
+        "artificial intelligence engineer",
+        "genai engineer",
+        "generative ai engineer"
+      ],
+      "queries": ["ai engineer", "artificial intelligence"]
+    },
+    {
+      "id": "ROL_NLP_ENGINEER",
+      "family_id": "FAM_AI_ML",
+      "code": "NLP_ENGINEER",
+      "name": "NLP Engineer",
+      "description": "Specializes in text processing, speech processing, and natural language understanding models.",
+      "aliases": [
+        "nlp engineer",
+        "natural language processing engineer",
+        "computational linguist"
+      ],
+      "queries": ["nlp engineer", "natural language processing"]
+    },
+    {
+      "id": "ROL_CV_ENGINEER",
+      "family_id": "FAM_AI_ML",
+      "code": "CV_ENGINEER",
+      "name": "Computer Vision Engineer",
+      "description": "Specializes in image processing, object detection, and visual recognition neural nets.",
+      "aliases": [
+        "computer vision engineer",
+        "cv engineer",
+        "vision engineer"
+      ],
+      "queries": ["computer vision engineer", "image processing engineer"]
+    },
+    {
+      "id": "ROL_MLOPS_ENGINEER",
+      "family_id": "FAM_AI_ML",
+      "code": "MLOPS_ENGINEER",
+      "name": "MLOps Engineer",
+      "description": "Manages ML model CI/CD, feature stores, model registry, monitoring, and scaling.",
+      "aliases": [
+        "mlops engineer",
+        "machine learning operations engineer",
+        "ai infrastructure engineer"
+      ],
+      "queries": ["mlops engineer", "ml platform engineer"]
+    },
+    {
+      "id": "ROL_FRONTEND_DEV",
+      "family_id": "FAM_SWE",
+      "code": "FRONTEND_DEV",
+      "name": "Frontend Developer",
+      "description": "Builds interactive user interfaces using modern web frameworks.",
+      "aliases": [
+        "frontend developer",
+        "front-end developer",
+        "frontend engineer",
+        "react developer",
+        "ui developer",
+        "web developer"
+      ],
+      "queries": ["frontend developer", "react developer", "ui engineer"]
+    },
+    {
+      "id": "ROL_BACKEND_DEV",
+      "family_id": "FAM_SWE",
+      "code": "BACKEND_DEV",
+      "name": "Backend Developer",
+      "description": "Designs scalable APIs, business logic, databases, and microservices.",
+      "aliases": [
+        "backend developer",
+        "back-end developer",
+        "backend engineer",
+        "python developer",
+        "java developer",
+        "node.js developer",
+        "api developer"
+      ],
+      "queries": ["backend developer", "backend engineer", "api engineer"]
+    },
+    {
+      "id": "ROL_FULLSTACK_DEV",
+      "family_id": "FAM_SWE",
+      "code": "FULLSTACK_DEV",
+      "name": "Full Stack Developer",
+      "description": "Builds end-to-end applications covering client, server, and storage layers.",
+      "aliases": [
+        "full stack developer",
+        "full-stack developer",
+        "full stack engineer",
+        "fullstack engineer",
+        "software engineer - full stack"
+      ],
+      "queries": ["full stack developer", "fullstack engineer"]
+    },
+    {
+      "id": "ROL_SOFTWARE_ENGINEER",
+      "family_id": "FAM_SWE",
+      "code": "SOFTWARE_ENGINEER",
+      "name": "Software Engineer",
+      "description": "General software engineering across systems, algorithms, and application domains.",
+      "aliases": [
+        "software engineer",
+        "software developer",
+        "member of technical staff",
+        "systems engineer",
+        "application developer"
+      ],
+      "queries": ["software engineer", "software developer"]
+    },
+    {
+      "id": "ROL_DEVOPS_ENGINEER",
+      "family_id": "FAM_CLOUD_DEVOPS",
+      "code": "DEVOPS_ENGINEER",
+      "name": "DevOps Engineer",
+      "description": "Builds CI/CD automation, manages cloud platforms, and maintains high reliability.",
+      "aliases": [
+        "devops engineer",
+        "cloud engineer",
+        "cloud infrastructure engineer",
+        "platform engineer",
+        "site reliability engineer",
+        "sre"
+      ],
+      "queries": ["devops engineer", "cloud engineer", "platform engineer"]
+    },
+    {
+      "id": "ROL_SECURITY_ANALYST",
+      "family_id": "FAM_SECURITY",
+      "code": "SECURITY_ANALYST",
+      "name": "Cybersecurity Analyst",
+      "description": "Monitors security posture, investigates incidents, and enforces compliance.",
+      "aliases": [
+        "cybersecurity analyst",
+        "security analyst",
+        "information security analyst",
+        "infosec analyst",
+        "soc analyst"
+      ],
+      "queries": ["cybersecurity analyst", "security engineer"]
+    },
+    {
+      "id": "ROL_QA_ENGINEER",
+      "family_id": "FAM_PRODUCT",
+      "code": "QA_ENGINEER",
+      "name": "QA / Automation Engineer",
+      "description": "Ensures application quality through manual testing and automated testing suites.",
+      "aliases": [
+        "qa engineer",
+        "quality assurance engineer",
+        "test automation engineer",
+        "sdet",
+        "software development engineer in test"
+      ],
+      "queries": ["qa engineer", "sdet", "test engineer"]
+    },
+    {
+      "id": "ROL_PRODUCT_MANAGER",
+      "family_id": "FAM_PRODUCT",
+      "code": "PRODUCT_MANAGER",
+      "name": "Product Manager",
+      "description": "Defines product vision, strategy, roadmap, and user stories.",
+      "aliases": [
+        "product manager",
+        "associate product manager",
+        "technical product manager",
+        "senior product manager"
+      ],
+      "queries": ["product manager", "tpm"]
+    },
+    {
+      "id": "ROL_ROBOTICS_ENGINEER",
+      "family_id": "FAM_ROBOTICS_EMBEDDED",
+      "code": "ROBOTICS_ENGINEER",
+      "name": "Robotics Engineer",
+      "description": "Designs, models, and programs autonomous robotic systems, kinematics, path planning, and perception.",
+      "aliases": [
+        "robotics engineer",
+        "robotics software engineer",
+        "autonomous systems engineer",
+        "robotics developer",
+        "ros developer",
+        "slam engineer",
+        "mechatronics engineer"
+      ],
+      "queries": ["robotics engineer", "ros developer", "slam", "mechatronics"]
+    },
+    {
+      "id": "ROL_EMBEDDED_ENGINEER",
+      "family_id": "FAM_ROBOTICS_EMBEDDED",
+      "code": "EMBEDDED_ENGINEER",
+      "name": "Embedded Systems Engineer",
+      "description": "Develops low-level firmware, device drivers, and real-time operating system applications for microcontrollers.",
+      "aliases": [
+        "embedded systems engineer",
+        "embedded engineer",
+        "firmware engineer",
+        "embedded software engineer",
+        "rtos engineer",
+        "microcontroller engineer"
+      ],
+      "queries": ["embedded systems engineer", "firmware engineer", "embedded c", "rtos"]
+    },
+    {
+      "id": "ROL_IOT_ENGINEER",
+      "family_id": "FAM_ROBOTICS_EMBEDDED",
+      "code": "IOT_ENGINEER",
+      "name": "IoT & Firmware Engineer",
+      "description": "Architects connected IoT devices, edge sensor networks, and wireless telemetry pipelines.",
+      "aliases": [
+        "iot engineer",
+        "internet of things engineer",
+        "edge developer",
+        "iot solutions engineer",
+        "connected systems engineer"
+      ],
+      "queries": ["iot engineer", "embedded iot", "edge systems"]
+    },
+    {
+      "id": "ROL_AUTOMATION_ENGINEER",
+      "family_id": "FAM_ROBOTICS_EMBEDDED",
+      "code": "AUTOMATION_ENGINEER",
+      "name": "Automation & Controls Engineer",
+      "description": "Designs and programs PLC systems, industrial robotics, SCADA, and control loops.",
+      "aliases": [
+        "automation engineer",
+        "controls engineer",
+        "plc programmer",
+        "industrial automation engineer",
+        "scada engineer"
+      ],
+      "queries": ["automation engineer", "controls engineer", "plc"]
+    },
+    {
+      "id": "ROL_HARDWARE_ENGINEER",
+      "family_id": "FAM_ROBOTICS_EMBEDDED",
+      "code": "HARDWARE_ENGINEER",
+      "name": "Hardware / PCB Design Engineer",
+      "description": "Designs electronic schematics, circuit boards, microelectronic layouts, and hardware prototypes.",
+      "aliases": [
+        "hardware engineer",
+        "pcb design engineer",
+        "electronics engineer",
+        "hardware design engineer",
+        "circuit design engineer"
+      ],
+      "queries": ["hardware engineer", "pcb design", "electronics engineer"]
+    }
+  ]
+}

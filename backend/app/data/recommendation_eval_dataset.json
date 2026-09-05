@@ -1,0 +1,113 @@
+{
+  "dataset_version": "1.0.0",
+  "description": "Benchmark evaluation dataset for Profile Intelligence Agent recommendation and skill-gap evaluation",
+  "test_profiles": [
+    {
+      "id": "TEST_STUDENT_DATA_ANALYST_FRESHER",
+      "name": "Aman Sharma",
+      "target_role": "Data Analyst",
+      "preferred_location": "Jaipur",
+      "city": "Jaipur",
+      "education_level": "B.Tech",
+      "degree": "Computer Science",
+      "experience_years": 0.0,
+      "is_fresher": true,
+      "skills": [
+        {"skill_id": "SKL_PYTHON", "canonical_name": "Python", "confidence": 0.95, "status": "KNOWN"},
+        {"skill_id": "SKL_SQL", "canonical_name": "SQL", "confidence": 0.90, "status": "KNOWN"},
+        {"skill_id": "SKL_PANDAS", "canonical_name": "Pandas", "confidence": 0.85, "status": "KNOWN"},
+        {"skill_id": "SKL_EXCEL", "canonical_name": "Excel", "confidence": 0.80, "status": "KNOWN"},
+        {"skill_id": "SKL_POWER_BI", "canonical_name": "Power BI", "confidence": 0.85, "status": "KNOWN"}
+      ],
+      "test_scenarios": [
+        {
+          "scenario_name": "High-fit Local/Remote Data Analyst Job",
+          "job": {
+            "id": "EVAL_JOB_001",
+            "title": "Junior Data Analyst",
+            "canonical_role": "Data Analyst",
+            "role_id": "ROL_DATA_ANALYST",
+            "company_name": "Analytics Corp",
+            "location": "Jaipur, India",
+            "country": "IN",
+            "remote": false,
+            "status": "ACTIVE",
+            "skills": [
+              {"skill_id": "SKL_PYTHON", "canonical_name": "Python", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_SQL", "canonical_name": "SQL", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_PANDAS", "canonical_name": "Pandas", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_POWER_BI", "canonical_name": "Power BI", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_AWS", "canonical_name": "AWS", "requirement_type": "PREFERRED"}
+            ]
+          },
+          "expected_relevance": 1.0,
+          "expected_min_score": 80.0
+        },
+        {
+          "scenario_name": "Related BI Analyst Remote Job",
+          "job": {
+            "id": "EVAL_JOB_002",
+            "title": "Business Intelligence Analyst",
+            "canonical_role": "BI Analyst",
+            "role_id": "ROL_BI_ANALYST",
+            "company_name": "FinTech Global",
+            "location": "Remote",
+            "country": "IN",
+            "remote": true,
+            "status": "ACTIVE",
+            "skills": [
+              {"skill_id": "SKL_SQL", "canonical_name": "SQL", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_POWER_BI", "canonical_name": "Power BI", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_EXCEL", "canonical_name": "Excel", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_TABLEAU", "canonical_name": "Tableau", "requirement_type": "PREFERRED"}
+            ]
+          },
+          "expected_relevance": 1.0,
+          "expected_min_score": 75.0
+        },
+        {
+          "scenario_name": "Senior ML Engineer Job (Experience Mismatch)",
+          "job": {
+            "id": "EVAL_JOB_003",
+            "title": "Senior Machine Learning Engineer (5+ years)",
+            "canonical_role": "ML Engineer",
+            "role_id": "ROL_ML_ENGINEER",
+            "company_name": "AI Labs",
+            "location": "Bengaluru",
+            "country": "IN",
+            "remote": false,
+            "status": "ACTIVE",
+            "skills": [
+              {"skill_id": "SKL_PYTHON", "canonical_name": "Python", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_PYTORCH", "canonical_name": "PyTorch", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_KUBERNETES", "canonical_name": "Kubernetes", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_DOCKER", "canonical_name": "Docker", "requirement_type": "REQUIRED"}
+            ]
+          },
+          "expected_relevance": 0.0,
+          "expected_max_score": 45.0
+        },
+        {
+          "scenario_name": "Unrelated Cybersecurity Job",
+          "job": {
+            "id": "EVAL_JOB_004",
+            "title": "Security Operations Analyst",
+            "canonical_role": "Cybersecurity Analyst",
+            "role_id": "ROL_SECURITY_ANALYST",
+            "company_name": "SecureShield",
+            "location": "Mumbai",
+            "country": "IN",
+            "remote": false,
+            "status": "ACTIVE",
+            "skills": [
+              {"skill_id": "SKL_KUBERNETES", "canonical_name": "Kubernetes", "requirement_type": "REQUIRED"},
+              {"skill_id": "SKL_AWS", "canonical_name": "AWS", "requirement_type": "REQUIRED"}
+            ]
+          },
+          "expected_relevance": 0.0,
+          "expected_max_score": 30.0
+        }
+      ]
+    }
+  ]
+}

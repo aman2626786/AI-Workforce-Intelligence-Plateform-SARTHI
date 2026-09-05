@@ -1,0 +1,791 @@
+{
+  "version": "1.0",
+  "license": "MIT",
+  "source": "MIND Tech Ontology + SkillVantage Platform Taxonomy",
+  "skills": [
+    {
+      "id": "SKL_PYTHON",
+      "canonical_name": "Python",
+      "category": "Programming Languages",
+      "subcategory": "General Purpose",
+      "description": "High-level, dynamically typed programming language widely used in AI/ML, data science, web development, and automation.",
+      "aliases": ["python", "python3", "python 3", "python2", "python 2", "python programming", "python scripting", "cpython"],
+      "relationships": [
+        {"target": "SKL_PANDAS", "relation": "TOOL_OF"},
+        {"target": "SKL_NUMPY", "relation": "TOOL_OF"},
+        {"target": "SKL_DJANGO", "relation": "FRAMEWORK_OF"},
+        {"target": "SKL_FASTAPI", "relation": "FRAMEWORK_OF"},
+        {"target": "SKL_FLASK", "relation": "FRAMEWORK_OF"},
+        {"target": "SKL_SCIKIT_LEARN", "relation": "TOOL_OF"},
+        {"target": "SKL_PYTORCH", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_SQL",
+      "canonical_name": "SQL",
+      "category": "Databases & Storage",
+      "subcategory": "Query Languages",
+      "description": "Structured Query Language used to store, manipulate, and query relational databases.",
+      "aliases": ["sql", "structured query language", "ansi sql", "sql querying", "t-sql", "pl/sql", "plsql"],
+      "relationships": [
+        {"target": "SKL_POSTGRESQL", "relation": "PARENT"},
+        {"target": "SKL_MYSQL", "relation": "PARENT"},
+        {"target": "SKL_SQL_SERVER", "relation": "PARENT"}
+      ]
+    },
+    {
+      "id": "SKL_POSTGRESQL",
+      "canonical_name": "PostgreSQL",
+      "category": "Databases & Storage",
+      "subcategory": "Relational Databases",
+      "description": "Powerful, open-source object-relational database system.",
+      "aliases": ["postgresql", "postgres", "psql", "postgre sql", "postgres sql"],
+      "relationships": [
+        {"target": "SKL_SQL", "relation": "CHILD"},
+        {"target": "SKL_MYSQL", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_MYSQL",
+      "canonical_name": "MySQL",
+      "category": "Databases & Storage",
+      "subcategory": "Relational Databases",
+      "description": "Open-source relational database management system.",
+      "aliases": ["mysql", "my sql", "mysql rdbms"],
+      "relationships": [
+        {"target": "SKL_SQL", "relation": "CHILD"},
+        {"target": "SKL_POSTGRESQL", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_SQL_SERVER",
+      "canonical_name": "SQL Server",
+      "category": "Databases & Storage",
+      "subcategory": "Relational Databases",
+      "description": "Microsoft relational database management system.",
+      "aliases": ["sql server", "ms sql", "mssql", "microsoft sql server"],
+      "relationships": [
+        {"target": "SKL_SQL", "relation": "CHILD"}
+      ]
+    },
+    {
+      "id": "SKL_MONGODB",
+      "canonical_name": "MongoDB",
+      "category": "Databases & Storage",
+      "subcategory": "NoSQL Databases",
+      "description": "Document-based distributed database designed for modern apps and cloud.",
+      "aliases": ["mongodb", "mongo db", "mongo"],
+      "relationships": [
+        {"target": "SKL_REDIS", "relation": "RELATED"}
+      ]
+    },
+    {
+      "id": "SKL_REDIS",
+      "canonical_name": "Redis",
+      "category": "Databases & Storage",
+      "subcategory": "In-Memory Cache",
+      "description": "Open source in-memory data store used as a database, cache, streaming engine, and message broker.",
+      "aliases": ["redis", "redis cache"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_JAVASCRIPT",
+      "canonical_name": "JavaScript",
+      "category": "Programming Languages",
+      "subcategory": "Web Development",
+      "description": "Interpreted programming language with first-class functions conforming to the ECMAScript specification.",
+      "aliases": ["javascript", "js", "ecmascript", "es6", "es6+", "vanilla js"],
+      "relationships": [
+        {"target": "SKL_TYPESCRIPT", "relation": "ALTERNATIVE"},
+        {"target": "SKL_REACT", "relation": "FRAMEWORK_OF"},
+        {"target": "SKL_NODEJS", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_TYPESCRIPT",
+      "canonical_name": "TypeScript",
+      "category": "Programming Languages",
+      "subcategory": "Web Development",
+      "description": "Strongly typed superset of JavaScript that compiles to plain JavaScript.",
+      "aliases": ["typescript", "ts"],
+      "relationships": [
+        {"target": "SKL_JAVASCRIPT", "relation": "PARENT"}
+      ]
+    },
+    {
+      "id": "SKL_REACT",
+      "canonical_name": "React",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Frontend Libraries",
+      "description": "JavaScript library for building interactive user interfaces.",
+      "aliases": ["react", "react.js", "reactjs", "react js"],
+      "relationships": [
+        {"target": "SKL_JAVASCRIPT", "relation": "TOOL_OF"},
+        {"target": "SKL_NEXTJS", "relation": "PARENT"}
+      ]
+    },
+    {
+      "id": "SKL_NEXTJS",
+      "canonical_name": "Next.js",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Full Stack Frameworks",
+      "description": "React framework for building full-stack web applications with server-side rendering.",
+      "aliases": ["next.js", "nextjs", "next js"],
+      "relationships": [
+        {"target": "SKL_REACT", "relation": "FRAMEWORK_OF"}
+      ]
+    },
+    {
+      "id": "SKL_NODEJS",
+      "canonical_name": "Node.js",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Runtime Environments",
+      "description": "Cross-platform, open-source JavaScript runtime environment.",
+      "aliases": ["node.js", "nodejs", "node js", "node"],
+      "relationships": [
+        {"target": "SKL_JAVASCRIPT", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_ANGULAR",
+      "canonical_name": "Angular",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Frontend Frameworks",
+      "description": "TypeScript-based open-source web application framework.",
+      "aliases": ["angular", "angularjs", "angular 2+", "angular.js"],
+      "relationships": [
+        {"target": "SKL_TYPESCRIPT", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_VUE",
+      "canonical_name": "Vue.js",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Frontend Frameworks",
+      "description": "Progressive JavaScript framework for building user interfaces.",
+      "aliases": ["vue", "vue.js", "vuejs", "vue js"],
+      "relationships": [
+        {"target": "SKL_JAVASCRIPT", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_JAVA",
+      "canonical_name": "Java",
+      "category": "Programming Languages",
+      "subcategory": "Enterprise Languages",
+      "description": "Object-oriented, class-based programming language designed for portability and enterprise scale.",
+      "aliases": ["java", "core java", "java 8", "java 11", "java 17", "java 21", "java se", "java ee"],
+      "relationships": [
+        {"target": "SKL_SPRING_BOOT", "relation": "FRAMEWORK_OF"}
+      ]
+    },
+    {
+      "id": "SKL_SPRING_BOOT",
+      "canonical_name": "Spring Boot",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Backend Frameworks",
+      "description": "Open source Java-based framework used to create microservices and stand-alone production grade Spring applications.",
+      "aliases": ["spring boot", "springboot", "spring-boot", "spring framework"],
+      "relationships": [
+        {"target": "SKL_JAVA", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_CPP",
+      "canonical_name": "C++",
+      "category": "Programming Languages",
+      "subcategory": "Systems Programming",
+      "description": "General-purpose programming language with low-level memory manipulation features.",
+      "aliases": ["c++", "cpp", "cplusplus", "c/c++"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_CSHARP",
+      "canonical_name": "C#",
+      "category": "Programming Languages",
+      "subcategory": "Enterprise Languages",
+      "description": "Modern, object-oriented, and type-safe programming language developed by Microsoft.",
+      "aliases": ["c#", "csharp", "c sharp", ".net c#"],
+      "relationships": [
+        {"target": "SKL_DOTNET", "relation": "FRAMEWORK_OF"}
+      ]
+    },
+    {
+      "id": "SKL_DOTNET",
+      "canonical_name": ".NET",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Backend Frameworks",
+      "description": "Free, cross-platform, open source developer platform for building apps.",
+      "aliases": [".net", "dotnet", ".net core", "asp.net", "asp.net core"],
+      "relationships": [
+        {"target": "SKL_CSHARP", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_GOLANG",
+      "canonical_name": "Go",
+      "category": "Programming Languages",
+      "subcategory": "Systems & Cloud",
+      "description": "Statically typed, compiled programming language designed at Google for concurrent systems.",
+      "aliases": ["golang", "go language", "go programming"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_R",
+      "canonical_name": "R",
+      "category": "Programming Languages",
+      "subcategory": "Statistical Computing",
+      "description": "Programming language and free software environment for statistical computing and graphics.",
+      "aliases": ["r programming", "r language", "r-project", "r/python"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_RUST",
+      "canonical_name": "Rust",
+      "category": "Programming Languages",
+      "subcategory": "Systems Programming",
+      "description": "Systems programming language focused on safety, speed, and concurrency.",
+      "aliases": ["rust", "rustlang", "rust programming"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_MACHINE_LEARNING",
+      "canonical_name": "Machine Learning",
+      "category": "AI & Machine Learning",
+      "subcategory": "Core Concepts",
+      "description": "Field of study that gives computers the ability to learn without being explicitly programmed.",
+      "aliases": ["machine learning", "ml", "machine-learning", "predictive modeling", "statistical learning"],
+      "relationships": [
+        {"target": "SKL_DEEP_LEARNING", "relation": "PARENT"},
+        {"target": "SKL_SCIKIT_LEARN", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_DEEP_LEARNING",
+      "canonical_name": "Deep Learning",
+      "category": "AI & Machine Learning",
+      "subcategory": "Neural Networks",
+      "description": "Subset of machine learning based on artificial neural networks with representation learning.",
+      "aliases": ["deep learning", "dl", "neural networks", "deep neural networks", "ann", "cnn", "rnn"],
+      "relationships": [
+        {"target": "SKL_MACHINE_LEARNING", "relation": "CHILD"},
+        {"target": "SKL_PYTORCH", "relation": "TOOL_OF"},
+        {"target": "SKL_TENSORFLOW", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_NLP",
+      "canonical_name": "Natural Language Processing",
+      "category": "AI & Machine Learning",
+      "subcategory": "Language Models",
+      "description": "Subfield of linguistics, computer science, and AI concerned with interactions between computers and human language.",
+      "aliases": ["natural language processing", "nlp", "text processing", "text mining", "computational linguistics"],
+      "relationships": [
+        {"target": "SKL_MACHINE_LEARNING", "relation": "CHILD"}
+      ]
+    },
+    {
+      "id": "SKL_COMPUTER_VISION",
+      "canonical_name": "Computer Vision",
+      "category": "AI & Machine Learning",
+      "subcategory": "Visual Recognition",
+      "description": "Interdisciplinary field that deals with how computers gain high-level understanding from digital images or videos.",
+      "aliases": ["computer vision", "cv", "image processing", "object detection", "image segmentation", "opencv"],
+      "relationships": [
+        {"target": "SKL_MACHINE_LEARNING", "relation": "CHILD"}
+      ]
+    },
+    {
+      "id": "SKL_SCIKIT_LEARN",
+      "canonical_name": "Scikit-Learn",
+      "category": "AI & Machine Learning",
+      "subcategory": "ML Libraries",
+      "description": "Simple and efficient tools for predictive data analysis and classical machine learning in Python.",
+      "aliases": ["scikit-learn", "sklearn", "scikitlearn"],
+      "relationships": [
+        {"target": "SKL_PYTHON", "relation": "TOOL_OF"},
+        {"target": "SKL_MACHINE_LEARNING", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_PYTORCH",
+      "canonical_name": "PyTorch",
+      "category": "AI & Machine Learning",
+      "subcategory": "Deep Learning Frameworks",
+      "description": "Open source machine learning framework based on the Torch library.",
+      "aliases": ["pytorch", "torch", "py-torch"],
+      "relationships": [
+        {"target": "SKL_DEEP_LEARNING", "relation": "TOOL_OF"},
+        {"target": "SKL_TENSORFLOW", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_TENSORFLOW",
+      "canonical_name": "TensorFlow",
+      "category": "AI & Machine Learning",
+      "subcategory": "Deep Learning Frameworks",
+      "description": "End-to-end open source platform for machine learning developed by Google Brain.",
+      "aliases": ["tensorflow", "tf", "tensor-flow", "keras"],
+      "relationships": [
+        {"target": "SKL_DEEP_LEARNING", "relation": "TOOL_OF"},
+        {"target": "SKL_PYTORCH", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_PANDAS",
+      "canonical_name": "Pandas",
+      "category": "Data Analytics",
+      "subcategory": "Data Manipulation",
+      "description": "Fast, powerful, flexible and easy to use open source data analysis and manipulation tool built on Python.",
+      "aliases": ["pandas", "pandas library"],
+      "relationships": [
+        {"target": "SKL_PYTHON", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_NUMPY",
+      "canonical_name": "NumPy",
+      "category": "Data Analytics",
+      "subcategory": "Scientific Computing",
+      "description": "Fundamental package for scientific computing in Python providing N-dimensional arrays.",
+      "aliases": ["numpy", "num py", "numpy library"],
+      "relationships": [
+        {"target": "SKL_PYTHON", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_POWER_BI",
+      "canonical_name": "Power BI",
+      "category": "Business Intelligence",
+      "subcategory": "Data Visualization",
+      "description": "Interactive data visualization software product developed by Microsoft.",
+      "aliases": ["power bi", "powerbi", "power-bi", "microsoft power bi", "ms power bi", "dax"],
+      "relationships": [
+        {"target": "SKL_TABLEAU", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_TABLEAU",
+      "canonical_name": "Tableau",
+      "category": "Business Intelligence",
+      "subcategory": "Data Visualization",
+      "description": "Visual analytics platform transforming the way we use data to solve problems.",
+      "aliases": ["tableau", "tableau desktop", "tableau server"],
+      "relationships": [
+        {"target": "SKL_POWER_BI", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_EXCEL",
+      "canonical_name": "Excel",
+      "category": "Business Intelligence",
+      "subcategory": "Spreadsheets",
+      "description": "Spreadsheet editor developed by Microsoft for Windows, macOS, Android and iOS.",
+      "aliases": ["excel", "ms excel", "microsoft excel", "advanced excel", "vlookup", "pivot tables"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_SPARK",
+      "canonical_name": "Apache Spark",
+      "category": "Data Engineering",
+      "subcategory": "Distributed Computing",
+      "description": "Multi-language engine for executing data engineering, data science, and machine learning on single-node machines or clusters.",
+      "aliases": ["spark", "apache spark", "pyspark", "py-spark"],
+      "relationships": [
+        {"target": "SKL_PYTHON", "relation": "TOOL_OF"},
+        {"target": "SKL_HADOOP", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_KAFKA",
+      "canonical_name": "Apache Kafka",
+      "category": "Data Engineering",
+      "subcategory": "Message Streaming",
+      "description": "Distributed event store and stream-processing platform.",
+      "aliases": ["kafka", "apache kafka"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_AIRFLOW",
+      "canonical_name": "Apache Airflow",
+      "category": "Data Engineering",
+      "subcategory": "Workflow Orchestration",
+      "description": "Platform created by the community to programmatically author, schedule and monitor workflows.",
+      "aliases": ["airflow", "apache airflow"],
+      "relationships": [
+        {"target": "SKL_PYTHON", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_DBT",
+      "canonical_name": "dbt",
+      "category": "Data Engineering",
+      "subcategory": "Data Transformation",
+      "description": "Data build tool that enables data analysts and engineers to transform data in their warehouse.",
+      "aliases": ["dbt", "data build tool"],
+      "relationships": [
+        {"target": "SKL_SQL", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_SNOWFLAKE",
+      "canonical_name": "Snowflake",
+      "category": "Data Engineering",
+      "subcategory": "Cloud Data Warehouses",
+      "description": "Cloud computing-based data cloud company that offers a cloud-based data storage and analytics service.",
+      "aliases": ["snowflake", "snowflake db", "snowflake data cloud"],
+      "relationships": [
+        {"target": "SKL_SQL", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_DATABRICKS",
+      "canonical_name": "Databricks",
+      "category": "Data Engineering",
+      "subcategory": "Lakehouse Platform",
+      "description": "Unified, open analytics platform for building, deploying, sharing, and maintaining enterprise-grade data solutions.",
+      "aliases": ["databricks", "databricks lakehouse"],
+      "relationships": [
+        {"target": "SKL_SPARK", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_AWS",
+      "canonical_name": "AWS",
+      "category": "Cloud & DevOps",
+      "subcategory": "Cloud Platforms",
+      "description": "Comprehensive, evolving cloud computing platform provided by Amazon.",
+      "aliases": ["aws", "amazon web services", "ec2", "s3", "lambda", "aws cloud"],
+      "relationships": [
+        {"target": "SKL_AZURE", "relation": "ALTERNATIVE"},
+        {"target": "SKL_GCP", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_AZURE",
+      "canonical_name": "Azure",
+      "category": "Cloud & DevOps",
+      "subcategory": "Cloud Platforms",
+      "description": "Cloud computing platform and an online portal provided by Microsoft.",
+      "aliases": ["azure", "microsoft azure", "azure cloud"],
+      "relationships": [
+        {"target": "SKL_AWS", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_GCP",
+      "canonical_name": "Google Cloud",
+      "category": "Cloud & DevOps",
+      "subcategory": "Cloud Platforms",
+      "description": "Suite of cloud computing services that runs on the same infrastructure that Google uses internally.",
+      "aliases": ["gcp", "google cloud", "google cloud platform", "bigquery"],
+      "relationships": [
+        {"target": "SKL_AWS", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_DOCKER",
+      "canonical_name": "Docker",
+      "category": "Cloud & DevOps",
+      "subcategory": "Containerization",
+      "description": "Set of platform as a service products that use OS-level virtualization to deliver software in containers.",
+      "aliases": ["docker", "dockerfile", "docker-compose", "containerization"],
+      "relationships": [
+        {"target": "SKL_KUBERNETES", "relation": "RELATED"}
+      ]
+    },
+    {
+      "id": "SKL_KUBERNETES",
+      "canonical_name": "Kubernetes",
+      "category": "Cloud & DevOps",
+      "subcategory": "Container Orchestration",
+      "description": "Open-source container orchestration system for automating software deployment, scaling, and management.",
+      "aliases": ["kubernetes", "k8s"],
+      "relationships": [
+        {"target": "SKL_DOCKER", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_TERRAFORM",
+      "canonical_name": "Terraform",
+      "category": "Cloud & DevOps",
+      "subcategory": "Infrastructure as Code",
+      "description": "Open-source infrastructure as code software tool created by HashiCorp.",
+      "aliases": ["terraform", "tf", "hashicorp terraform"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_GIT",
+      "canonical_name": "Git",
+      "category": "Cloud & DevOps",
+      "subcategory": "Version Control",
+      "description": "Distributed version control system that tracks changes in any set of computer files.",
+      "aliases": ["git", "github", "gitlab", "bitbucket", "version control"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_LINUX",
+      "canonical_name": "Linux",
+      "category": "Cloud & DevOps",
+      "subcategory": "Operating Systems",
+      "description": "Family of open-source Unix-like operating systems based on the Linux kernel.",
+      "aliases": ["linux", "unix", "ubuntu", "debian", "centos", "redhat", "bash", "shell scripting"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_CICD",
+      "canonical_name": "CI/CD",
+      "category": "Cloud & DevOps",
+      "subcategory": "Continuous Integration",
+      "description": "Continuous Integration and Continuous Delivery automation practices.",
+      "aliases": ["ci/cd", "cicd", "continuous integration", "continuous delivery", "jenkins", "github actions"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_DJANGO",
+      "canonical_name": "Django",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Backend Frameworks",
+      "description": "High-level Python web framework that encourages rapid development and clean, pragmatic design.",
+      "aliases": ["django", "django rest framework", "drf"],
+      "relationships": [
+        {"target": "SKL_PYTHON", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_FASTAPI",
+      "canonical_name": "FastAPI",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Backend Frameworks",
+      "description": "Modern, fast (high-performance), web framework for building APIs with Python.",
+      "aliases": ["fastapi", "fast-api", "fast api"],
+      "relationships": [
+        {"target": "SKL_PYTHON", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_FLASK",
+      "canonical_name": "Flask",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Backend Frameworks",
+      "description": "Micro web framework written in Python.",
+      "aliases": ["flask"],
+      "relationships": [
+        {"target": "SKL_PYTHON", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_REST_API",
+      "canonical_name": "REST API",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "API Architecture",
+      "description": "Representational state transfer architectural style for networked hypermedia applications.",
+      "aliases": ["rest api", "restful", "restful apis", "rest web services"],
+      "relationships": [
+        {"target": "SKL_GRAPHQL", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_GRAPHQL",
+      "canonical_name": "GraphQL",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "API Architecture",
+      "description": "Open-source data query and manipulation language for APIs.",
+      "aliases": ["graphql", "graph ql"],
+      "relationships": [
+        {"target": "SKL_REST_API", "relation": "ALTERNATIVE"}
+      ]
+    },
+    {
+      "id": "SKL_HTML_CSS",
+      "canonical_name": "HTML/CSS",
+      "category": "Web & Backend Frameworks",
+      "subcategory": "Frontend Standards",
+      "description": "Core technologies for building web pages and web applications.",
+      "aliases": ["html", "html5", "css", "css3", "html/css", "sass", "scss", "tailwind css", "tailwind", "bootstrap"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_AGILE",
+      "canonical_name": "Agile",
+      "category": "Methodologies",
+      "subcategory": "Project Management",
+      "description": "Iterative approach to software development and project management.",
+      "aliases": ["agile", "scrum", "kanban", "sprint planning", "jira"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_TESTING",
+      "canonical_name": "Software Testing",
+      "category": "Methodologies",
+      "subcategory": "Quality Assurance",
+      "description": "Process of evaluating and verifying that a software application does what it is supposed to do.",
+      "aliases": ["software testing", "unit testing", "pytest", "jest", "selenium", "cypress", "integration testing", "tdd", "test automation"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_CYBERSECURITY",
+      "canonical_name": "Cybersecurity",
+      "category": "Cybersecurity",
+      "subcategory": "Information Security",
+      "description": "Practice of protecting systems, networks, and programs from digital attacks.",
+      "aliases": ["cybersecurity", "cyber security", "infosec", "network security", "application security", "owasp", "penetration testing"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_ETL",
+      "canonical_name": "ETL",
+      "category": "Data Engineering",
+      "subcategory": "Data Integration",
+      "description": "Extract, Transform, Load procedure in data processing and warehousing.",
+      "aliases": ["etl", "elt", "data pipelines", "data warehousing", "data warehouse"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_CPP",
+      "canonical_name": "C++",
+      "category": "Programming Languages",
+      "subcategory": "Systems Programming",
+      "description": "High-performance compiled language used in robotics, game development, embedded systems, and systems programming.",
+      "aliases": ["c++", "cpp", "c / c++", "c/c++", "modern c++"],
+      "relationships": [
+        {"target": "SKL_ROS", "relation": "TOOL_OF"},
+        {"target": "SKL_EMBEDDED_C", "relation": "RELATED_TO"}
+      ]
+    },
+    {
+      "id": "SKL_ROS",
+      "canonical_name": "ROS",
+      "category": "Robotics & Automation",
+      "subcategory": "Robotics Middleware",
+      "description": "Robot Operating System middleware suite for robotics software development, drivers, state estimation, and nodes.",
+      "aliases": ["ros", "robot operating system", "ros1", "ros 1", "rospy", "roscpp"],
+      "relationships": [
+        {"target": "SKL_ROS2", "relation": "PARENT"},
+        {"target": "SKL_GAZEBO", "relation": "TOOL_OF"},
+        {"target": "SKL_SLAM", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_ROS2",
+      "canonical_name": "ROS2",
+      "category": "Robotics & Automation",
+      "subcategory": "Robotics Middleware",
+      "description": "Next-generation Robot Operating System with DDS middleware and real-time support.",
+      "aliases": ["ros2", "ros 2", "robot operating system 2"],
+      "relationships": [
+        {"target": "SKL_ROS", "relation": "CHILD"}
+      ]
+    },
+    {
+      "id": "SKL_SLAM",
+      "canonical_name": "SLAM",
+      "category": "Robotics & Automation",
+      "subcategory": "Perception & Navigation",
+      "description": "Simultaneous Localization and Mapping for mobile robots and autonomous navigation.",
+      "aliases": ["slam", "simultaneous localization and mapping", "visual slam", "vslam", "lidar slam", "gmapping", "cartographer"],
+      "relationships": [
+        {"target": "SKL_ROS", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_GAZEBO",
+      "canonical_name": "Gazebo",
+      "category": "Robotics & Automation",
+      "subcategory": "Simulation",
+      "description": "Physics-based 3D simulation engine for robotics testing and validation.",
+      "aliases": ["gazebo", "gazebo simulation", "robot simulation", "ignition gazebo"],
+      "relationships": [
+        {"target": "SKL_ROS", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_KINEMATICS",
+      "canonical_name": "Kinematics & Dynamics",
+      "category": "Robotics & Automation",
+      "subcategory": "Robotics Mechanics",
+      "description": "Forward/inverse kinematics, motion planning, trajectory generation, and manipulator dynamics.",
+      "aliases": ["kinematics", "robot kinematics", "forward kinematics", "inverse kinematics", "motion planning", "path planning", "moveit"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_EMBEDDED_C",
+      "canonical_name": "Embedded C",
+      "category": "Embedded Systems",
+      "subcategory": "Firmware Development",
+      "description": "C and assembly extensions for programming microcontrollers and low-level embedded hardware.",
+      "aliases": ["embedded c", "embedded c/c++", "c programming", "bare-metal c"],
+      "relationships": [
+        {"target": "SKL_MICROCONTROLLERS", "relation": "TOOL_OF"},
+        {"target": "SKL_RTOS", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_RTOS",
+      "canonical_name": "RTOS",
+      "category": "Embedded Systems",
+      "subcategory": "Real-Time Systems",
+      "description": "Real-Time Operating Systems for deterministic, task-scheduled embedded applications.",
+      "aliases": ["rtos", "freertos", "real-time operating system", "real time os", "zephyr rtos"],
+      "relationships": [
+        {"target": "SKL_MICROCONTROLLERS", "relation": "TOOL_OF"}
+      ]
+    },
+    {
+      "id": "SKL_MICROCONTROLLERS",
+      "canonical_name": "Microcontrollers",
+      "category": "Embedded Systems",
+      "subcategory": "Embedded Hardware",
+      "description": "Programming and interfacing STM32, Arduino, ESP32, and ARM Cortex microcontrollers.",
+      "aliases": ["microcontroller", "microcontrollers", "stm32", "arduino", "esp32", "arm cortex", "avr", "pic microcontroller"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_PCB_DESIGN",
+      "canonical_name": "PCB Design",
+      "category": "Hardware & Electronics",
+      "subcategory": "Circuit Design",
+      "description": "Designing schematics and printed circuit board layouts using Altium, KiCad, or Eagle.",
+      "aliases": ["pcb design", "printed circuit board", "altium", "altium designer", "kicad", "eagle pcb", "schematic design"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_SENSORS_ACTUATORS",
+      "canonical_name": "Sensors & Actuators",
+      "category": "Robotics & Automation",
+      "subcategory": "Mechatronics",
+      "description": "Interfacing and signal conditioning for LiDAR, IMUs, encoders, servo motors, and stepper drives.",
+      "aliases": ["sensors", "actuators", "imu", "lidar", "servo motors", "stepper motors", "encoders", "motor control"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_CONTROL_SYSTEMS",
+      "canonical_name": "Control Systems & PID",
+      "category": "Robotics & Automation",
+      "subcategory": "Control Theory",
+      "description": "Classical and modern feedback control, PID tuning, state-space modeling, and filter design.",
+      "aliases": ["control systems", "pid control", "pid controller", "feedback control", "state space", "kalman filter"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_MATLAB",
+      "canonical_name": "MATLAB & Simulink",
+      "category": "Tools & Simulation",
+      "subcategory": "Mathematical Modeling",
+      "description": "Numerical computation and multi-domain block diagram simulation for controls and robotics.",
+      "aliases": ["matlab", "simulink", "matlab simulink"],
+      "relationships": []
+    },
+    {
+      "id": "SKL_OPENCV",
+      "canonical_name": "OpenCV",
+      "category": "AI/ML & Vision",
+      "subcategory": "Computer Vision",
+      "description": "Open source computer vision library for image processing and camera streams.",
+      "aliases": ["opencv", "open-cv", "opencv-python", "cv2"],
+      "relationships": [
+        {"target": "SKL_CPP", "relation": "TOOL_OF"}
+      ]
+    }
+  ]
+}

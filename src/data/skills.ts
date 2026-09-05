@@ -11,6 +11,8 @@ export interface IndustrySkill {
   gapSeverity: 'Critical' | 'Partial' | 'Met';
   categoryColor: string;
   description: string;
+  tier?: 'Top 7 Core Mandate' | 'Secondary High-Demand' | 'Specialized & Emerging';
+  tierRank?: number;
 }
 
 export const initialSkills: IndustrySkill[] = [

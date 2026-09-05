@@ -39,11 +39,32 @@ export default function IndustrySkillsPage() {
   const [companySearch, setCompanySearch] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<CompanySkillCriteria | null>(null);
 
+  const [skillSearch, setSkillSearch] = useState('');
+  const [skillTierFilter, setSkillTierFilter] = useState<'ALL' | 'TIER_1' | 'TIER_2' | 'TIER_3'>('ALL');
+
   // Filtered company criteria
   const filteredCompanies = (industryOverview?.companyCriteria || []).filter((c) =>
     c.companyName.toLowerCase().includes(companySearch.toLowerCase()) ||
     c.activeRole.toLowerCase().includes(companySearch.toLowerCase())
   );
+
+  // Filtered skills index
+  const filteredSkills = skills.filter((sk) => {
+    const matchesSearch =
+      sk.name.toLowerCase().includes(skillSearch.toLowerCase()) ||
+      sk.category.toLowerCase().includes(skillSearch.toLowerCase());
+
+    let matchesTier = true;
+    if (skillTierFilter === 'TIER_1') matchesTier = (sk.tierRank || 0) <= 7;
+    else if (skillTierFilter === 'TIER_2') matchesTier = (sk.tierRank || 0) > 7 && (sk.tierRank || 0) <= 20;
+    else if (skillTierFilter === 'TIER_3') matchesTier = (sk.tierRank || 0) > 20;
+
+    return matchesSearch && matchesTier;
+  });
+
+  const tier1Count = skills.filter((s) => (s.tierRank || 0) <= 7).length;
+  const tier2Count = skills.filter((s) => (s.tierRank || 0) > 7 && (s.tierRank || 0) <= 20).length;
+  const tier3Count = skills.filter((s) => (s.tierRank || 0) > 20).length;
 
   return (
     <div className="space-y-8 animate-fade-in font-sans">
@@ -129,33 +150,106 @@ export default function IndustrySkillsPage() {
           )}
 
           {/* SKILL DEMAND TABLE */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Skill Demand Index</h3>
-                <p className="text-xs text-slate-500 font-medium">Ranked by frequency in active job postings</p>
+                <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Skill Demand Index (Ranked Spectrum)</h3>
+                <p className="text-xs text-slate-500 font-medium">Ranked by actual probability across active employer job postings</p>
               </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                {skills.length} Core Skills Analyzed
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 self-start sm:self-auto">
+                {skills.length} Total Competencies Analyzed
               </span>
+            </div>
+
+            {/* TIER TABS & SEARCH */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl overflow-x-auto text-xs font-bold">
+                <button
+                  onClick={() => setSkillTierFilter('ALL')}
+                  className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    skillTierFilter === 'ALL'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  All Skills ({skills.length})
+                </button>
+                <button
+                  onClick={() => setSkillTierFilter('TIER_1')}
+                  className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    skillTierFilter === 'TIER_1'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-amber-800 hover:bg-amber-100/50'
+                  }`}
+                >
+                  ★ Top 7 Core Mandates ({tier1Count})
+                </button>
+                <button
+                  onClick={() => setSkillTierFilter('TIER_2')}
+                  className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    skillTierFilter === 'TIER_2'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-blue-800 hover:bg-blue-100/50'
+                  }`}
+                >
+                  ● Secondary High-Demand ({tier2Count})
+                </button>
+                <button
+                  onClick={() => setSkillTierFilter('TIER_3')}
+                  className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    skillTierFilter === 'TIER_3'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-purple-800 hover:bg-purple-100/50'
+                  }`}
+                >
+                  ✦ Specialized (21+) ({tier3Count})
+                </button>
+              </div>
+
+              <div className="relative min-w-[200px]">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Filter skills..."
+                  value={skillSearch}
+                  onChange={(e) => setSkillSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                />
+              </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider">
-                    <th className="py-3 px-4">Skill Name</th>
+                    <th className="py-3 px-3">Rank</th>
+                    <th className="py-3 px-4">Skill Name & Scope</th>
                     <th className="py-3 px-4">Market Category</th>
                     <th className="py-3 px-4">Demand %</th>
                     <th className="py-3 px-4">Trajectory</th>
                     <th className="py-3 px-4">Priority</th>
+                    <th className="py-3 px-4">Your Resume Status</th>
                     <th className="py-3 px-4 text-right">Market Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-                  {skills.map((sk) => (
+                  {filteredSkills.map((sk) => (
                     <tr key={sk.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-4 px-4 font-extrabold text-slate-900 text-sm">{sk.name}</td>
+                      <td className="py-4 px-3 font-extrabold text-slate-400">
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-extrabold ${
+                          (sk.tierRank || 0) <= 7
+                            ? 'bg-amber-100 text-amber-900'
+                            : (sk.tierRank || 0) <= 20
+                            ? 'bg-blue-100 text-blue-900'
+                            : 'bg-purple-100 text-purple-900'
+                        }`}>
+                          #{(sk.tierRank || 0)}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="font-extrabold text-slate-900 text-sm">{sk.name}</div>
+                        <div className="text-[11px] text-slate-500 line-clamp-1 max-w-xs">{sk.description}</div>
+                      </td>
                       <td className="py-4 px-4 text-slate-500">{sk.category}</td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
@@ -188,6 +282,24 @@ export default function IndustrySkillsPage() {
                         >
                           {sk.priority}
                         </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        {sk.gapSeverity === 'Met' ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Matched ({sk.studentLevel})
+                          </span>
+                        ) : sk.gapSeverity === 'Partial' ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            Partial ({sk.studentLevel})
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                            Gap (None)
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-4 text-right">
                         <SkillBadge type={sk.status} />

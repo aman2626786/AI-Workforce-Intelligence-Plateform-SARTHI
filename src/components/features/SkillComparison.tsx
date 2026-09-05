@@ -42,7 +42,18 @@ export const SkillComparison: React.FC<SkillComparisonProps> = ({ skill, onAddTo
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            {skill.tierRank && (
+              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                skill.tierRank <= 7
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                  : skill.tierRank <= 20
+                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                  : 'bg-purple-100 text-purple-800 border border-purple-200'
+              }`}>
+                {skill.tierRank <= 7 ? `★ Core Mandate #${skill.tierRank}` : skill.tierRank <= 20 ? `● Secondary #${skill.tierRank}` : `✦ Specialized #${skill.tierRank}`}
+              </span>
+            )}
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{skill.category}</span>
             <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${statusColor} flex items-center gap-1`}>
               {badgeIcon}

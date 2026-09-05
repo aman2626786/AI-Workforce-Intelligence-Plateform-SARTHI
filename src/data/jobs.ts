@@ -1,3 +1,11 @@
+export interface JobSkillRequirement {
+  name: string;
+  category: string;
+  demandProbability: number; // e.g. 96 for 96%
+  tier: 'Core' | 'Secondary' | 'Specialized';
+  isMatched?: boolean;
+}
+
 export interface JobMatch {
   id: string;
   companyName: string;
@@ -14,6 +22,8 @@ export interface JobMatch {
   matchExplanation: string;
   postedDaysAgo: number;
   department: string;
+  applyUrl?: string;
+  jdSkills?: JobSkillRequirement[];
 }
 
 export const initialJobs: JobMatch[] = [

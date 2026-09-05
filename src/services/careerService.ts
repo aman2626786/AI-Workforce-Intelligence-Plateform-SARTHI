@@ -527,6 +527,7 @@ class CareerService {
     }
 
     // Dynamic role-filtered fallback with TRUE candidate-to-job matching
+    // Dynamic role-filtered fallback with TRUE candidate-to-job matching and Full Tiered JD Skills
     const targetRoleLower = (role || this.profile.targetRole || 'Robotics Engineer').toLowerCase();
     const candidateSkills = this.profile.skills || [];
 
@@ -538,29 +539,41 @@ class CareerService {
       location: string;
       type: string;
       salaryRange: string;
-      requiredSkills: string[];
       department: string;
       postedDaysAgo: number;
+      applyUrl: string;
+      rawSkills: Array<{ name: string; category: string; demandProbability: number; tier: 'Core' | 'Secondary' | 'Specialized' }>;
     }): JobMatch => {
       const strong: string[] = [];
       const missing: string[] = [];
-
-      jobData.requiredSkills.forEach((reqSkill) => {
-        const matched = findMatchingCandidateSkill(candidateSkills, reqSkill);
-        if (matched) {
+      const enrichedJdSkills = jobData.rawSkills.map((sk) => {
+        const matched = findMatchingCandidateSkill(candidateSkills, sk.name);
+        const isMatched = !!matched;
+        if (isMatched) {
           strong.push(matched.name);
         } else {
-          missing.push(reqSkill);
+          missing.push(sk.name);
         }
+        return {
+          ...sk,
+          isMatched,
+        };
       });
 
-      const total = jobData.requiredSkills.length;
-      const score = Math.round((strong.length / Math.max(1, total)) * 100);
+      // Core and secondary skills define the primary match index
+      const coreAndSecondary = enrichedJdSkills.filter((s) => s.tier === 'Core' || s.tier === 'Secondary');
+      const coreMatchedCount = enrichedJdSkills.filter((s) => s.tier === 'Core' && s.isMatched).length;
+      const secMatchedCount = enrichedJdSkills.filter((s) => s.tier === 'Secondary' && s.isMatched).length;
+      const totalCoreSec = Math.max(1, coreAndSecondary.length);
+
+      const score = Math.round(((coreMatchedCount * 1.5 + secMatchedCount) / (7 * 1.5 + (totalCoreSec - 7))) * 100);
+
+      const topStrong = strong.slice(0, 4);
+      const topMissing = missing.slice(0, 2);
 
       const explanation = strong.length > 0
-        ? `Direct match based on your verified ${strong.slice(0, 3).join(', ')} expertise.` +
-          (missing.length > 0 ? ` Adding ${missing[0]} will bring you to 100%.` : '')
-        : `Requires foundational skills in ${jobData.requiredSkills.slice(0, 2).join(' & ')}.`;
+        ? `Direct match for ${topStrong.join(', ')}. Mastering ${topMissing.join(' & ')} will complete your 100% profile fit.`
+        : `Foundational role requiring core proficiency in ${enrichedJdSkills.slice(0, 3).map((s) => s.name).join(', ')}.`;
 
       return {
         id: jobData.id,
@@ -570,14 +583,16 @@ class CareerService {
         location: jobData.location,
         type: jobData.type,
         salaryRange: jobData.salaryRange,
-        matchScore: Math.max(35, score),
+        matchScore: Math.min(98, Math.max(30, score)),
         matchedSkillsCount: strong.length,
-        totalRequiredSkillsCount: total,
-        strongSkills: strong,
-        missingSkills: missing,
+        totalRequiredSkillsCount: enrichedJdSkills.length,
+        strongSkills: topStrong,
+        missingSkills: topMissing,
         matchExplanation: explanation,
         postedDaysAgo: jobData.postedDaysAgo,
         department: jobData.department,
+        applyUrl: jobData.applyUrl,
+        jdSkills: enrichedJdSkills,
       };
     };
 
@@ -591,9 +606,40 @@ class CareerService {
           location: 'Bengaluru, India',
           type: 'Full-Time',
           salaryRange: '₹14.0 - ₹24.0 LPA',
-          requiredSkills: ['ROS2', 'C++', 'SLAM', 'Gazebo', 'Embedded C'],
           department: 'Robotics R&D',
           postedDaysAgo: 1,
+          applyUrl: 'https://careers.greyorange.com/',
+          rawSkills: [
+            // Top 7 Core Mandates (88% - 98%)
+            { name: 'ROS / ROS2', category: 'Robotics Middleware', demandProbability: 98, tier: 'Core' },
+            { name: 'C++', category: 'Systems Programming', demandProbability: 95, tier: 'Core' },
+            { name: 'Linux', category: 'Operating Systems', demandProbability: 94, tier: 'Core' },
+            { name: 'Python', category: 'Programming', demandProbability: 92, tier: 'Core' },
+            { name: 'Gazebo', category: 'Robotics Simulation', demandProbability: 90, tier: 'Core' },
+            { name: 'Embedded C', category: 'Real-Time Systems', demandProbability: 89, tier: 'Core' },
+            { name: 'Git / GitHub', category: 'Tools & DevOps', demandProbability: 88, tier: 'Core' },
+
+            // Skills 8 to 20 High-Demand Secondary (60% - 84%)
+            { name: 'SLAM & Perception', category: 'Autonomous Navigation', demandProbability: 84, tier: 'Secondary' },
+            { name: 'OpenCV', category: 'Computer Vision', demandProbability: 81, tier: 'Secondary' },
+            { name: 'Microcontrollers', category: 'Hardware Interfacing', demandProbability: 78, tier: 'Secondary' },
+            { name: 'Sensors & Actuators', category: 'Hardware Telemetry', demandProbability: 76, tier: 'Secondary' },
+            { name: 'Kinematics & Dynamics', category: 'Robotics Mechanics', demandProbability: 74, tier: 'Secondary' },
+            { name: 'PID Control & State Estimation', category: 'Control Systems', demandProbability: 72, tier: 'Secondary' },
+            { name: 'Docker', category: 'Deployment', demandProbability: 70, tier: 'Secondary' },
+            { name: 'CAN Bus & Hardware Telemetry', category: 'Protocols', demandProbability: 68, tier: 'Secondary' },
+            { name: 'RTOS Task Scheduling', category: 'Real-Time OS', demandProbability: 66, tier: 'Secondary' },
+            { name: 'Problem Solving', category: 'Core Engineering', demandProbability: 65, tier: 'Secondary' },
+            { name: 'PCB Design', category: 'Electronics', demandProbability: 63, tier: 'Secondary' },
+            { name: 'CI/CD Automation Pipelines', category: 'DevOps', demandProbability: 62, tier: 'Secondary' },
+            { name: 'Communication Skills', category: 'Collaboration', demandProbability: 60, tier: 'Secondary' },
+
+            // Specialized & Emerging Competencies (35% - 58%)
+            { name: 'CUDA & GPU Acceleration', category: 'Edge AI Computing', demandProbability: 56, tier: 'Specialized' },
+            { name: 'Point Cloud Library (PCL)', category: '3D Spatial Mapping', demandProbability: 51, tier: 'Specialized' },
+            { name: 'Safety Standards (ISO 26262)', category: 'Industrial Compliance', demandProbability: 44, tier: 'Specialized' },
+            { name: 'MoveIt Motion Planning', category: 'Manipulator Control', demandProbability: 40, tier: 'Specialized' },
+          ],
         }),
         calculateDynamicJobMatch({
           id: 'job_dom_2',
@@ -603,9 +649,38 @@ class CareerService {
           location: 'Bengaluru, India',
           type: 'Full-Time',
           salaryRange: '₹8.0 - ₹15.0 LPA',
-          requiredSkills: ['ROS2', 'OpenCV', 'Microcontrollers', 'C++'],
           department: 'Industrial Automation',
           postedDaysAgo: 3,
+          applyUrl: 'https://careers.abb/global/en',
+          rawSkills: [
+            // Top 7 Core Mandates
+            { name: 'ROS / ROS2', category: 'Robotics Middleware', demandProbability: 96, tier: 'Core' },
+            { name: 'C++', category: 'Systems Programming', demandProbability: 94, tier: 'Core' },
+            { name: 'OpenCV', category: 'Computer Vision', demandProbability: 91, tier: 'Core' },
+            { name: 'Microcontrollers', category: 'Hardware Interfacing', demandProbability: 89, tier: 'Core' },
+            { name: 'Embedded C', category: 'Embedded Systems', demandProbability: 88, tier: 'Core' },
+            { name: 'Python', category: 'Programming', demandProbability: 87, tier: 'Core' },
+            { name: 'Linux', category: 'Operating Systems', demandProbability: 86, tier: 'Core' },
+
+            // Skills 8 to 20 High-Demand Secondary
+            { name: 'Gazebo', category: 'Robotics Simulation', demandProbability: 83, tier: 'Secondary' },
+            { name: 'Sensors & Actuators', category: 'Hardware Telemetry', demandProbability: 80, tier: 'Secondary' },
+            { name: 'Kinematics & Dynamics', category: 'Manipulation', demandProbability: 77, tier: 'Secondary' },
+            { name: 'Git / GitHub', category: 'Tools', demandProbability: 75, tier: 'Secondary' },
+            { name: 'SLAM & Perception', category: 'Navigation', demandProbability: 73, tier: 'Secondary' },
+            { name: 'CAN Bus & Hardware Telemetry', category: 'Protocols', demandProbability: 70, tier: 'Secondary' },
+            { name: 'PID Control & State Estimation', category: 'Control Systems', demandProbability: 68, tier: 'Secondary' },
+            { name: 'PCB Design', category: 'Electronics', demandProbability: 65, tier: 'Secondary' },
+            { name: 'Docker', category: 'DevOps', demandProbability: 64, tier: 'Secondary' },
+            { name: 'Problem Solving', category: 'Analytical', demandProbability: 63, tier: 'Secondary' },
+            { name: 'Communication Skills', category: 'Collaboration', demandProbability: 62, tier: 'Secondary' },
+            { name: 'Serial UART/SPI/I2C', category: 'Bus Protocols', demandProbability: 61, tier: 'Secondary' },
+            { name: 'Kalman Filtering', category: 'State Estimation', demandProbability: 60, tier: 'Secondary' },
+
+            // Specialized
+            { name: 'CUDA & GPU Acceleration', category: 'Edge AI', demandProbability: 52, tier: 'Specialized' },
+            { name: 'Industrial Robot Safety (ISO 10218)', category: 'Safety Standards', demandProbability: 46, tier: 'Specialized' },
+          ],
         }),
         calculateDynamicJobMatch({
           id: 'job_dom_3',
@@ -615,9 +690,38 @@ class CareerService {
           location: 'Remote / Global',
           type: 'Remote',
           salaryRange: '₹18.0 - ₹32.0 LPA',
-          requiredSkills: ['ROS2', 'SLAM', 'C++', 'Sensors & Actuators'],
           department: 'Autonomous Vehicles',
           postedDaysAgo: 5,
+          applyUrl: 'https://www.tesla.com/careers/search/?query=Robotics',
+          rawSkills: [
+            // Top 7 Core Mandates
+            { name: 'C++', category: 'Modern C++ (17/20)', demandProbability: 99, tier: 'Core' },
+            { name: 'ROS / ROS2', category: 'Robotics Middleware', demandProbability: 97, tier: 'Core' },
+            { name: 'SLAM & Perception', category: 'Autonomous Navigation', demandProbability: 95, tier: 'Core' },
+            { name: 'Python', category: 'Algorithms', demandProbability: 93, tier: 'Core' },
+            { name: 'Linux', category: 'Operating Systems', demandProbability: 92, tier: 'Core' },
+            { name: 'Sensors & Actuators', category: 'LiDAR & Camera Suite', demandProbability: 90, tier: 'Core' },
+            { name: 'Git / GitHub', category: 'Version Control', demandProbability: 88, tier: 'Core' },
+
+            // Skills 8 to 20 High-Demand Secondary
+            { name: 'OpenCV', category: 'Computer Vision', demandProbability: 84, tier: 'Secondary' },
+            { name: 'Gazebo', category: 'Physics Simulation', demandProbability: 82, tier: 'Secondary' },
+            { name: 'CUDA & GPU Acceleration', category: 'High-Performance Edge AI', demandProbability: 80, tier: 'Secondary' },
+            { name: 'Embedded C', category: 'Firmware', demandProbability: 77, tier: 'Secondary' },
+            { name: 'Microcontrollers', category: 'ARM Cortex', demandProbability: 75, tier: 'Secondary' },
+            { name: 'Kinematics & Dynamics', category: 'Trajectory Planning', demandProbability: 73, tier: 'Secondary' },
+            { name: 'Docker', category: 'Containerization', demandProbability: 70, tier: 'Secondary' },
+            { name: 'CAN Bus & Hardware Telemetry', category: 'Automotive Bus', demandProbability: 68, tier: 'Secondary' },
+            { name: 'PID Control & State Estimation', category: 'Kalman Filters', demandProbability: 66, tier: 'Secondary' },
+            { name: 'Problem Solving', category: 'Algorithms', demandProbability: 65, tier: 'Secondary' },
+            { name: 'Communication Skills', category: 'Team Leadership', demandProbability: 63, tier: 'Secondary' },
+            { name: 'Point Cloud Library (PCL)', category: 'LiDAR Processing', demandProbability: 62, tier: 'Secondary' },
+            { name: 'CI/CD Automation Pipelines', category: 'Continuous Testing', demandProbability: 60, tier: 'Secondary' },
+
+            // Specialized
+            { name: 'Deep Learning Perception', category: 'Neural Networks', demandProbability: 55, tier: 'Specialized' },
+            { name: 'Safety Standards (ISO 26262)', category: 'Functional Safety (ASIL-D)', demandProbability: 48, tier: 'Specialized' },
+          ],
         }),
         calculateDynamicJobMatch({
           id: 'job_dom_4',
@@ -627,9 +731,38 @@ class CareerService {
           location: 'Hyderabad, India',
           type: 'Full-Time',
           salaryRange: '₹15.0 - ₹26.0 LPA',
-          requiredSkills: ['Embedded C', 'Microcontrollers', 'Linux', 'PCB Design', 'C++'],
           department: 'Edge AI & Robotics',
           postedDaysAgo: 2,
+          applyUrl: 'https://qualcomm.wd5.myworkdayjobs.com/External?q=Robotics',
+          rawSkills: [
+            // Top 7 Core Mandates
+            { name: 'Embedded C', category: 'Bare-Metal & RTOS', demandProbability: 97, tier: 'Core' },
+            { name: 'Microcontrollers', category: 'Snapdragon & STM32', demandProbability: 95, tier: 'Core' },
+            { name: 'C++', category: 'Embedded C++', demandProbability: 93, tier: 'Core' },
+            { name: 'Linux', category: 'Embedded Linux / Yocto', demandProbability: 92, tier: 'Core' },
+            { name: 'PCB Design', category: 'Board Bring-Up', demandProbability: 90, tier: 'Core' },
+            { name: 'Sensors & Actuators', category: 'Hardware Interfacing', demandProbability: 89, tier: 'Core' },
+            { name: 'Git / GitHub', category: 'Source Control', demandProbability: 88, tier: 'Core' },
+
+            // Skills 8 to 20 High-Demand Secondary
+            { name: 'ROS / ROS2', category: 'Middleware', demandProbability: 84, tier: 'Secondary' },
+            { name: 'CAN Bus & Hardware Telemetry', category: 'I2C/SPI/UART/CAN', demandProbability: 82, tier: 'Secondary' },
+            { name: 'Python', category: 'Automation Scripting', demandProbability: 79, tier: 'Secondary' },
+            { name: 'OpenCV', category: 'Vision Telemetry', demandProbability: 76, tier: 'Secondary' },
+            { name: 'RTOS Task Scheduling', category: 'FreeRTOS & Zephyr', demandProbability: 74, tier: 'Secondary' },
+            { name: 'Gazebo', category: 'URDF Simulation', demandProbability: 72, tier: 'Secondary' },
+            { name: 'Problem Solving', category: 'Hardware Debugging', demandProbability: 70, tier: 'Secondary' },
+            { name: 'Docker', category: 'Containerized Testing', demandProbability: 68, tier: 'Secondary' },
+            { name: 'PID Control & State Estimation', category: 'Motor Closed-Loop', demandProbability: 66, tier: 'Secondary' },
+            { name: 'Communication Skills', category: 'Cross-Functional', demandProbability: 64, tier: 'Secondary' },
+            { name: 'Oscilloscopes & Logic Analyzers', category: 'Lab Instruments', demandProbability: 62, tier: 'Secondary' },
+            { name: 'CI/CD Automation Pipelines', category: 'Automated Flashing', demandProbability: 61, tier: 'Secondary' },
+            { name: 'SLAM & Perception', category: 'Edge Navigation', demandProbability: 60, tier: 'Secondary' },
+
+            // Specialized
+            { name: 'CUDA & GPU Acceleration', category: 'NPU / DSP Acceleration', demandProbability: 55, tier: 'Specialized' },
+            { name: 'Functional Safety Compliance', category: 'Automotive / Industrial', demandProbability: 47, tier: 'Specialized' },
+          ],
         }),
       ];
     }

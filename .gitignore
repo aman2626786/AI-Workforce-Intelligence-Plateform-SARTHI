@@ -21,6 +21,11 @@ venv/
 ENV/
 .pytest_cache/
 
+# Editor / build cache
+.vscode/
+.idea/
+*.tsbuildinfo
+
 # Database
 *.db
 *.sqlite

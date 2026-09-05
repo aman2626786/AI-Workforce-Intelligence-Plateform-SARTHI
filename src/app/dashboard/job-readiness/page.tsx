@@ -4,15 +4,17 @@ import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { CompanyMatchCard } from '@/components/features/CompanyMatchCard';
 import { JobDetailModal } from '@/components/features/JobDetailModal';
+import { ResumeUploadModal } from '@/components/features/ResumeUploadModal';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { JobMatch } from '@/data/jobs';
-import { Briefcase, Sparkles, Building2, Search, Lightbulb } from 'lucide-react';
+import { Briefcase, Sparkles, Building2, Search, Lightbulb, Upload } from 'lucide-react';
 
 export default function JobReadinessPage() {
   const { jobs, activeRole, setActiveRole, activeLocation, setActiveLocation, openAiDrawerWithTopic } = useApp();
 
   const [selectedJob, setSelectedJob] = useState<JobMatch | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
 
   const filteredJobs = jobs.filter((j) => {
     const matchesSearch =
@@ -32,13 +34,23 @@ export default function JobReadinessPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => openAiDrawerWithTopic('Job Application Targeting Strategy')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold border border-brand-200 transition-colors self-start sm:self-auto"
-        >
-          <Sparkles className="w-4 h-4 text-brand-600" />
-          Ask AI Job Match Strategy
-        </button>
+        <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={() => setIsResumeModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 transition-all cursor-pointer"
+          >
+            <Upload className="w-4 h-4" />
+            Upload / Update Resume
+          </button>
+
+          <button
+            onClick={() => openAiDrawerWithTopic('Job Application Targeting Strategy')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold border border-brand-200 transition-colors cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-brand-600" />
+            Ask AI Job Match Strategy
+          </button>
+        </div>
       </div>
 
       {/* INTUITION GUIDANCE BANNER */}
@@ -89,6 +101,12 @@ export default function JobReadinessPage() {
           ))}
         </div>
       </div>
+
+      {/* Reusable Resume Upload Modal */}
+      <ResumeUploadModal
+        isOpen={isResumeModalOpen}
+        onClose={() => setIsResumeModalOpen(false)}
+      />
 
       {/* Detail Slideover Modal */}
       <JobDetailModal

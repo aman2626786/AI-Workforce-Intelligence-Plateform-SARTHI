@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { SkillComparison } from '@/components/features/SkillComparison';
 import { MetricCard } from '@/components/ui/MetricCard';
+import { ResumeUploadModal } from '@/components/features/ResumeUploadModal';
 import {
   Target,
   CheckCircle2,
@@ -16,10 +17,12 @@ import {
   Star,
   Award,
   Zap,
+  Upload,
 } from 'lucide-react';
 
 export default function SkillGapPage() {
   const { skills, profile, addSkillToRoadmap, activeRole, openAiDrawerWithTopic } = useApp();
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState<'ALL' | 'TIER_1' | 'TIER_2' | 'TIER_3'>('ALL');
@@ -78,13 +81,23 @@ export default function SkillGapPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => openAiDrawerWithTopic('Skill Gap Prioritization Strategy')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold border border-brand-200 transition-colors self-start sm:self-auto cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4 text-brand-600" />
-          Ask AI Gap Strategy
-        </button>
+        <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={() => setIsResumeModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 transition-all cursor-pointer"
+          >
+            <Upload className="w-4 h-4" />
+            Upload / Update Resume
+          </button>
+
+          <button
+            onClick={() => openAiDrawerWithTopic('Skill Gap Prioritization Strategy')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold border border-brand-200 transition-colors cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-brand-600" />
+            Ask AI Gap Strategy
+          </button>
+        </div>
       </div>
 
       {/* INTUITION GUIDANCE BANNER */}
@@ -259,6 +272,12 @@ export default function SkillGapPage() {
           </div>
         )}
       </div>
+
+      {/* Reusable Resume Upload Modal */}
+      <ResumeUploadModal
+        isOpen={isResumeModalOpen}
+        onClose={() => setIsResumeModalOpen(false)}
+      />
     </div>
   );
 }

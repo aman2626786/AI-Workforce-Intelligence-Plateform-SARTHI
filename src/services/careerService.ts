@@ -4,6 +4,7 @@ import { IndustryOverview, industryData, CompanySkillCriteria, EmergingSkill } f
 import { JobMatch, initialJobs } from '../data/jobs';
 import { RoadmapItem, initialRoadmap } from '../data/roadmap';
 import { isSkillMatch, findMatchingCandidateSkill } from '../utils/skillMatcher';
+import { getRoleSkillDefinitions, getRoleOverviewData } from './domainKnowledge';
 
 /**
  * Service Layer Abstraction for SkillVantage AI
@@ -221,31 +222,7 @@ class CareerService {
 
   // --- Industry Skill Intelligence ---
   async getIndustrySkills(role: string = 'Data Scientist', location: string = 'India'): Promise<IndustrySkill[]> {
-    try {
-      const { api } = await import('./api');
-      const data = await api.getSkillGaps();
-      if (data && data.skill_gaps && data.skill_gaps.length > 0) {
-        return data.skill_gaps.map((g: any, idx: number) => ({
-          id: g.skill_id,
-          name: g.canonical_name,
-          category: g.category,
-          demandPercentage: Math.round(g.demand_percentage),
-          trend: g.trend_label === 'RISING_FAST' ? 'rapid' : g.trend_label === 'RISING' ? 'up' : g.trend_label === 'DECLINING' ? 'down' : 'stable',
-          priority: g.priority_level === 'HIGH' ? 'High' : g.priority_level === 'MEDIUM' ? 'Medium' : 'Low',
-          status: g.is_emerging ? 'Emerging' : g.trend_label === 'RISING' ? 'Rising' : 'Stable',
-          studentLevel: g.status === 'MATCHED' ? 'Advanced' : g.status === 'PARTIAL' ? 'Intermediate' : 'None',
-          requiredLevel: 'Advanced',
-          gapSeverity: g.status === 'MATCHED' ? 'Met' : g.status === 'PARTIAL' ? 'Partial' : 'Critical',
-          categoryColor: g.status === 'MATCHED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : g.status === 'PARTIAL' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200',
-          description: g.matching_evidence || `${g.canonical_name} is required in ${Math.round(g.demand_percentage)}% of target job postings.`,
-          tier: idx < 7 ? 'Top 7 Core Mandate' : idx < 20 ? 'Secondary High-Demand' : 'Specialized & Emerging',
-          tierRank: idx + 1
-        }));
-      }
-    } catch (e) {
-      // Graceful fallback to domain generators if live API is starting
-    }
-
+    this.loadFromStorage();
     const domainSkills = this.generateDomainSkills(role);
 
     // Calculate candidate's real weighted readiness score based on actual matched skills
@@ -266,178 +243,9 @@ class CareerService {
   }
 
   generateDomainSkills(role: string): IndustrySkill[] {
-    const rLower = (role || this.profile.targetRole || 'Data Scientist').toLowerCase();
+    const activeRole = role || this.profile.targetRole || 'Data Scientist';
     const studentSkills = this.profile.skills || [];
-
-    let baseDefs: Array<{
-      name: string;
-      category: string;
-      demand: number;
-      trend: 'rapid' | 'up' | 'stable';
-      priority: 'Critical' | 'High' | 'Medium' | 'Low' | 'Emerging';
-      status: 'Rising' | 'Stable' | 'Emerging' | 'Declining';
-      desc: string;
-    }> = [];
-
-    if (rLower.includes('data') || rLower.includes('analytic') || rLower.includes('statistic') || rLower.includes('bi')) {
-      baseDefs = [
-        // --- TIER 1: CORE MANDATES (Top 7) ---
-        { name: 'Python & Pandas', category: 'Data Analysis', demand: 96, trend: 'up', priority: 'High', status: 'Rising', desc: 'Data manipulation, dataframe transformations, and statistical exploratory analysis with NumPy & Pandas.' },
-        { name: 'SQL & Query Optimization', category: 'Databases', demand: 94, trend: 'stable', priority: 'Critical', status: 'Stable', desc: 'Complex joins, window functions, CTEs, indexing, and high-performance relational data aggregation.' },
-        { name: 'Machine Learning & Scikit-Learn', category: 'Core ML', demand: 91, trend: 'up', priority: 'High', status: 'Rising', desc: 'Supervised classification, regression, ensemble decision trees (RandomForest/XGBoost), and cross-validation.' },
-        { name: 'Data Visualization (Power BI / Tableau)', category: 'Business Intelligence', demand: 88, trend: 'up', priority: 'High', status: 'Rising', desc: 'Building executive KPI dashboards, interactive charts, and DAX metric calculations for stakeholders.' },
-        { name: 'Business Statistics & Probability', category: 'Mathematical Foundations', demand: 85, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Hypothesis testing (p-values, t-tests, ANOVA), probability distributions, and confidence intervals.' },
-        { name: 'Data Preprocessing & Feature Engineering', category: 'Data Preparation', demand: 84, trend: 'up', priority: 'High', status: 'Rising', desc: 'Handling missing values, outlier detection, categorical encoding, feature scaling, and PCA dimensionality reduction.' },
-        { name: 'Exploratory Data Analysis (EDA)', category: 'Analytics', demand: 82, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Extracting actionable business patterns, correlation analysis, and multivariate visualization using Seaborn & Matplotlib.' },
-
-        // --- TIER 2: HIGH-DEMAND SECONDARY (Rank 8-20) ---
-        { name: 'Deep Learning & PyTorch / TensorFlow', category: 'Deep Learning', demand: 79, trend: 'rapid', priority: 'High', status: 'Emerging', desc: 'Building multi-layer neural networks, backpropagation optimization, and GPU tensor acceleration.' },
-        { name: 'Big Data Processing (PySpark & Databricks)', category: 'Distributed Computing', demand: 76, trend: 'rapid', priority: 'Medium', status: 'Rising', desc: 'Distributed cluster computing, Resilient Distributed Datasets (RDD), and Spark SQL on large-scale datasets.' },
-        { name: 'Model Evaluation & A/B Testing', category: 'Experimentation', demand: 74, trend: 'up', priority: 'High', status: 'Rising', desc: 'Designing controlled randomized experiments, sample sizing, ROC-AUC metrics, and statistical significance analysis.' },
-        { name: 'REST APIs & Model Deployment (FastAPI / Flask)', category: 'Production Systems', demand: 71, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Wrapping ML model checkpoints into production-ready asynchronous REST microservice endpoints.' },
-        { name: 'Git & GitHub Version Control', category: 'Developer Tools', demand: 70, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Collaborative code versioning, branch strategies, pull requests, and reproducible experiment codebases.' },
-        { name: 'Cloud Platforms (AWS / GCP / Azure Data Lake)', category: 'Cloud & Infrastructure', demand: 68, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Cloud object storage (S3/GCS), serverless functions, and managed analytics services (BigQuery/Athena).' },
-        { name: 'Natural Language Processing (NLP)', category: 'Applied AI', demand: 66, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Text tokenization, sentiment classification, TF-IDF representations, and transformer sequence embeddings.' },
-        { name: 'Data Warehousing & ETL Pipelines (Snowflake / BigQuery)', category: 'Data Engineering', demand: 65, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Automated extract-transform-load orchestration, dimensional schema design, and star schema modeling.' },
-        { name: 'Docker & Containerization', category: 'DevOps & Tooling', demand: 63, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Containerizing Python data pipelines and model inference runtimes for consistent environment deployment.' },
-        { name: 'Generative AI & LLM Prompting / RAG', category: 'Emerging Tech', demand: 61, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Integrating LLM APIs, prompt engineering, vector embeddings, and LangChain document retrieval pipelines.' },
-        { name: 'Time Series Forecasting (ARIMA / Prophet)', category: 'Predictive Modeling', demand: 60, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Decomposing trends, seasonality, stationarity testing, autoregressive models, and supply chain demand forecasting.' },
-        { name: 'Advanced Excel & Pivot Modeling', category: 'Spreadsheets', demand: 58, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Advanced lookups (XLOOKUP/VLOOKUP), PivotTables, nested logical formulas, and quick financial validation.' },
-        { name: 'MLOps & Model Tracking (MLflow)', category: 'ML Operations', demand: 56, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Tracking experiment hyperparameter runs, artifact logging, model versioning, and drift monitoring in production.' },
-
-        // --- TIER 3: SPECIALIZED & EMERGING (Rank 21+) ---
-        { name: 'Vector Databases (Pinecone / ChromaDB)', category: 'AI Infrastructure', demand: 52, trend: 'rapid', priority: 'Low', status: 'Emerging', desc: 'Storing high-dimensional vector embeddings, cosine similarity indexing, and k-NN semantic search retrieval.' },
-        { name: 'Recommendation Systems & Collaborative Filtering', category: 'Personalization', demand: 49, trend: 'up', priority: 'Low', status: 'Rising', desc: 'User-item matrix factorization, content-based recommendation heuristics, and hybrid ranking algorithms.' },
-        { name: 'Computer Vision & OpenCV', category: 'Visual AI', demand: 46, trend: 'up', priority: 'Low', status: 'Rising', desc: 'Image preprocessing, feature extraction, filtering, and convolutional image classification.' },
-        { name: 'Linux & Shell Scripting', category: 'System Operations', demand: 43, trend: 'stable', priority: 'Low', status: 'Stable', desc: 'Command-line data pipeline scheduling, bash scripting, cron jobs, and SSH remote server execution.' },
-      ];
-    } else if (rLower.includes('ai') || rLower.includes('machine learning') || rLower.includes('vision') || rLower.includes('nlp')) {
-      baseDefs = [
-        // --- TIER 1: CORE MANDATES (Top 7) ---
-        { name: 'Python & Scientific Computing (NumPy, SciPy)', category: 'Programming', demand: 98, trend: 'stable', priority: 'Critical', status: 'Stable', desc: 'Vectorized operations, matrix computations, algorithm implementation, and high-performance data routines.' },
-        { name: 'PyTorch & Neural Network Architecture', category: 'Deep Learning', demand: 95, trend: 'rapid', priority: 'Critical', status: 'Emerging', desc: 'Custom autograd modules, training loops, loss functions, optimizer tuning, and multi-GPU distributed data parallel.' },
-        { name: 'Machine Learning Algorithms & Optimization', category: 'Core ML', demand: 92, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Gradient descent, regularizations (L1/L2), SVMs, gradient boosted decision trees, and hyperparameter tuning.' },
-        { name: 'Transformers & Foundation Models (HuggingFace)', category: 'Applied Deep Learning', demand: 89, trend: 'rapid', priority: 'High', status: 'Emerging', desc: 'Self-attention mechanisms, pretrained LLM tokenizers, pipeline fine-tuning, and HuggingFace model architectures.' },
-        { name: 'Computer Vision (OpenCV & CNNs)', category: 'Computer Vision', demand: 86, trend: 'up', priority: 'High', status: 'Rising', desc: 'Convolutional neural networks, object detection (YOLO/Faster-RCNN), semantic segmentation, and image augmentations.' },
-        { name: 'Natural Language Processing (NLP & LLMs)', category: 'NLP', demand: 85, trend: 'rapid', priority: 'High', status: 'Emerging', desc: 'Tokenization, attention layers, sentiment analysis, named entity recognition (NER), and prompt generation.' },
-        { name: 'Mathematics for AI (Linear Algebra & Calculus)', category: 'Theory', demand: 83, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Eigenvalues/eigenvectors, Jacobians, Hessians, probability theory, and convex optimization proofs.' },
-
-        // --- TIER 2: HIGH-DEMAND SECONDARY (Rank 8-20) ---
-        { name: 'Generative AI & RAG Architectures', category: 'GenAI', demand: 80, trend: 'rapid', priority: 'High', status: 'Emerging', desc: 'Retrieval Augmented Generation with vector stores, semantic chunking, and contextual reranking.' },
-        { name: 'CUDA & GPU Acceleration', category: 'Systems Acceleration', demand: 77, trend: 'rapid', priority: 'High', status: 'Emerging', desc: 'Writing parallel GPU kernels, optimizing memory bandwidth, and high-throughput CUDA acceleration.' },
-        { name: 'MLOps & Containerized Deployment (Docker/Triton)', category: 'ML Infrastructure', demand: 75, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Packaging models with NVIDIA Triton Inference Server, ONNX runtime, and FastAPI microservices.' },
-        { name: 'Model Fine-Tuning (LoRA, QLoRA, PEFT)', category: 'LLM Engineering', demand: 73, trend: 'rapid', priority: 'High', status: 'Emerging', desc: 'Parameter-efficient fine-tuning, Low-Rank Adaptation, and quantization for low-memory training.' },
-        { name: 'Vector Databases & Embeddings', category: 'AI Infrastructure', demand: 71, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Vector similarity search indexing (HNSW, IVFFlat) on Pinecone, Milvus, and Qdrant.' },
-        { name: 'Distributed Model Training (DeepSpeed / Ray)', category: 'HPC & Scale', demand: 69, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'ZeRO memory optimization, pipeline parallelism, and distributed Ray cluster orchestration.' },
-        { name: 'Model Quantization (TensorRT / ONNX)', category: 'Inference Optimization', demand: 67, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'FP16/INT8/FP8 weight quantization and engine graph compilation for ultra-low latency response.' },
-        { name: 'ML Experiment Tracking (MLflow / WandB)', category: 'ML Operations', demand: 65, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Tracking gradient norms, learning rate curves, artifacts, and hyperparameter sweep runs.' },
-        { name: 'SQL & Data Extraction', category: 'Databases', demand: 63, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Relational data extraction, training batch aggregation, and feature querying.' },
-        { name: 'Cloud AI Services (AWS SageMaker / GCP Vertex)', category: 'Cloud AI', demand: 61, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Managed training job instances, serverless endpoint deployment, and cloud feature stores.' },
-        { name: 'Feature Engineering & Selection', category: 'Data Preparation', demand: 59, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Automated feature creation, mutual information ranking, and embedding projection.' },
-        { name: 'Reinforcement Learning (RLHF / PPO)', category: 'Advanced AI', demand: 57, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Reward modeling, Proximal Policy Optimization, and human feedback alignment for LLMs.' },
-        { name: 'CI/CD for Machine Learning (CML / DVC)', category: 'MLOps', demand: 55, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Data version control, automated model evaluation pull request checks, and model registries.' },
-
-        // --- TIER 3: SPECIALIZED & EMERGING (Rank 21+) ---
-        { name: 'Multimodal AI (Vision-Language Models)', category: 'Multimodal', demand: 51, trend: 'rapid', priority: 'Low', status: 'Emerging', desc: 'CLIP embeddings, joint cross-attention encoders, and visual question answering architectures.' },
-        { name: 'Edge AI Deployment (OpenVINO / TFLite)', category: 'Edge Computing', demand: 48, trend: 'up', priority: 'Low', status: 'Rising', desc: 'Deploying compressed neural models on ARM, Raspberry Pi, and mobile embedded devices.' },
-        { name: 'AI Safety, Guardrails & Explainability (SHAP)', category: 'Governance', demand: 45, trend: 'up', priority: 'Low', status: 'Rising', desc: 'SHAP value attribution, LIME feature explanation, and output guardrail filtering.' },
-      ];
-    } else if (rLower.includes('full') || rLower.includes('software') || rLower.includes('backend') || rLower.includes('frontend')) {
-      baseDefs = [
-        // --- TIER 1: CORE MANDATES (Top 7) ---
-        { name: 'TypeScript & JavaScript (ES6+)', category: 'Languages', demand: 96, trend: 'stable', priority: 'Critical', status: 'Stable', desc: 'Strict type systems, asynchronous event loops, promises, generics, and modern ESNext features.' },
-        { name: 'React / Next.js 15', category: 'Frontend Architecture', demand: 94, trend: 'up', priority: 'Critical', status: 'Rising', desc: 'React Server Components, server actions, dynamic routing, state hooks, and client-side performance.' },
-        { name: 'Node.js & Backend Services', category: 'Backend Development', demand: 90, trend: 'up', priority: 'High', status: 'Rising', desc: 'Express / NestJS / FastAPI REST backends, middleware pipelines, and scalable I/O handling.' },
-        { name: 'SQL & Relational Databases (PostgreSQL / MySQL)', category: 'Databases', demand: 88, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Complex relational schemas, ACID transactions, index optimization, and connection pooling.' },
-        { name: 'RESTful API Architecture & Design', category: 'API Design', demand: 86, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Stateless endpoints, standard HTTP status codes, request validation, and OpenAPI documentation.' },
-        { name: 'Git & GitHub Workflows', category: 'Developer Tooling', demand: 85, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Branching models, rebasing, pull request reviews, merge conflict resolution, and release tags.' },
-        { name: 'HTML5 & Modern Responsive CSS / Tailwind', category: 'UI Development', demand: 82, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Semantic layout, CSS Grid/Flexbox, responsive breakpoints, accessible ARIA roles, and Tailwind styling.' },
-
-        // --- TIER 2: HIGH-DEMAND SECONDARY (Rank 8-20) ---
-        { name: 'Docker & Containerization', category: 'DevOps', demand: 78, trend: 'up', priority: 'High', status: 'Rising', desc: 'Dockerfile optimization, multi-stage builds, container networking, and docker-compose orchestration.' },
-        { name: 'Python & Backend Frameworks (FastAPI / Django)', category: 'Backend Languages', demand: 76, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Async Python endpoint design, Pydantic data validation, and ORM integrations.' },
-        { name: 'NoSQL Databases (MongoDB & Redis)', category: 'Databases & Caching', demand: 74, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Document schemas, Redis in-memory key-value caching, pub/sub, and session storage.' },
-        { name: 'CI/CD Pipelines & GitHub Actions', category: 'Automation', demand: 72, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Automated test workflows, linting checks, build verification, and continuous deployment.' },
-        { name: 'State Management (Zustand / Redux Toolkit)', category: 'Frontend State', demand: 70, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Global application state stores, selectors, immutable updates, and reactive action dispatching.' },
-        { name: 'Cloud Infrastructure (AWS S3 / EC2 / Lambda)', category: 'Cloud Computing', demand: 68, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Deploying serverless functions, static asset buckets, compute instances, and load balancers.' },
-        { name: 'Automated Testing (Jest / Playwright / Cypress)', category: 'Quality Assurance', demand: 66, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Unit testing, component mocking, integration tests, and end-to-end browser regression automation.' },
-        { name: 'Authentication & Security (JWT, OAuth, NextAuth)', category: 'Security & Auth', demand: 64, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Token encryption, password hashing (bcrypt), refresh tokens, RBAC permissions, and social logins.' },
-        { name: 'Microservices & Distributed Architecture', category: 'System Architecture', demand: 62, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Service discovery, API gateways, independent deployments, and loose coupling patterns.' },
-        { name: 'Message Queues (Kafka / RabbitMQ)', category: 'Event Streaming', demand: 60, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Asynchronous event streaming, consumer groups, message partitioning, and backpressure handling.' },
-        { name: 'GraphQL API Architecture', category: 'APIs', demand: 58, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Schema definition language, query resolvers, mutations, and avoiding over-fetching.' },
-        { name: 'WebSockets & Real-Time Sync', category: 'Real-Time Systems', demand: 56, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Bi-directional socket connections, live notifications, real-time collaboration, and ping heartbeats.' },
-        { name: 'System Design & Scalability Patterns', category: 'Engineering Design', demand: 54, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Horizontal scaling, database sharding, CAP theorem trade-offs, and rate limiting.' },
-
-        // --- TIER 3: SPECIALIZED & EMERGING (Rank 21+) ---
-        { name: 'Kubernetes Cluster Orchestration', category: 'Cloud Native', demand: 50, trend: 'rapid', priority: 'Low', status: 'Emerging', desc: 'Pod manifests, deployment replicas, service ingress, and automated rolling updates.' },
-        { name: 'Serverless Edge Functions', category: 'Edge Computing', demand: 48, trend: 'rapid', priority: 'Low', status: 'Emerging', desc: 'Low-latency serverless edge execution on Vercel Edge / Cloudflare Workers.' },
-        { name: 'Web Performance & Core Web Vitals', category: 'Performance', demand: 45, trend: 'up', priority: 'Low', status: 'Rising', desc: 'LCP/FID/CLS optimization, code splitting, asset preloading, and bundle compression.' },
-        { name: 'Linux Server Administration', category: 'Infrastructure', demand: 42, trend: 'stable', priority: 'Low', status: 'Stable', desc: 'Nginx reverse proxying, systemd services, firewall rules (UFW), and SSL certbot automation.' },
-      ];
-    } else if (rLower.includes('cyber') || rLower.includes('security') || rLower.includes('cloud') || rLower.includes('devops')) {
-      baseDefs = [
-        // --- TIER 1: CORE MANDATES (Top 7) ---
-        { name: 'Network Security & Firewall Architecture', category: 'Network Defense', demand: 95, trend: 'up', priority: 'Critical', status: 'Rising', desc: 'TCP/IP packet routing, firewall ACLs, VLAN segmentation, VPN tunnels, and IDS/IPS inspection.' },
-        { name: 'Linux System Security & Hardening', category: 'System Defense', demand: 93, trend: 'stable', priority: 'Critical', status: 'Stable', desc: 'Kernel parameter hardening, sudo privilege separation, SSH key management, and auditd logging.' },
-        { name: 'Python & Bash Security Automation', category: 'Scripting', demand: 90, trend: 'up', priority: 'High', status: 'Rising', desc: 'Automating security scans, parsing server logs, credential audits, and threat telemetry scripts.' },
-        { name: 'SIEM & SOC Operations (Splunk / Sentinel)', category: 'Incident Monitoring', demand: 88, trend: 'rapid', priority: 'High', status: 'Emerging', desc: 'Real-time alert triage, correlation rules, incident response playbooks, and log aggregation.' },
-        { name: 'Vulnerability Assessment & Pen-Testing', category: 'Offensive Security', demand: 86, trend: 'up', priority: 'High', status: 'Rising', desc: 'Nessus vulnerability scans, Metasploit, Nmap network reconnaissance, and remediation reporting.' },
-        { name: 'OWASP Top 10 & Web Application Security', category: 'AppSec', demand: 84, trend: 'up', priority: 'High', status: 'Rising', desc: 'Mitigating SQL injection, Cross-Site Scripting (XSS), CSRF, SSRF, and broken access controls.' },
-        { name: 'Identity & Access Management (IAM / OAuth / SAML)', category: 'Identity Defense', demand: 82, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Role-Based Access Control (RBAC), multi-factor authentication (MFA), and single sign-on.' },
-
-        // --- TIER 2: HIGH-DEMAND SECONDARY (Rank 8-20) ---
-        { name: 'Cloud Security (AWS Security Hub / Azure Defender)', category: 'Cloud Security', demand: 79, trend: 'rapid', priority: 'High', status: 'Emerging', desc: 'Securing cloud IAM policies, S3 bucket permissions, VPC security groups, and audit trails.' },
-        { name: 'Threat Hunting & Incident Response (IR)', category: 'Defensive Operations', demand: 77, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Forensic memory analysis, timeline reconstruction, IoC (Indicators of Compromise) extraction.' },
-        { name: 'Cryptography & PKI / TLS Encryption', category: 'Security Architecture', demand: 75, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Public-key infrastructure, SSL/TLS handshake security, AES/RSA ciphers, and key rotation.' },
-        { name: 'Docker & Container Security', category: 'DevSecOps', demand: 73, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Rootless container execution, image vulnerability scanning (Trivy), and secure base images.' },
-        { name: 'Wireshark & Deep Packet Inspection', category: 'Network Analysis', demand: 71, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Analyzing pcap traces, protocol anomalies, DNS exfiltration detection, and packet decryption.' },
-        { name: 'Compliance & Governance (ISO 27001, SOC 2, NIST)', category: 'Governance', demand: 69, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Security policy documentation, third-party risk assessments, and compliance audit frameworks.' },
-        { name: 'Endpoint Detection & Response (EDR / CrowdStrike)', category: 'Endpoint Defense', demand: 67, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Behavioral malware blocking, agent telemetry, process tree inspection, and host containment.' },
-        { name: 'DevSecOps & CI/CD Security (SAST / DAST)', category: 'Application Security', demand: 65, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Static code analysis in pipeline (SonarQube), dynamic security scans, and secret scanning.' },
-        { name: 'Zero Trust Architecture', category: 'Modern Architecture', demand: 63, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Continuous authentication verification, micro-segmentation, and least privilege access.' },
-        { name: 'Malware Analysis Fundamentals', category: 'Threat Intelligence', demand: 61, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Static string extraction, dynamic sandbox execution analysis, and Ghidra disassembling.' },
-        { name: 'Infrastructure as Code Security (Terraform / Checkov)', category: 'Cloud Infrastructure', demand: 59, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Scanning Terraform HCL code for misconfigurations and enforce immutable cloud guardrails.' },
-        { name: 'Security Information Logging & Logstash', category: 'Telemetry', demand: 57, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Syslog forwarding, Windows Event Forwarding, and Elasticsearch schema mapping.' },
-        { name: 'API Security & Rate Limiting', category: 'API Defense', demand: 55, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Protecting API tokens, JSON schema validation, and preventing automated credential stuffing.' },
-
-        // --- TIER 3: SPECIALIZED & EMERGING (Rank 21+) ---
-        { name: 'Kubernetes Security & OPA Gatekeeper', category: 'Cloud Native Defense', demand: 51, trend: 'rapid', priority: 'Low', status: 'Emerging', desc: 'Kubernetes RBAC policies, admission controllers, and network policy enforcement.' },
-        { name: 'Cloud Security Posture Management (CSPM)', category: 'Cloud Governance', demand: 48, trend: 'rapid', priority: 'Low', status: 'Emerging', desc: 'Continuous posture assessment, drift detection, and multi-cloud compliance alerting.' },
-        { name: 'Red Teaming & Adversary Simulation', category: 'Offensive Simulation', demand: 45, trend: 'up', priority: 'Low', status: 'Rising', desc: 'MITRE ATT&CK framework mapping, adversary emulation, and perimeter breach testing.' },
-      ];
-    } else {
-      // Robotics & Embedded Systems
-      baseDefs = [
-        // --- TIER 1: CORE MANDATES (Top 7) ---
-        { name: 'ROS / ROS2 (Robot Operating System)', category: 'Robotics Middleware', demand: 96, trend: 'rapid', priority: 'Critical', status: 'Emerging', desc: 'ROS2 DDS nodes, pub/sub topics, action servers, service clients, and custom message interfaces.' },
-        { name: 'Modern C++ (C++17/20)', category: 'Systems Programming', demand: 94, trend: 'up', priority: 'Critical', status: 'Rising', desc: 'RAII memory safety, smart pointers, multi-threading, concurrency locks, and real-time execution.' },
-        { name: 'Python for Robotics & Automation', category: 'Robotics Scripting', demand: 91, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Algorithm prototyping, kinematic modeling, data logging, and ROS Python client bindings.' },
-        { name: 'SLAM & Autonomous Navigation', category: 'Perception & Navigation', demand: 88, trend: 'rapid', priority: 'High', status: 'Emerging', desc: 'Simultaneous Localization and Mapping, LiDAR point clouds, 2D/3D costmaps, and Nav2 pathing.' },
-        { name: 'Embedded C & Bare-Metal Programming', category: 'Firmware Development', demand: 86, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Direct register manipulation, hardware timers, interrupt service routines (ISR), and memory maps.' },
-        { name: 'Linux / Ubuntu for Robotics Development', category: 'Operating Systems', demand: 84, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Systemd robotics daemon services, udev device rules, real-time Linux kernels, and bash workflows.' },
-        { name: 'Gazebo Physics Simulation & URDF', category: 'Robotics Simulation', demand: 82, trend: 'up', priority: 'High', status: 'Rising', desc: 'Unified Robot Description Format (URDF/Xacro), physics engine contacts, and simulated sensor plugins.' },
-
-        // --- TIER 2: HIGH-DEMAND SECONDARY (Rank 8-20) ---
-        { name: 'Real-Time Operating Systems (FreeRTOS / RTOS)', category: 'Real-Time Systems', demand: 79, trend: 'rapid', priority: 'High', status: 'Rising', desc: 'Deterministic task scheduling, semaphores, mutexes, message queues, and memory pools.' },
-        { name: 'Microcontrollers (STM32, ESP32, ARM Cortex-M)', category: 'Embedded Hardware', demand: 77, trend: 'up', priority: 'High', status: 'Rising', desc: 'ARM Cortex hardware debugging with JTAG/SWD, peripheral HAL drivers, and memory flashing.' },
-        { name: 'Kinematics, Dynamics & MoveIt', category: 'Robotic Mechanics', demand: 75, trend: 'stable', priority: 'High', status: 'Stable', desc: 'Forward/inverse kinematics, DH parameters, Jacobian matrices, and MoveIt arm trajectory planning.' },
-        { name: 'Computer Vision & OpenCV Perception', category: 'Visual Perception', demand: 73, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Depth camera image processing, Apriltag tracking, optical flow, and visual object detection.' },
-        { name: 'Communication Protocols (CAN Bus, SPI, I2C, UART)', category: 'Hardware Protocols', demand: 71, trend: 'stable', priority: 'High', status: 'Stable', desc: 'CAN 2.0B / CAN-FD message frames, high-speed SPI sensors, I2C IMUs, and UART telemetry.' },
-        { name: 'Sensor Fusion & Kalman Filtering (EKF)', category: 'State Estimation', demand: 69, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Fusing IMU accelerometers, wheel odometry, and LiDAR through Extended Kalman Filters.' },
-        { name: 'LiDAR Point Cloud Processing (PCL)', category: 'Spatial Computing', demand: 67, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Voxel grid filtering, RANSAC plane segmentation, Euclidean cluster extraction, and ICP registration.' },
-        { name: 'Motor Control & PID Tuning (BLDC / Stepper)', category: 'Motion Control', demand: 65, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Field-Oriented Control (FOC), PWM signal generation, encoder feedback reading, and PID loops.' },
-        { name: 'Edge AI on NVIDIA Jetson & TensorRT', category: 'Edge Computing', demand: 63, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Running optimized deep neural networks on Jetson Nano/Orin using TensorRT GPU acceleration.' },
-        { name: 'Git & Version Control for Embedded', category: 'Tooling', demand: 61, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Submodules, firmware release tags, hardware revision branches, and CI builds.' },
-        { name: 'PCB Schematics & Hardware Debugging', category: 'Electronics', demand: 59, trend: 'up', priority: 'Medium', status: 'Rising', desc: 'Oscilloscope signal inspection, logic analyzer protocol decoding, multimeter testing, and schematics.' },
-        { name: 'Nav2 Navigation Stack & BT Recovery', category: 'Autonomous Systems', demand: 57, trend: 'rapid', priority: 'Medium', status: 'Emerging', desc: 'Configuring Behavior Trees, recovery behaviors, costmap inflation layers, and planner plugins.' },
-        { name: 'Drone / AMR Chassis Kinematics', category: 'Vehicle Dynamics', demand: 55, trend: 'stable', priority: 'Medium', status: 'Stable', desc: 'Differential drive, Ackermann steering, omnidirectional mecanum wheel geometry calculations.' },
-
-        // --- TIER 3: SPECIALIZED & EMERGING (Rank 21+) ---
-        { name: 'MATLAB / Simulink Control System Design', category: 'Control Systems', demand: 50, trend: 'stable', priority: 'Low', status: 'Stable', desc: 'State-space control modeling, root locus, Bode plot stability analysis, and code generation.' },
-        { name: 'CUDA GPU Acceleration on Autonomous Systems', category: 'High Performance', demand: 47, trend: 'rapid', priority: 'Low', status: 'Emerging', desc: 'Massively parallel perception computation and occupancy grid calculation on GPU.' },
-        { name: 'Industrial Fieldbus (Modbus, EtherCAT)', category: 'Industrial Robotics', demand: 44, trend: 'stable', priority: 'Low', status: 'Stable', desc: 'Real-time master/slave industrial automation communication across PLC and robotic arms.' },
-      ];
-    }
+    const baseDefs = getRoleSkillDefinitions(activeRole);
 
     return baseDefs.map((b, idx) => {
       // Find candidate's matching skill in resume with bulletproof canonical matcher
@@ -460,8 +268,14 @@ class CareerService {
         gapSeverity = b.priority === 'Critical' || b.priority === 'High' ? 'Critical' : 'Partial';
       }
 
-      const tier: 'Top 7 Core Mandate' | 'Secondary High-Demand' | 'Specialized & Emerging' =
-        idx < 7 ? 'Top 7 Core Mandate' : idx < 20 ? 'Secondary High-Demand' : 'Specialized & Emerging';
+      const tier: string =
+        idx < 10
+          ? 'Top 10 Core Mandate'
+          : idx < 25
+          ? 'Secondary Tech Stack'
+          : idx < 38
+          ? 'Specialized & Domain Tools'
+          : 'Professional & Best Practices';
 
       return {
         id: `dom_sk_${idx}_${b.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`,
@@ -474,7 +288,12 @@ class CareerService {
         studentLevel: studentLevel,
         requiredLevel: 'Advanced',
         gapSeverity: gapSeverity,
-        categoryColor: gapSeverity === 'Met' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : gapSeverity === 'Partial' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200',
+        categoryColor:
+          gapSeverity === 'Met'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : gapSeverity === 'Partial'
+            ? 'bg-amber-50 text-amber-700 border-amber-200'
+            : 'bg-rose-50 text-rose-700 border-rose-200',
         description: b.desc,
         tier: tier,
         tierRank: idx + 1,
@@ -483,272 +302,19 @@ class CareerService {
   }
 
   async getIndustryOverview(role: string = 'Data Scientist'): Promise<IndustryOverview> {
-    const rLower = (role || this.profile.targetRole || 'Data Scientist').toLowerCase();
-    
-    let domainCompanies: CompanySkillCriteria[] = [];
-    let domainEmerging: EmergingSkill[] = [];
-
-    if (rLower.includes('data') || rLower.includes('analytic') || rLower.includes('statistic') || rLower.includes('bi')) {
-      domainCompanies = [
-        {
-          id: 'cc_ds_1',
-          companyName: 'Microsoft India - Data & AI',
-          companyLogo: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Tier 1 Tech',
-          activeRole: 'Data Scientist (Machine Learning & NLP)',
-          openPositionsCount: 16,
-          entryMandatorySkills: ['Python', 'SQL & Query Optimization', 'Machine Learning'],
-          preferredAdvancedSkills: ['PyTorch', 'Distributed Spark', 'MLflow / MLOps'],
-          hiringStatus: 'Actively Hiring',
-          minProficiencyExpected: 'Advanced',
-        },
-        {
-          id: 'cc_ds_2',
-          companyName: 'Fractal Analytics',
-          companyLogo: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Unicorn',
-          activeRole: 'AI & Data Science Specialist',
-          openPositionsCount: 22,
-          entryMandatorySkills: ['Python & Pandas', 'SQL', 'Business Statistics'],
-          preferredAdvancedSkills: ['Power BI & Tableau', 'Deep Learning', 'Tableau'],
-          hiringStatus: 'Hiring Peak',
-          minProficiencyExpected: 'Intermediate',
-        },
-        {
-          id: 'cc_ds_3',
-          companyName: 'Swiggy Intelligence Labs',
-          companyLogo: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Unicorn',
-          activeRole: 'Lead Data Scientist - Ranking & Recommendations',
-          openPositionsCount: 9,
-          entryMandatorySkills: ['Python', 'Machine Learning', 'Business Statistics'],
-          preferredAdvancedSkills: ['Spark / Kafka', 'Feature Stores', 'Deep Learning'],
-          hiringStatus: 'Actively Hiring',
-          minProficiencyExpected: 'Advanced',
-        },
-        {
-          id: 'cc_ds_4',
-          companyName: 'Walmart Global Tech',
-          companyLogo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Tier 1 Tech',
-          activeRole: 'Data Scientist - Forecasting & Supply Chain',
-          openPositionsCount: 14,
-          entryMandatorySkills: ['SQL & Query Optimization', 'Python & Pandas', 'Business Statistics'],
-          preferredAdvancedSkills: ['BigQuery / GCP', 'PyTorch', 'Docker'],
-          hiringStatus: 'Actively Hiring',
-          minProficiencyExpected: 'Intermediate',
-        },
-      ];
-
-      domainEmerging = [
-        {
-          id: 'em_ds_1',
-          name: 'LLM Fine-Tuning & RAG Pipelines',
-          growthRate: '+48% YoY',
-          demandPercentage: 92,
-          status: 'Rapid Growth',
-          whyItMatters: 'Deploying domain-adapted foundation models with vector embeddings and LangChain/LlamaIndex.',
-          recommendedAction: 'Build a production document retrieval QA system with hybrid vector search and reranking.',
-        },
-        {
-          id: 'em_ds_2',
-          name: 'Feature Stores & MLOps (MLflow / Feast)',
-          growthRate: '+42% YoY',
-          demandPercentage: 86,
-          status: 'Rapid Growth',
-          whyItMatters: 'Standardizing machine learning feature engineering, model registry, and automated inference.',
-          recommendedAction: 'Set up an automated CI/CD model retraining pipeline with drift monitoring.',
-        },
-        {
-          id: 'em_ds_3',
-          name: 'Real-time Streaming Analytics (Spark / Kafka)',
-          growthRate: '+31% YoY',
-          demandPercentage: 79,
-          status: 'Growing',
-          whyItMatters: 'Low-latency event stream processing and continuous feature aggregation for online prediction.',
-          recommendedAction: 'Implement real-time windowed aggregations with structured streaming.',
-        },
-      ];
-    } else if (rLower.includes('ai') || rLower.includes('machine learning') || rLower.includes('vision') || rLower.includes('nlp')) {
-      domainCompanies = [
-        {
-          id: 'cc_ai_1',
-          companyName: 'Anthropic Partner Lab',
-          companyLogo: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Unicorn',
-          activeRole: 'Applied AI & LLM Engineer',
-          openPositionsCount: 14,
-          entryMandatorySkills: ['PyTorch', 'Python', 'Generative AI & LLMs'],
-          preferredAdvancedSkills: ['CUDA', 'MLOps & Docker', 'Computer Vision / NLP'],
-          hiringStatus: 'Actively Hiring',
-          minProficiencyExpected: 'Advanced',
-        },
-        {
-          id: 'cc_ai_2',
-          companyName: 'NVIDIA AI Research',
-          companyLogo: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Tier 1 Tech',
-          activeRole: 'Deep Learning Systems Engineer',
-          openPositionsCount: 18,
-          entryMandatorySkills: ['PyTorch & Neural Networks', 'Python', 'Computer Vision / NLP'],
-          preferredAdvancedSkills: ['CUDA & GPU Acceleration', 'MLOps & Docker', 'Transformers'],
-          hiringStatus: 'Hiring Peak',
-          minProficiencyExpected: 'Advanced',
-        },
-      ];
-      domainEmerging = [
-        {
-          id: 'em_ai_1',
-          name: 'Multimodal Vision-Language Models',
-          growthRate: '+55% YoY',
-          demandPercentage: 94,
-          status: 'Rapid Growth',
-          whyItMatters: 'Joint visual-textual reasoning, CLIP embeddings, and vision transformer fine-tuning.',
-          recommendedAction: 'Fine-tune open-weight vision models on custom OCR and spatial reasoning tasks.',
-        },
-        {
-          id: 'em_ai_2',
-          name: 'CUDA Kernel Optimization & TensorRT',
-          growthRate: '+46% YoY',
-          demandPercentage: 88,
-          status: 'Rapid Growth',
-          whyItMatters: 'High-throughput low-latency model inference on enterprise GPU clusters.',
-          recommendedAction: 'Quantize transformer checkpoints into FP8/INT4 using TensorRT-LLM.',
-        },
-      ];
-    } else if (rLower.includes('full') || rLower.includes('software') || rLower.includes('backend') || rLower.includes('frontend')) {
-      domainCompanies = [
-        {
-          id: 'cc_swe_1',
-          companyName: 'Razorpay Tech',
-          companyLogo: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Unicorn',
-          activeRole: 'Full Stack Software Engineer - Fintech Core',
-          openPositionsCount: 20,
-          entryMandatorySkills: ['TypeScript & JavaScript', 'React / Next.js', 'Node.js & FastAPI / Backend'],
-          preferredAdvancedSkills: ['SQL & Database Architecture', 'Docker & CI/CD', 'Kafka'],
-          hiringStatus: 'Actively Hiring',
-          minProficiencyExpected: 'Advanced',
-        },
-        {
-          id: 'cc_swe_2',
-          companyName: 'Google India',
-          companyLogo: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Tier 1 Tech',
-          activeRole: 'Software Development Engineer (SDE II)',
-          openPositionsCount: 35,
-          entryMandatorySkills: ['TypeScript & JavaScript', 'SQL & Database Architecture', 'Node.js & FastAPI / Backend'],
-          preferredAdvancedSkills: ['Docker & CI/CD', 'React / Next.js', 'System Design'],
-          hiringStatus: 'Hiring Peak',
-          minProficiencyExpected: 'Advanced',
-        },
-      ];
-      domainEmerging = [
-        {
-          id: 'em_swe_1',
-          name: 'Next.js 15 Full Stack Server Actions',
-          growthRate: '+44% YoY',
-          demandPercentage: 91,
-          status: 'Rapid Growth',
-          whyItMatters: 'Full stack streaming SSR with edge rendering, server components, and secure server actions.',
-          recommendedAction: 'Build zero-API-layer database actions with optimistic UI and React 19 hooks.',
-        },
-        {
-          id: 'em_swe_2',
-          name: 'High-Throughput Distributed Kafka Streams',
-          growthRate: '+36% YoY',
-          demandPercentage: 83,
-          status: 'Growing',
-          whyItMatters: 'Event-driven async microservices with idempotent handlers and exactly-once message delivery.',
-          recommendedAction: 'Implement partitioned message pub/sub handling with dead-letter queue recovery.',
-        },
-      ];
-    } else if (rLower.includes('cyber') || rLower.includes('security') || rLower.includes('cloud') || rLower.includes('devops')) {
-      domainCompanies = [
-        {
-          id: 'cc_cyb_1',
-          companyName: 'CrowdStrike',
-          companyLogo: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Tier 1 Tech',
-          activeRole: 'Cybersecurity Engineer (Threat Hunting & SOC)',
-          openPositionsCount: 12,
-          entryMandatorySkills: ['Network Security & Firewalls', 'SIEM & SOC Operations', 'OWASP & Web Security'],
-          preferredAdvancedSkills: ['Cryptography & Identity', 'Threat Hunting', 'Splunk'],
-          hiringStatus: 'Actively Hiring',
-          minProficiencyExpected: 'Advanced',
-        },
-      ];
-      domainEmerging = [
-        {
-          id: 'em_cyb_1',
-          name: 'Zero Trust & Cloud Security Posture (CSPM)',
-          growthRate: '+50% YoY',
-          demandPercentage: 95,
-          status: 'Rapid Growth',
-          whyItMatters: 'Automated policy enforcement, identity boundary governance, and multi-cloud asset defense.',
-          recommendedAction: 'Design identity-aware proxy and automated compliance rule remediation.',
-        },
-      ];
-    } else {
-      // Robotics & Embedded Systems
-      domainCompanies = [
-        {
-          id: 'cc_rob_1',
-          companyName: 'GreyOrange Robotics',
-          companyLogo: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Tier 1 Tech',
-          activeRole: 'Robotics Software Engineer',
-          openPositionsCount: 8,
-          entryMandatorySkills: ['ROS / ROS2', 'C++', 'SLAM & Perception'],
-          preferredAdvancedSkills: ['Gazebo', 'MoveIt', 'RTOS'],
-          hiringStatus: 'Actively Hiring',
-          minProficiencyExpected: 'Intermediate',
-        },
-        {
-          id: 'cc_rob_2',
-          companyName: 'ABB Robotics',
-          companyLogo: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&q=80&w=120',
-          industryTier: 'Tier 1 Tech',
-          activeRole: 'Autonomous Navigation Engineer',
-          openPositionsCount: 12,
-          entryMandatorySkills: ['ROS2', 'Kinematics & Dynamics', 'OpenCV'],
-          preferredAdvancedSkills: ['SLAM & Perception', 'Embedded C & RTOS'],
-          hiringStatus: 'Hiring Peak',
-          minProficiencyExpected: 'Intermediate',
-        },
-      ];
-      domainEmerging = [
-        {
-          id: 'em_rob_1',
-          name: 'ROS2 DDS & Nav2 Stack',
-          growthRate: '+45% YoY',
-          demandPercentage: 93,
-          status: 'Rapid Growth',
-          whyItMatters: 'Industry-standard distributed robotics communication and autonomous navigation stack.',
-          recommendedAction: 'Build navigation costmaps and custom BT recovery behaviors for AMR chassis.',
-        },
-        {
-          id: 'em_rob_2',
-          name: 'Visual SLAM & LiDAR Fusion',
-          growthRate: '+38% YoY',
-          demandPercentage: 87,
-          status: 'Rapid Growth',
-          whyItMatters: 'Essential for mobile robots operating in GPS-denied indoor warehouse and industrial environments.',
-          recommendedAction: 'Integrate real-time point cloud registration with extended Kalman filtering.',
-        },
-      ];
-    }
+    const targetRole = role || this.profile.targetRole || 'Data Scientist';
+    const overviewData = getRoleOverviewData(targetRole);
 
     return {
-      targetRole: role || this.profile.targetRole || 'Data Scientist',
+      targetRole: targetRole,
       totalJobSignals: 1840,
       lastUpdated: 'Live Feed Today',
       timeframe: 'Last 6 Months',
       location: 'Pan India (Bengaluru, Pune, Hyderabad, Remote)',
-      trendData: this.industryInfo.trendData,
-      emergingSkills: domainEmerging,
-      companyCriteria: domainCompanies,
-      skillCompanyMappings: this.industryInfo.skillCompanyMappings,
+      trendData: overviewData.trendData,
+      emergingSkills: overviewData.emergingSkills,
+      companyCriteria: overviewData.companyCriteria,
+      skillCompanyMappings: overviewData.skillCompanyMappings,
     };
   }
 
@@ -759,50 +325,27 @@ class CareerService {
     metCount: number;
     gaps: IndustrySkill[];
   }> {
-    try {
-      const { api } = await import('./api');
-      const data = await api.getSkillGaps();
-      if (data && data.skill_gaps && data.skill_gaps.length > 0) {
-        const liveGaps: IndustrySkill[] = data.skill_gaps.map((g: any) => ({
-          id: g.skill_id,
-          name: g.canonical_name,
-          category: g.category,
-          demandPercentage: Math.round(g.demand_percentage),
-          trend: g.trend_label === 'RISING_FAST' ? 'rapid' : g.trend_label === 'RISING' ? 'up' : g.trend_label === 'DECLINING' ? 'down' : 'stable',
-          priority: g.priority_level === 'HIGH' ? 'High' : g.priority_level === 'MEDIUM' ? 'Medium' : 'Low',
-          status: g.is_emerging ? 'Emerging' : g.trend_label === 'RISING' ? 'Rising' : 'Stable',
-          studentLevel: g.status === 'MATCHED' ? 'Advanced' : g.status === 'PARTIAL' ? 'Intermediate' : 'None',
-          requiredLevel: 'Advanced',
-          gapSeverity: g.status === 'MATCHED' ? 'Met' : g.status === 'PARTIAL' ? 'Partial' : 'Critical',
-          categoryColor: g.status === 'MATCHED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : g.status === 'PARTIAL' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200',
-          description: g.matching_evidence || `${g.canonical_name} demanded in ${Math.round(g.demand_percentage)}% of active jobs.`
-        }));
-
-        const criticalCount = liveGaps.filter((s) => s.gapSeverity === 'Critical').length;
-        const metCount = liveGaps.filter((s) => s.gapSeverity === 'Met').length;
-
-        // Update profile readiness score
-        this.profile.readinessScore = Math.round(data.career_fit_score || this.profile.readinessScore);
-        this.saveToStorage();
-
-        return {
-          matchScore: Math.round(data.career_fit_score || this.profile.readinessScore),
-          criticalCount,
-          metCount,
-          gaps: liveGaps,
-        };
-      }
-    } catch (e) {
-      // Graceful fallback to dynamic domain generator
-    }
-
+    this.loadFromStorage();
     const domainSkills = this.generateDomainSkills(this.profile.targetRole || 'Data Scientist');
     const criticalCount = domainSkills.filter((s) => s.gapSeverity === 'Critical').length;
     const metCount = domainSkills.filter((s) => s.gapSeverity === 'Met').length;
-    const matchScore = Math.round((metCount / Math.max(1, domainSkills.length)) * 100);
+
+    let totalWeight = 0;
+    let earnedWeight = 0;
+    domainSkills.forEach((s) => {
+      const weight = s.priority === 'Critical' || s.priority === 'High' ? 3 : s.priority === 'Medium' ? 2 : 1;
+      totalWeight += weight;
+      if (s.studentLevel === 'Advanced') earnedWeight += weight * 1.0;
+      else if (s.studentLevel === 'Intermediate') earnedWeight += weight * 0.65;
+      else if (s.studentLevel === 'Basic') earnedWeight += weight * 0.35;
+    });
+
+    const matchScore = Math.max(10, Math.round((earnedWeight / Math.max(1, totalWeight)) * 100));
+    this.profile.readinessScore = matchScore;
+    this.saveToStorage();
 
     return {
-      matchScore: matchScore > 0 ? matchScore : 65,
+      matchScore,
       criticalCount,
       metCount,
       gaps: domainSkills,
@@ -811,42 +354,8 @@ class CareerService {
 
   // --- Job & Company Matching ---
   async getJobMatches(role: string = 'Data Scientist'): Promise<JobMatch[]> {
-    try {
-      const { api } = await import('./api');
-      const data = await api.getRecommendations(20);
-      if (data && data.recommendations && data.recommendations.length > 0) {
-        return data.recommendations.map((r: any) => {
-          const matchedSkillsList = (r.matched_skills || []).map((s: any) => s.canonical_name || s);
-          const missingSkillsList = [
-            ...(r.missing_required_skills || []).map((s: any) => s.canonical_name || s),
-            ...(r.missing_preferred_skills || []).map((s: any) => s.canonical_name || s)
-          ];
-          const totalReq = matchedSkillsList.length + missingSkillsList.length;
-
-          return {
-            id: r.job_id,
-            companyName: r.company_name,
-            companyLogo: `https://images.unsplash.com/photo-1549923746-c502d488b3ea?auto=format&fit=crop&q=80&w=120`,
-            jobTitle: r.title,
-            location: r.remote ? 'Remote' : (r.location || 'India'),
-            type: r.remote ? 'Remote' : 'Full-Time',
-            salaryRange: r.salary_min && r.salary_max ? `₹${(r.salary_min / 100000).toFixed(1)} - ₹${(r.salary_max / 100000).toFixed(1)} LPA` : '₹12.0 - ₹22.0 LPA',
-            matchScore: Math.round(r.match_score),
-            matchedSkillsCount: matchedSkillsList.length,
-            totalRequiredSkillsCount: Math.max(matchedSkillsList.length, totalReq),
-            strongSkills: matchedSkillsList,
-            missingSkills: missingSkillsList,
-            matchExplanation: r.why_recommended || (r.explanation_breakdown || []).join(' • '),
-            postedDaysAgo: 2,
-            department: r.country === 'IN' ? 'Domestic Market' : 'Global Opportunities',
-          };
-        });
-      }
-    } catch (e) {
-      // Graceful fallback to dynamic domain job matches
-    }
-
-    // Dynamic role-filtered fallback with TRUE candidate-to-job matching and Full Tiered JD Skills
+    this.loadFromStorage();
+    // Dynamic role-filtered matching with TRUE candidate-to-job matching and Full Tiered JD Skills
     const targetRoleLower = (role || this.profile.targetRole || 'Data Scientist').toLowerCase();
     const candidateSkills = this.profile.skills || [];
 

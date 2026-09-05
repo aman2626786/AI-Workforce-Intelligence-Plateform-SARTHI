@@ -57,9 +57,9 @@ export const CompanyMatchCard: React.FC<CompanyMatchCardProps> = ({ job, onViewM
         <div className="mt-4 space-y-2">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Matched Strong Skills</div>
           <div className="flex flex-wrap gap-1.5">
-            {job.strongSkills.map((sk) => (
+            {job.strongSkills.map((sk, idx) => (
               <span
-                key={sk}
+                key={`strong-${sk}-${idx}`}
                 className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1"
               >
                 <Check className="w-3 h-3 text-emerald-600" />
@@ -74,9 +74,9 @@ export const CompanyMatchCard: React.FC<CompanyMatchCardProps> = ({ job, onViewM
           <div className="mt-3 space-y-1.5">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Missing Skill Gaps</div>
             <div className="flex flex-wrap gap-1.5">
-              {job.missingSkills.map((sk) => (
+              {job.missingSkills.map((sk, idx) => (
                 <span
-                  key={sk}
+                  key={`missing-${sk}-${idx}`}
                   className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"
                 >
                   <X className="w-3 h-3 text-rose-600" />

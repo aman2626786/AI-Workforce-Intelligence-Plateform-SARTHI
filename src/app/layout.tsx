@@ -15,8 +15,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className="font-sans bg-surface-ground text-slate-900 antialiased selection:bg-brand-500 selection:text-white">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className="font-sans bg-surface-ground text-slate-900 antialiased selection:bg-brand-500 selection:text-white"
+      >
         <AppProvider>
           {children}
           <ToastContainer />

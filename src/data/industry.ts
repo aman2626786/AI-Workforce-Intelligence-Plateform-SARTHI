@@ -1,10 +1,6 @@
 export interface TrendPoint {
   month: string;
-  SQL: number;
-  Python: number;
-  PowerBI: number;
-  GenAI: number;
-  Cloud: number;
+  [key: string]: string | number;
 }
 
 export interface EmergingSkill {

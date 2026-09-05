@@ -223,13 +223,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, isOpen, onC
 
           {/* Skill List with Demand Probabilities */}
           <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
-            {filteredSkills.map((sk) => {
+            {filteredSkills.map((sk, idx) => {
               const isCore = sk.tier === 'Core';
               const isSec = sk.tier === 'Secondary';
 
               return (
                 <div
-                  key={sk.name}
+                  key={`jd-skill-${sk.name}-${sk.tier}-${idx}`}
                   className={`p-3.5 rounded-2xl border transition-all flex flex-col gap-2 ${
                     sk.isMatched
                       ? 'bg-emerald-50/40 border-emerald-200/80 hover:bg-emerald-50/70'

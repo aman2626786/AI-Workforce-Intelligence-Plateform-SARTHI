@@ -55,7 +55,7 @@ export default function SettingsPage() {
   };
 
   const handleLogout = () => {
-    if (confirm('Are you sure you want to log out of SkillVantage AI?')) {
+    if (confirm('Are you sure you want to log out of SARTHI AI?')) {
       addToast('Logged out successfully', 'info');
       router.push('/login');
     }

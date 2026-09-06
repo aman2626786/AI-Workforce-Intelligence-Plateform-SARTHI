@@ -415,7 +415,7 @@ export default function OnboardingPage() {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-black text-slate-900 tracking-tight text-base">SKILLVANTAGE</span>
+              <span className="font-black text-slate-900 tracking-tight text-base">SARTHI</span>
               <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
                 AI
               </span>

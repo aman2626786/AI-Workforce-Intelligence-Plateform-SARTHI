@@ -5,8 +5,8 @@ import { ToastContainer } from "@/components/ui/ToastContainer";
 import { AiAssistantDrawer } from "@/components/features/AiAssistantDrawer";
 
 export const metadata: Metadata = {
-  title: "SkillVantage AI - From Skills to Careers",
-  description: "Student-focused AI career intelligence platform for SIH 2026 Problem Statement 26134. Understand industry demands, discover skill gaps, and build career roadmaps.",
+  title: "SARTHI - AI Workforce & Career Intelligence Platform",
+  description: "SARTHI - Student-focused AI career intelligence platform for SIH 2026 Problem Statement 26134. Understand industry demands, discover skill gaps, and build career roadmaps.",
 };
 
 export default function RootLayout({

@@ -15,7 +15,7 @@ export const LandingHeader: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-extrabold tracking-tight text-slate-900">SKILLVANTAGE</span>
+              <span className="text-xl font-extrabold tracking-tight text-slate-900">SARTHI</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-brand-50 text-brand-600 font-bold border border-brand-200">AI</span>
             </div>
             <p className="text-xs text-slate-500 font-medium">From Skills to Careers</p>

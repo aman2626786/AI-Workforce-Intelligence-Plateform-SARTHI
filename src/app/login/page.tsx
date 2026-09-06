@@ -46,7 +46,7 @@ export default function LoginPage() {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xl font-extrabold tracking-tight text-white">SKILLVANTAGE</span>
+              <span className="text-xl font-extrabold tracking-tight text-white">SARTHI</span>
               <span className="text-xs font-bold px-2 py-0.5 rounded bg-white/20 text-white">AI</span>
             </div>
             <p className="text-xs text-brand-100 font-medium">From Skills to Careers</p>
@@ -84,7 +84,7 @@ export default function LoginPage() {
         {/* Footer info */}
         <div className="text-xs text-brand-200 font-medium flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-brand-300" />
-          <span>© {new Date().getFullYear()} SkillVantage AI • Secure Google OAuth 2.0 Access</span>
+          <span>© {new Date().getFullYear()} SARTHI AI • Secure Google OAuth 2.0 Access</span>
         </div>
       </div>
 

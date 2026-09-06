@@ -43,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ];
 
   const handleLogout = async () => {
-    if (confirm('Are you sure you want to log out of SkillVantage AI?')) {
+    if (confirm('Are you sure you want to log out of SARTHI AI?')) {
       await logout();
     }
   };
@@ -75,7 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-slate-900 tracking-tight text-lg">SKILLVANTAGE</span>
+                <span className="font-extrabold text-slate-900 tracking-tight text-lg">SARTHI</span>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-50 text-brand-600 border border-brand-200">AI</span>
               </div>
               <p className="text-xs text-slate-500 font-medium">From Skills to Careers</p>

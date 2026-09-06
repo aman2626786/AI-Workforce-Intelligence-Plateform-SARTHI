@@ -70,7 +70,7 @@ export default function LandingPage() {
                 <div className="w-3 h-3 rounded-full bg-rose-400" />
                 <div className="w-3 h-3 rounded-full bg-amber-400" />
                 <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                <span className="text-xs font-bold text-slate-400 ml-2">SkillVantage AI Engine • Live Market Preview</span>
+                <span className="text-xs font-bold text-slate-400 ml-2">SARTHI AI Engine • Live Market Preview</span>
               </div>
               <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 ● 10,000+ Active Job Signals
@@ -221,7 +221,7 @@ export default function LandingPage() {
               <Compass className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-extrabold text-sm tracking-tight text-white">SKILLVANTAGE AI</span>
+              <span className="font-extrabold text-sm tracking-tight text-white">SARTHI AI</span>
               <p className="text-[11px] text-slate-400">SIH 2026 Problem Statement 26134 Platform</p>
             </div>
           </div>
@@ -233,7 +233,7 @@ export default function LandingPage() {
               <ShieldCheck className="w-3.5 h-3.5 text-brand-400" />
               Admin Portal
             </Link>
-            <p className="text-xs text-slate-400">© 2026 SkillVantage AI. Real-Time Labor Market Intelligence.</p>
+            <p className="text-xs text-slate-400">© 2026 SARTHI AI. Real-Time Labor Market Intelligence.</p>
           </div>
         </div>
       </footer>

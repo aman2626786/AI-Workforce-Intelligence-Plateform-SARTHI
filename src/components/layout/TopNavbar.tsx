@@ -22,7 +22,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
 
   const handleLogout = async () => {
     setIsDropdownOpen(false);
-    if (confirm('Are you sure you want to log out of SkillVantage AI?')) {
+    if (confirm('Are you sure you want to log out of SARTHI AI?')) {
       await logout();
     }
   };

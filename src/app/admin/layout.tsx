@@ -51,8 +51,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     setTimeout(() => {
       // Secure unique admin credentials
-      const validIds = ['admin', 'admin@skillvantage.ai', 'superadmin'];
-      const validPasswords = ['Admin@2026', 'admin123', 'SkillVantage#2026'];
+      const validIds = ['admin', 'admin@sarthi.ai', 'admin@skillvantage.ai', 'superadmin'];
+      const validPasswords = ['Admin@2026', 'admin123', 'Sarthi@2026', 'SkillVantage#2026'];
 
       if (validIds.includes(adminId.trim().toLowerCase()) && validPasswords.includes(adminPassword)) {
         sessionStorage.setItem('skillvantage_admin_session', 'authenticated_super_admin');
@@ -94,7 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <ShieldCheck className="w-8 h-8" />
             </div>
             <h1 className="text-2xl font-black tracking-tight text-white mt-3">
-              SkillVantage Admin Portal
+              SARTHI Admin Portal
             </h1>
             <p className="text-xs text-slate-400 font-medium">
               Restricted access for system administrators & crawler telemetry.
@@ -118,7 +118,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   type="text"
                   value={adminId}
                   onChange={(e) => setAdminId(e.target.value)}
-                  placeholder="admin@skillvantage.ai or admin"
+                  placeholder="admin@sarthi.ai or admin"
                   required
                   className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-slate-600"
                 />
@@ -203,7 +203,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-black text-white text-base tracking-tight">SKILLVANTAGE</span>
+              <span className="font-black text-white text-base tracking-tight">SARTHI</span>
               <span className="ml-1.5 px-2 py-0.5 rounded bg-brand-500/20 text-brand-400 text-[10px] font-black uppercase border border-brand-500/30">
                 Admin Command Center
               </span>

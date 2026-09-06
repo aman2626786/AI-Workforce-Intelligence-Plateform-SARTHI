@@ -28,15 +28,20 @@ def seed_skills_if_empty():
                 with open(skills_file, "r", encoding="utf-8") as f:
                     skills_data = json.load(f)
 
+                existing_canonical = {s[0] for s in db.query(Skill.canonical_name).all()}
+                seen = set(existing_canonical)
                 for skill_id, item in skills_data.items():
-                    db.add(Skill(
-                        id=skill_id,
-                        canonical_name=item["name"],
-                        category=item["category"],
-                        aliases=item.get("aliases", [])
-                    ))
+                    name = item["name"]
+                    if name not in seen:
+                        seen.add(name)
+                        db.add(Skill(
+                            id=skill_id,
+                            canonical_name=name,
+                            category=item["category"],
+                            aliases=item.get("aliases", [])
+                        ))
                 db.commit()
-                print(f"[Startup] Successfully seeded {len(skills_data)} canonical skills into database.")
+                print(f"[Startup] Successfully seeded canonical skills into database.")
     except Exception as e:
         print(f"[Startup] Skill seeding note: {e}")
         db.rollback()
@@ -126,6 +131,17 @@ app.include_router(jobs_router, prefix=settings.API_V1_STR)
 app.include_router(skill_intelligence_router, prefix=settings.API_V1_STR)
 app.include_router(profile_intelligence_router, prefix=settings.API_V1_STR)
 app.include_router(admin_router, prefix=settings.API_V1_STR)
+
+@app.get("/")
+def root():
+    return {
+        "service": settings.PROJECT_NAME,
+        "status": "online",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/health",
+        "api_base": settings.API_V1_STR
+    }
 
 @app.get("/health")
 def health_check():

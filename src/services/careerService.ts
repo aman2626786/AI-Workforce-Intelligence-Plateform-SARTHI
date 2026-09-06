@@ -1,4 +1,4 @@
-import { StudentProfile, initialStudentProfile, SkillItem, ProjectItem, CertificationItem, ExperienceItem } from '../data/profile';
+import { StudentProfile, initialStudentProfile, createEmptyStudentProfile, SkillItem, ProjectItem, CertificationItem, ExperienceItem } from '../data/profile';
 import { IndustrySkill, initialSkills } from '../data/skills';
 import { IndustryOverview, industryData, CompanySkillCriteria, EmergingSkill } from '../data/industry';
 import { JobMatch, initialJobs } from '../data/jobs';
@@ -23,20 +23,38 @@ class CareerService {
     this.loadFromStorage();
   }
 
+  private getStorageKey(): string {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('skillvantage_user_session');
+        if (raw) {
+          const session = JSON.parse(raw);
+          const email = (session.email || session.user_id || '').toLowerCase().trim();
+          if (email) {
+            return `skillvantage_student_profile_${email}`;
+          }
+        }
+      } catch (e) {}
+    }
+    return 'skillvantage_student_profile_guest';
+  }
+
   private loadFromStorage() {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('skillvantage_user_profile');
+        const key = this.getStorageKey();
+        const saved = localStorage.getItem(key);
         if (saved) {
           const parsed = JSON.parse(saved);
-          this.profile = { ...this.profile, ...parsed };
+          this.profile = { ...createEmptyStudentProfile(), ...parsed };
         } else {
-          const session = localStorage.getItem('skillvantage_user_session');
-          if (session) {
-            const parsedSession = JSON.parse(session);
-            if (parsedSession.name && !this.profile.name) this.profile.name = parsedSession.name;
-            if (parsedSession.email && !this.profile.email) this.profile.email = parsedSession.email;
-            if (parsedSession.avatar_url && !this.profile.avatarUrl) this.profile.avatarUrl = parsedSession.avatar_url;
+          const raw = localStorage.getItem('skillvantage_user_session');
+          if (raw) {
+            const session = JSON.parse(raw);
+            this.profile = createEmptyStudentProfile(session.name || '', session.email || '');
+            if (session.avatar_url) this.profile.avatarUrl = session.avatar_url;
+          } else {
+            this.profile = createEmptyStudentProfile();
           }
         }
       } catch (e) {
@@ -45,15 +63,21 @@ class CareerService {
     }
   }
 
-
   private saveToStorage() {
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem('skillvantage_user_profile', JSON.stringify(this.profile));
+        const key = this.getStorageKey();
+        localStorage.setItem(key, JSON.stringify(this.profile));
       } catch (e) {
         console.warn('Could not save user profile to localStorage:', e);
       }
     }
+  }
+
+  resetProfileForNewUser(user?: { name?: string; email?: string; avatar_url?: string }) {
+    this.profile = createEmptyStudentProfile(user?.name, user?.email);
+    if (user?.avatar_url) this.profile.avatarUrl = user.avatar_url;
+    this.saveToStorage();
   }
 
   // --- Student Profile ---
@@ -172,7 +196,7 @@ class CareerService {
         degree: data.degree,
         fieldOfStudy: data.branch || 'Engineering / Technical',
         graduationYear: String(data.graduationYear),
-        cgpa: data.cgpa || this.profile.education?.cgpa || '8.4',
+        cgpa: data.cgpa || this.profile.education?.cgpa || '',
       },
       location: data.city,
       targetRole: data.targetRole || 'Robotics Engineer',

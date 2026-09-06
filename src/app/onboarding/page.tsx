@@ -343,22 +343,23 @@ export default function OnboardingPage() {
     const activeTargetRole = isCustomRole && customRoleInput.trim() ? customRoleInput.trim() : targetRole;
 
     // 2. DYNAMICALLY SYNC EXACT USER ENTERED & PARSED DATA INTO LIVE PROFILE
+    const sessionUser = authService.getCurrentUser();
     await careerService.syncOnboardingProfile({
-      name: name.trim() || 'Student',
-      email: email.trim() || 'student@university.edu',
-      city: city.trim() || 'Jaipur',
+      name: name.trim() || sessionUser?.name || 'Student',
+      email: email.trim() || sessionUser?.email || '',
+      city: city.trim() || '',
       educationLevel,
-      degree: degree.trim() || 'B.Tech',
-      branch: branch.trim() || 'Computer Science',
-      college: college.trim() || 'University',
+      degree: degree.trim() || '',
+      branch: branch.trim() || '',
+      college: college.trim() || '',
       graduationYear: gradYear,
       targetRole: activeTargetRole,
-      preferredLocation,
+      preferredLocation: preferredLocation || city.trim() || '',
       linkedin,
       github,
       portfolio,
-      resumeFileName: resumeFile?.name || 'My_Resume.pdf',
-      resumeFileSize: resumeFile ? `${(resumeFile.size / (1024 * 1024)).toFixed(1)} MB` : '1.8 MB',
+      resumeFileName: resumeFile?.name || '',
+      resumeFileSize: resumeFile ? `${(resumeFile.size / (1024 * 1024)).toFixed(1)} MB` : '',
       skills: reviewSkills.map((s) => ({
         canonical_name: s.canonical_name,
         category: s.category,

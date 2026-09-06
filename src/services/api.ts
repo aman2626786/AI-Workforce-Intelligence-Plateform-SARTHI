@@ -4,7 +4,7 @@
  * Includes graceful mock fallback if the backend server is not running during pure frontend testing.
  */
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ai-workforce-intelligence-plateform.onrender.com/api';
 
 export interface UserRegistrationData {
   name: string;

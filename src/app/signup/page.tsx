@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Compass, CheckCircle2, ArrowRight, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { authService } from '@/services/authService';
 import { useApp } from '@/context/AppContext';
+import { careerService } from '@/services/careerService';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -22,15 +23,17 @@ export default function SignupPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // 1. Google OAuth Sign-In
+  // 1. Google OAuth Sign-Up
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     setErrorMessage('');
     try {
       const user = await authService.signInWithGoogle();
-      addToast(`Welcome ${user.name || 'Student'}! Signed in with Google.`, 'success');
+      addToast(`Welcome ${user.name || 'Student'}! Let's complete your profile registration.`, 'success');
+      // Ensure student has their own clean, separate profile
+      careerService.resetProfileForNewUser({ name: user.name, email: user.email, avatar_url: user.avatar_url });
       await refreshData();
-      router.push('/dashboard');
+      router.push('/onboarding');
     } catch (err: any) {
       console.error('Google Auth Failed:', err);
       setErrorMessage(err.message || 'Google sign-up failed. Please try again.');
@@ -61,6 +64,7 @@ export default function SignupPage() {
     try {
       await authService.registerWithEmail(fullName.trim(), email.trim(), password, confirmPassword);
       addToast('Account created successfully! Starting your onboarding profile...', 'success');
+      careerService.resetProfileForNewUser({ name: fullName.trim(), email: email.trim() });
       await refreshData();
       router.push('/onboarding');
     } catch (err: any) {

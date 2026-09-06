@@ -26,6 +26,7 @@ import {
   Layers,
   Award,
   ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { api, BasicProfileData, ResumeAnalysisResult, ExtractedSkill } from '@/services/api';
 import { useApp } from '@/context/AppContext';
@@ -111,12 +112,9 @@ export default function OnboardingPage() {
   // Current Step: 1 to 6
   const [currentStep, setCurrentStep] = useState<number>(1);
 
-  // Step 1: Account (Blank inputs with placeholders)
+  // Step 1: Account State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [step1Errors, setStep1Errors] = useState<string[]>([]);
 
   // Step 2: Basic Profile (Completely blank without prefilled defaults)
   const [city, setCity] = useState('');
@@ -161,35 +159,29 @@ export default function OnboardingPage() {
   // HANDLERS
   // ----------------------------------------------------
 
-  // Step 1 -> Step 2
-  const handleStep1Submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errors: string[] = [];
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-    if (!name.trim()) errors.push('Full Name is required');
-    if (!email.trim() || !email.includes('@')) errors.push('Valid email address is required');
-    if (password.length < 8) errors.push('Password must be at least 8 characters long');
-    if (password !== confirmPassword) errors.push('Passwords do not match');
-
-    if (errors.length > 0) {
-      setStep1Errors(errors);
-      return;
-    }
-
-    setStep1Errors([]);
+  // 1-Click Google Sign In for Onboarding
+  const handleGoogleSignInOnboarding = async () => {
+    setIsGoogleLoading(true);
     try {
-      await api.register({
-        name,
-        email,
-        password,
-        confirm_password: confirmPassword,
-      });
-      addToast('Account created successfully!', 'success');
-      setCurrentStep(2);
+      const user = await authService.signInWithGoogle();
+      if (user) {
+        setName(user.name || '');
+        setEmail(user.email || '');
+        careerService.resetProfileForNewUser({
+          name: user.name,
+          email: user.email,
+          avatar_url: user.avatar_url,
+        });
+        await refreshData();
+        addToast(`Welcome ${user.name || 'Student'}! Profile initialized.`, 'success');
+        setCurrentStep(2);
+      }
     } catch (err: any) {
-      addToast(err.message || 'Registration error', 'warning');
-      // Proceed even on mock network
-      setCurrentStep(2);
+      addToast(err.message || 'Google sign-up failed', 'error');
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -405,7 +397,7 @@ export default function OnboardingPage() {
   };
 
   const stepsConfig = [
-    { num: 1, label: 'Account', desc: 'Credentials' },
+    { num: 1, label: 'Google Auth', desc: 'Verified account' },
     { num: 2, label: 'Basic Profile', desc: 'Academic details' },
     { num: 3, label: 'Resume', desc: 'Upload file' },
     { num: 4, label: 'Resume Analysis', desc: 'Deterministic parser' },
@@ -498,107 +490,58 @@ export default function OnboardingPage() {
 
         {/* Right Column: Active Form Step */}
         <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-soft-sm">
-          {/* STEP 1: ACCOUNT CREATION */}
+          {/* STEP 1: GOOGLE AUTHENTICATION */}
           {currentStep === 1 && (
-            <form onSubmit={handleStep1Submit} className="space-y-6 animate-fade-in">
-              <div>
+            <div className="space-y-6 animate-fade-in text-center py-8">
+              <div className="max-w-md mx-auto">
                 <span className="px-2.5 py-0.5 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-[10px] font-extrabold uppercase">
                   Step 01
                 </span>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-1">Create Your Student Account</h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Enter your name and credentials. Your name will be used across your portfolio and dashboard.
+                <h3 className="text-2xl font-extrabold text-slate-900 mt-2">Sign In with Google to Start</h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">
+                  Authenticate your student account with Google to open your personalized registration and onboarding form.
                 </p>
-              </div>
 
-              {step1Errors.length > 0 && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium space-y-1">
-                  {step1Errors.map((err, idx) => (
-                    <p key={idx}>• {err}</p>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Your Full Name <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter your full name"
-                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Your Email Address <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email address"
-                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Password (min 8 chars) <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Choose a strong password"
-                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Confirm Password <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="password"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter password"
-                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
-                    />
-                  </div>
+                <div className="mt-8">
+                  <button
+                    onClick={handleGoogleSignInOnboarding}
+                    disabled={isGoogleLoading}
+                    type="button"
+                    className="w-full py-4 px-6 rounded-2xl border-2 border-slate-200 hover:border-brand-500 bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 text-sm font-extrabold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-3.5 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer group"
+                  >
+                    {isGoogleLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin text-brand-600" />
+                        <span>Connecting to Google...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                          <path
+                            fill="#4285F4"
+                            d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                          />
+                          <path
+                            fill="#34A853"
+                            d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.27v3.15C3.25 21.3 7.31 24 12 24z"
+                          />
+                          <path
+                            fill="#FBBC05"
+                            d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.27C.46 8.2.01 10.04.01 12s.45 3.8 1.26 5.42l4.01-3.15z"
+                          />
+                          <path
+                            fill="#EA4335"
+                            d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.23 0 12 0 7.31 0 3.25 2.7 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                          />
+                        </svg>
+                        <span>Continue with Google</span>
+                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-brand-600 group-hover:translate-x-1 transition-all" />
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
-
-              <div className="pt-2 flex justify-end">
-                <button
-                  type="submit"
-                  className="px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs shadow-md shadow-brand-600/20 transition-all flex items-center gap-2"
-                >
-                  Continue to Basic Profile
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
+            </div>
           )}
 
           {/* STEP 2: BASIC PROFILE */}

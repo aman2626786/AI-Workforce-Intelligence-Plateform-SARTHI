@@ -59,12 +59,12 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
         >
           <span className="flex items-center gap-1" suppressHydrationWarning>
             <Briefcase className="w-3.5 h-3.5 text-brand-600" />
-            {mounted ? activeRole : 'Robotics Engineer'}
+            {mounted ? (profile?.targetRole || activeRole || 'Select Target Role') : 'Select Target Role'}
           </span>
           <span className="text-slate-300">•</span>
           <span className="flex items-center gap-1" suppressHydrationWarning>
             <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-            {mounted ? activeLocation : 'Bengaluru'}
+            {mounted ? (profile?.targetLocation || profile?.location || activeLocation || 'All India') : 'All India'}
           </span>
         </div>
 

@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
 
   const displayName = mounted && profile?.name ? profile.name : 'Student Profile';
-  const displayRole = mounted && (profile?.targetRole || activeRole) ? (profile?.targetRole || activeRole) : 'Robotics Engineer';
+  const displayRole = mounted && profile?.targetRole ? profile.targetRole : 'Target Role Not Set';
 
   return (
     <>

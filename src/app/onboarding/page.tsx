@@ -118,17 +118,17 @@ export default function OnboardingPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [step1Errors, setStep1Errors] = useState<string[]>([]);
 
-  // Step 2: Basic Profile (Blank inputs with placeholders)
+  // Step 2: Basic Profile (Completely blank without prefilled defaults)
   const [city, setCity] = useState('');
-  const [educationLevel, setEducationLevel] = useState('Undergraduate');
-  const [degree, setDegree] = useState('B.Tech');
+  const [educationLevel, setEducationLevel] = useState('');
+  const [degree, setDegree] = useState('');
   const [branch, setBranch] = useState('');
   const [college, setCollege] = useState('');
-  const [gradYear, setGradYear] = useState<number>(2026);
-  const [targetRole, setTargetRole] = useState('Robotics Engineer');
+  const [gradYear, setGradYear] = useState<number>(new Date().getFullYear());
+  const [targetRole, setTargetRole] = useState('');
   const [isCustomRole, setIsCustomRole] = useState(false);
   const [customRoleInput, setCustomRoleInput] = useState('');
-  const [preferredLocation, setPreferredLocation] = useState('Bengaluru');
+  const [preferredLocation, setPreferredLocation] = useState('');
   const [linkedin, setLinkedin] = useState('');
   const [github, setGithub] = useState('');
   const [portfolio, setPortfolio] = useState('');
@@ -196,26 +196,42 @@ export default function OnboardingPage() {
   // Step 2 -> Step 3
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!city.trim() || !degree.trim() || !college.trim()) {
-      addToast('Please fill out your City, Degree, and College Name.', 'warning');
+    const chosenRole = isCustomRole && customRoleInput.trim() ? customRoleInput.trim() : targetRole;
+
+    if (!city.trim()) {
+      addToast('Please enter your current city.', 'warning');
+      return;
+    }
+    if (!educationLevel.trim()) {
+      addToast('Please select your education level.', 'warning');
+      return;
+    }
+    if (!degree.trim()) {
+      addToast('Please enter your degree.', 'warning');
+      return;
+    }
+    if (!college.trim()) {
+      addToast('Please enter your college / university name.', 'warning');
+      return;
+    }
+    if (!chosenRole.trim()) {
+      addToast('Please select your target job role.', 'warning');
       return;
     }
 
-    const chosenRole = isCustomRole && customRoleInput.trim() ? customRoleInput.trim() : targetRole;
-
     const basicData: BasicProfileData = {
       name,
-      city,
+      city: city.trim(),
       education_level: educationLevel,
-      degree,
-      branch,
-      college,
+      degree: degree.trim(),
+      branch: branch.trim(),
+      college: college.trim(),
       graduation_year: gradYear,
       target_role: chosenRole,
-      preferred_location: preferredLocation,
-      linkedin,
-      github,
-      portfolio,
+      preferred_location: preferredLocation.trim(),
+      linkedin: linkedin.trim(),
+      github: github.trim(),
+      portfolio: portfolio.trim(),
     };
 
     await api.saveBasicProfile(basicData);
@@ -515,7 +531,7 @@ export default function OnboardingPage() {
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter your full name (e.g. Rahul Sharma)"
+                      placeholder="Enter your full name"
                       className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
                     />
                   </div>
@@ -532,7 +548,7 @@ export default function OnboardingPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your.email@university.edu"
+                      placeholder="Enter your email address"
                       className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 font-medium"
                     />
                   </div>
@@ -608,7 +624,7 @@ export default function OnboardingPage() {
                     required
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    placeholder="e.g. Jaipur / Delhi / Mumbai"
+                    placeholder="Enter your current city"
                     className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
                   />
                 </div>
@@ -619,9 +635,11 @@ export default function OnboardingPage() {
                   </label>
                   <select
                     value={educationLevel}
+                    required
                     onChange={(e) => setEducationLevel(e.target.value)}
                     className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
                   >
+                    <option value="" disabled>-- Select Education Level --</option>
                     <option value="Undergraduate">Undergraduate (B.Tech / BCA / B.Sc)</option>
                     <option value="Postgraduate">Postgraduate (M.Tech / MCA / M.Sc)</option>
                     <option value="Diploma">Diploma / Polytechnic</option>
@@ -637,7 +655,7 @@ export default function OnboardingPage() {
                     required
                     value={degree}
                     onChange={(e) => setDegree(e.target.value)}
-                    placeholder="e.g. B.Tech / BCA / B.Sc"
+                    placeholder="Enter degree"
                     className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
                   />
                 </div>
@@ -648,7 +666,7 @@ export default function OnboardingPage() {
                     type="text"
                     value={branch}
                     onChange={(e) => setBranch(e.target.value)}
-                    placeholder="e.g. Computer Science / AI & Data Science"
+                    placeholder="Enter branch / major"
                     className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 font-medium"
                   />
                 </div>
@@ -662,7 +680,7 @@ export default function OnboardingPage() {
                     required
                     value={college}
                     onChange={(e) => setCollege(e.target.value)}
-                    placeholder="e.g. Arya College of Engineering / National Institute of Technology"
+                    placeholder="Enter college / university name"
                     className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
                   />
                 </div>
@@ -703,9 +721,11 @@ export default function OnboardingPage() {
                       </label>
                       <select
                         value={isCustomRole ? '__CUSTOM__' : targetRole}
+                        required
                         onChange={(e) => {
                           if (e.target.value === '__CUSTOM__') {
                             setIsCustomRole(true);
+                            setTargetRole('');
                           } else {
                             setIsCustomRole(false);
                             setTargetRole(e.target.value);
@@ -713,6 +733,7 @@ export default function OnboardingPage() {
                         }}
                         className="w-full px-4 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900 shadow-sm"
                       >
+                        <option value="" disabled>-- Select Your Target Role --</option>
                         {CAREER_ROLE_CATEGORIES.map((cat) => (
                           <optgroup key={cat.category} label={`${cat.icon} ${cat.category}`}>
                             {cat.roles.map((r) => (
@@ -739,13 +760,19 @@ export default function OnboardingPage() {
                             setCustomRoleInput(e.target.value);
                             setTargetRole(e.target.value);
                           }}
-                          placeholder="e.g. Autonomous Vehicle Engineer"
+                          placeholder="Enter custom role title"
                           className="w-full px-4 py-2.5 text-xs bg-white border border-brand-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-brand-900 shadow-sm"
                         />
                       ) : (
-                        <div className="w-full px-4 py-2.5 text-xs bg-white/90 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center justify-between shadow-sm">
-                          <span>{targetRole}</span>
-                          <span className="text-[10px] text-brand-600 font-black uppercase">Selected</span>
+                        <div className="w-full px-4 py-2.5 text-xs bg-white/90 border border-slate-200 rounded-xl font-bold flex items-center justify-between shadow-sm">
+                          <span className={targetRole ? "text-slate-900" : "text-slate-400 font-normal"}>
+                            {targetRole || 'No role selected yet'}
+                          </span>
+                          {targetRole ? (
+                            <span className="text-[10px] text-brand-600 font-black uppercase">Selected</span>
+                          ) : (
+                            <span className="text-[10px] text-amber-600 font-bold uppercase">Required</span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -753,17 +780,23 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Preferred Location</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Preferred Location <span className="text-rose-500">*</span>
+                  </label>
                   <select
                     value={preferredLocation}
+                    required
                     onChange={(e) => setPreferredLocation(e.target.value)}
                     className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
                   >
+                    <option value="" disabled>-- Select Preferred Location --</option>
                     <option value="Bengaluru">Bengaluru</option>
                     <option value="Delhi NCR">Delhi NCR</option>
                     <option value="Mumbai">Mumbai</option>
                     <option value="Hyderabad">Hyderabad</option>
                     <option value="Pune">Pune</option>
+                    <option value="Chennai">Chennai</option>
+                    <option value="Kolkata">Kolkata</option>
                     <option value="Remote">Remote</option>
                   </select>
                 </div>
@@ -774,7 +807,7 @@ export default function OnboardingPage() {
                     type="url"
                     value={linkedin}
                     onChange={(e) => setLinkedin(e.target.value)}
-                    placeholder="https://linkedin.com/in/your-profile"
+                    placeholder="Enter LinkedIn profile URL"
                     className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                   />
                 </div>
@@ -785,7 +818,7 @@ export default function OnboardingPage() {
                     type="url"
                     value={github}
                     onChange={(e) => setGithub(e.target.value)}
-                    placeholder="https://github.com/your-username"
+                    placeholder="Enter GitHub profile URL"
                     className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                   />
                 </div>

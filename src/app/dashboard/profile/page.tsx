@@ -38,7 +38,7 @@ export default function StudentProfilePage() {
 
   // Target Career Switcher States
   const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState(profile?.targetRole || 'Robotics Engineer');
+  const [selectedRole, setSelectedRole] = useState(profile?.targetRole || '');
   const [isCustomSelectedRole, setIsCustomSelectedRole] = useState(false);
   const [customRoleInput, setCustomRoleInput] = useState('');
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
@@ -247,22 +247,22 @@ export default function StudentProfilePage() {
               </div>
             )}
             <h2 className="text-xl font-black text-slate-900">{profile?.name || 'Student Candidate'}</h2>
-            <p className="text-xs font-semibold text-brand-600 mt-0.5">{profile?.targetRole || 'Robotics Engineer'} Candidate</p>
+            <p className="text-xs font-semibold text-brand-600 mt-0.5">{profile?.targetRole ? `${profile.targetRole} Candidate` : 'Career Track Pending'}</p>
             <p className="text-xs text-slate-500 mt-1">{profile?.email || 'Registered User'}</p>
 
             <div className="mt-6 pt-6 border-t border-slate-100 space-y-3 text-left text-xs font-medium text-slate-600">
               <div className="flex items-center gap-2.5">
                 <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                <span>Current Location: <strong className="text-slate-900">{profile?.location || 'India (Default)'}</strong></span>
+                <span>Current Location: <strong className="text-slate-900">{profile?.location || 'Not Specified'}</strong></span>
               </div>
               <div className="flex items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2.5">
                   <Compass className="w-4 h-4 text-brand-600 shrink-0" />
-                  <span>Target Role: <strong className="text-slate-900">{profile?.targetRole || 'Robotics Engineer'}</strong></span>
+                  <span>Target Role: <strong className="text-slate-900">{profile?.targetRole || 'Not Selected'}</strong></span>
                 </div>
                 <button
                   onClick={() => {
-                    setSelectedRole(profile?.targetRole || 'Robotics Engineer');
+                    setSelectedRole(profile?.targetRole || '');
                     setIsCustomSelectedRole(false);
                     setIsEditRoleOpen(true);
                   }}
@@ -273,7 +273,7 @@ export default function StudentProfilePage() {
               </div>
               <div className="flex items-center gap-2.5">
                 <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                <span>Target Location: <strong className="text-slate-900">{profile?.targetLocation || 'Bengaluru'}</strong></span>
+                <span>Target Location: <strong className="text-slate-900">{profile?.targetLocation || 'Not Specified'}</strong></span>
               </div>
             </div>
           </div>
@@ -290,14 +290,14 @@ export default function StudentProfilePage() {
               </span>
             </div>
             <div>
-              <p className="text-base font-black text-white">{profile?.targetRole || 'Robotics Engineer'}</p>
+              <p className="text-base font-black text-white">{profile?.targetRole || 'No Target Role Selected Yet'}</p>
               <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
                 Skill gaps, market benchmarks, and job matching scores are actively tuned for this career path.
               </p>
             </div>
             <button
               onClick={() => {
-                setSelectedRole(profile?.targetRole || 'Robotics Engineer');
+                setSelectedRole(profile?.targetRole || '');
                 setIsCustomSelectedRole(false);
                 setIsEditRoleOpen(true);
               }}

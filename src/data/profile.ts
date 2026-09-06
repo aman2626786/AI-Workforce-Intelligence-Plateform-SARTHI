@@ -81,9 +81,9 @@ export const createEmptyStudentProfile = (name?: string, email?: string): Studen
     cgpa: '',
   },
   location: '',
-  targetRole: 'Robotics Engineer',
-  targetLocation: 'Bengaluru',
-  targetCompany: 'Open to Top Employers',
+  targetRole: '',
+  targetLocation: '',
+  targetCompany: '',
   readinessScore: 0,
   resume: {
     fileName: '',

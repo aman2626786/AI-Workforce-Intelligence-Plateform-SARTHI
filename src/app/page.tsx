@@ -48,7 +48,7 @@ export default function LandingPage() {
           {/* Action CTAs */}
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/onboarding"
+              href="/signup"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-base shadow-lg shadow-brand-600/25 transition-all hover:scale-[1.02]"
             >
               Start Your Career Journey
@@ -225,7 +225,16 @@ export default function LandingPage() {
               <p className="text-[11px] text-slate-400">SIH 2026 Problem Statement 26134 Platform</p>
             </div>
           </div>
-          <p className="text-xs text-slate-400">© 2026 SkillVantage AI. All mock data for demonstration purposes.</p>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/admin"
+              className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-600 font-semibold"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-brand-400" />
+              Admin Portal
+            </Link>
+            <p className="text-xs text-slate-400">© 2026 SkillVantage AI. Real-Time Labor Market Intelligence.</p>
+          </div>
         </div>
       </footer>
     </div>

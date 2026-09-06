@@ -167,13 +167,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
           </form>
 
-          <div className="pt-4 border-t border-slate-800/80 text-center">
-            <Link
-              href="/dashboard"
-              className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
+          <div className="pt-4 border-t border-slate-800/80 text-center space-y-2">
+            <button
+              type="button"
+              onClick={() => {
+                setAdminId('admin');
+                setAdminPassword('Admin@2026');
+              }}
+              className="text-[11px] font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer block w-full py-1.5 rounded bg-brand-950/40 border border-brand-800/40"
             >
-              ← Back to Student Dashboard
-            </Link>
+              Demo: Click to Fill Admin Credentials (admin / Admin@2026)
+            </button>
+            <div>
+              <Link
+                href="/dashboard"
+                className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
+              >
+                ← Back to Student Dashboard
+              </Link>
+            </div>
           </div>
         </div>
       </div>

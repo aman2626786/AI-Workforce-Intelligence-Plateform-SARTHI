@@ -38,7 +38,7 @@ export const LandingHeader: React.FC = () => {
             Login
           </Link>
           <Link
-            href="/onboarding"
+            href="/signup"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 shadow-md shadow-brand-600/20 transition-all hover:scale-[1.02]"
           >
             Get Started

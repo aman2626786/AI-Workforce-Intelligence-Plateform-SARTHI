@@ -10,6 +10,15 @@ services:
       - key: ALLOW_ALL_CORS
         value: "true"
       - key: SECRET_KEY
-        generateValue: true
+        value: "skillvantage-ai-secure-random-jwt-secret-key-2026"
       - key: API_V1_STR
         value: "/api"
+      - key: MONGODB_URI
+        value: "mongodb+srv://aiworkforceintelligence_db_user:0r4gaLZKmb0fggbV@cluster0.kuvum9z.mongodb.net/skillvantage_db?retryWrites=true&w=majority&appName=Cluster0"
+      - key: MONGODB_DB_NAME
+        value: "skillvantage_db"
+      - key: JOOBLE_API_KEY
+        value: "2445453e-4cf1-49c9-9085-b761f190f5f5"
+      - key: JOOBLE_IN_API_KEY
+        value: "2445453e-4cf1-49c9-9085-b761f190f5f5"
+

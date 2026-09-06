@@ -12,6 +12,13 @@ class UserLoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class FirebaseLoginRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = "Student"
+    firebase_uid: Optional[str] = None
+    photo_url: Optional[str] = None
+    id_token: Optional[str] = None
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -19,6 +26,7 @@ class TokenResponse(BaseModel):
     student_id: Optional[str] = None
     email: str
     name: str
+
 
 class UserResponse(BaseModel):
     id: str

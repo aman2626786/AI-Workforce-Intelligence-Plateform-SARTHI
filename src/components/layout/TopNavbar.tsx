@@ -12,7 +12,7 @@ interface TopNavbarProps {
 
 export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
   const router = useRouter();
-  const { profile, activeRole, activeLocation, openAiDrawerWithTopic, addToast } = useApp();
+  const { profile, activeRole, activeLocation, openAiDrawerWithTopic, addToast, logout } = useApp();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -20,13 +20,13 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
     setMounted(true);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsDropdownOpen(false);
     if (confirm('Are you sure you want to log out of SkillVantage AI?')) {
-      addToast('Logged out successfully', 'info');
-      router.push('/login');
+      await logout();
     }
   };
+
 
   return (
     <header className="sticky top-0 z-30 w-full h-16 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
@@ -89,15 +89,22 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex items-center gap-2 focus:outline-none"
           >
-            <img
-              src={profile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-              alt="Avatar"
-              className="w-8 h-8 rounded-full object-cover border border-slate-200 ring-2 ring-transparent hover:ring-brand-500 transition-all"
-            />
+            {profile?.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full object-cover border border-slate-200 ring-2 ring-transparent hover:ring-brand-500 transition-all"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                {profile?.name ? profile.name.charAt(0).toUpperCase() : 'S'}
+              </div>
+            )}
             <span className="hidden sm:inline text-xs font-bold text-slate-800" suppressHydrationWarning>
               {mounted && profile?.name ? profile.name.split(' ')[0] : 'Student'}
             </span>
           </button>
+
 
           {/* User Dropdown Menu */}
           {isDropdownOpen && (

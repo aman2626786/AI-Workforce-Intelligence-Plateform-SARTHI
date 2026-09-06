@@ -36,10 +36,12 @@ interface AppContextType {
   updateTargetCareer: (role: string, location: string, company?: string) => Promise<void>;
   addSkillToRoadmap: (skill: IndustrySkill) => Promise<void>;
   toggleRoadmapStatus: (id: string) => Promise<void>;
+  logout: () => Promise<void>;
   addSelfReportedSkill: (name: string, category: string, level: 'Basic' | 'Intermediate' | 'Advanced') => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -151,6 +153,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addToast('Roadmap progress updated & readiness score recalculated!', 'info');
   };
 
+  const logout = async () => {
+    try {
+      const { authService } = await import('@/services/authService');
+      await authService.logout();
+    } catch (e) {}
+    const { createEmptyStudentProfile } = await import('@/data/profile');
+    setProfile(createEmptyStudentProfile());
+    addToast('You have been logged out successfully.', 'info');
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+  };
+
   const addSelfReportedSkill = async (
     name: string,
     category: string,
@@ -160,6 +175,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProfile(updatedProfile);
     addToast(`Skill "${name}" added to your Career Profile!`, 'success');
   };
+
 
   return (
     <AppContext.Provider
@@ -185,8 +201,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateTargetCareer,
         addSkillToRoadmap,
         toggleRoadmapStatus,
+        logout,
         addSelfReportedSkill,
       }}
+
     >
       {children}
     </AppContext.Provider>

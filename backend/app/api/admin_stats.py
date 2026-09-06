@@ -7,8 +7,9 @@ from sqlalchemy import func
 
 from backend.app.core.database import get_db
 from backend.app.models import (
-    StudentProfile, StudentSkill, Job, JobSkill, Skill, Role, RoleFamily, RoleSkill
+    StudentProfile, StudentSkill, Job, JobSkill, Skill, Role, RoleFamily, RoleSkillDemand
 )
+
 from backend.app.models.intelligence import PipelineRun
 from backend.app.models.recommendation import ProfileIntelligenceState, RecommendationRun
 from backend.app.services.skill_intelligence.pipeline import SkillIntelligencePipeline
@@ -82,7 +83,8 @@ def get_admin_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:
     # 3. Skill Intelligence & Pipeline Stats
     total_canonical_skills = db.query(Skill).count()
     total_job_skills = db.query(JobSkill).count()
-    total_role_skills = db.query(RoleSkill).count()
+    total_role_skills = db.query(RoleSkillDemand).count()
+
     
     recent_pipeline_runs = (
         db.query(PipelineRun)

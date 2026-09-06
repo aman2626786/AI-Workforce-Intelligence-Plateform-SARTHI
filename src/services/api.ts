@@ -174,22 +174,23 @@ export const api = {
     };
   },
 
-  // 4. Direct Parse Resume File using Python Engine via Next.js API
+  // 4. Direct Parse Resume File using Python Engine via Backend API
   parseResumeFile: async (file: File, userProfileData?: BasicProfileData): Promise<ResumeAnalysisResult> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetch('/api/resume/analyze', {
+    const res = await fetch(`${API_BASE_URL}/resume/analyze-direct`, {
       method: 'POST',
       body: formData,
     });
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({ error: 'Resume analysis failed' }));
-      throw new Error(errData.error || 'Resume analysis failed');
+      throw new Error(errData.detail || errData.error || 'Resume analysis failed');
     }
 
     const data = await res.json();
+
 
     // Check for conflict: User city vs Resume city
     const conflicts: ConflictItem[] = [];

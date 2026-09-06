@@ -19,8 +19,9 @@ import {
 } from 'lucide-react';
 
 export default function DashboardHome() {
-  const { profile, skills, industryOverview, jobs, activeRole, activeLocation } = useApp();
+  const { profile, skills, industryOverview, jobs, roadmap, activeRole, activeLocation } = useApp();
   const [selectedJobModal, setSelectedJobModal] = useState<JobMatch | null>(null);
+
 
   // Top 3 Skill Gaps
   const topGaps = skills.filter((s) => s.gapSeverity !== 'Met').slice(0, 3);
@@ -57,7 +58,7 @@ export default function DashboardHome() {
         role={currentRole}
         location={profile?.targetLocation || activeLocation}
         company={profile?.targetCompany || 'Open to Top Employers'}
-        readinessScore={profile?.readinessScore || 82}
+        readinessScore={profile?.readinessScore ?? 0}
       />
 
       {/* NEXT BEST ACTION - STANDOUT CARD */}
@@ -76,7 +77,7 @@ export default function DashboardHome() {
           </h3>
           <p className="text-xs text-slate-300 font-medium" suppressHydrationWarning>
             {topPriorityGap
-              ? `${topPriorityGap.name} is demanded in ${topPriorityGap.demandPercentage}% of active ${currentRole} roles. Completing this node boosts your score by +12%.`
+              ? `${topPriorityGap.name} is demanded in ${topPriorityGap.demandPercentage}% of active ${currentRole} roles. Completing this node boosts your score.`
               : `Your verified profile satisfies the mandatory technical requirements across industry job postings.`}
           </p>
         </div>
@@ -100,34 +101,35 @@ export default function DashboardHome() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <ProgressCard
             title="Industry Skills"
-            percentage={skills.length > 0 ? Math.round((skills.filter((s) => s.gapSeverity === 'Met').length / skills.length) * 100) : 75}
+            percentage={skills.length > 0 ? Math.round((skills.filter((s) => s.gapSeverity === 'Met').length / skills.length) * 100) : 0}
             icon={TrendingUp}
             color="blue"
             subtitle={`${skills.filter((s) => s.gapSeverity === 'Met').length} of ${skills.length} verified`}
           />
           <ProgressCard
             title="Career Readiness"
-            percentage={profile?.readinessScore || 82}
+            percentage={profile?.readinessScore ?? 0}
             icon={Target}
             color="emerald"
             subtitle="Calculated on live JD weights"
           />
           <ProgressCard
             title="Career Roadmap"
-            percentage={65}
+            percentage={roadmap.length > 0 ? Math.round((roadmap.filter((r) => r.status === 'Completed').length / roadmap.length) * 100) : 0}
             icon={Map}
             color="purple"
-            subtitle="4 core milestones active"
+            subtitle={`${roadmap.filter((r) => r.status === 'Completed').length} of ${roadmap.length} milestones complete`}
           />
           <ProgressCard
             title="Job Readiness"
-            percentage={previewJobs.length > 0 ? previewJobs[0].matchScore : 88}
+            percentage={previewJobs.length > 0 ? previewJobs[0].matchScore : 0}
             icon={Briefcase}
             color="amber"
-            subtitle={`Top Match: ${previewJobs.length > 0 ? previewJobs[0].matchScore : 88}%`}
+            subtitle={previewJobs.length > 0 ? `Top Match: ${previewJobs[0].matchScore}%` : 'Exploring live roles'}
           />
         </div>
       </div>
+
 
       {/* TWO COLUMN SECTION: TOP SKILL GAPS & TREND PREVIEW */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

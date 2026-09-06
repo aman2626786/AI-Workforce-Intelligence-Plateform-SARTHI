@@ -43,8 +43,29 @@ def seed_skills_if_empty():
     finally:
         db.close()
 
-# Ensure DB tables exist
+from sqlalchemy import text
+
+def run_migrations():
+    """Auto-migrate schema changes for SQLite / PostgreSQL"""
+    with engine.connect() as conn:
+        try:
+            # Check users table columns
+            if engine.dialect.name == "sqlite":
+                result = conn.execute(text("PRAGMA table_info(users)"))
+                columns = [row[1] for row in result.fetchall()]
+                if "auth_provider" not in columns and len(columns) > 0:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(50) DEFAULT 'email'"))
+                    conn.commit()
+                if "firebase_uid" not in columns and len(columns) > 0:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN firebase_uid VARCHAR(255)"))
+                    conn.commit()
+        except Exception as e:
+            print(f"[Migration] Auto-migration note: {e}")
+
+# Ensure DB tables exist & run migrations
 Base.metadata.create_all(bind=engine)
+run_migrations()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -68,14 +89,31 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration for Next.js frontend
+import os
+
+# CORS configuration for Next.js frontend (Local, Firebase Hosting, Render)
+raw_allowed_origins = os.getenv("ALLOWED_ORIGINS", "")
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://*.web.app",
+    "https://*.firebaseapp.com"
+]
+if raw_allowed_origins:
+    allowed_origins.extend([origin.strip() for origin in raw_allowed_origins.split(",") if origin.strip()])
+
+frontend_url = os.getenv("FRONTEND_URL", "")
+if frontend_url and frontend_url not in allowed_origins:
+    allowed_origins.append(frontend_url.strip())
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_origins=["*"] if os.getenv("ALLOW_ALL_CORS", "true").lower() == "true" else allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 from backend.app.api.admin_stats import router as admin_router
 

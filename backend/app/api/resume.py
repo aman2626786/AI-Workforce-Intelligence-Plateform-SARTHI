@@ -31,6 +31,40 @@ parser = ResumeParser()
 # Cache parsed analysis temporarily in memory or file for quick retrieval
 _analysis_cache = {}
 
+@router.post("/analyze-direct")
+async def analyze_resume_direct(
+    file: UploadFile = File(...),
+):
+    """Directly parse uploaded resume file and return extracted sections & skills."""
+    ext = Path(file.filename).suffix.lower()
+    if ext not in settings.ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file type: '{ext}'. Please upload PDF or DOCX format."
+        )
+
+    contents = await file.read()
+    if len(contents) > settings.MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File exceeds maximum allowed size of {settings.MAX_FILE_SIZE_BYTES // (1024*1024)}MB."
+        )
+
+    unique_filename = f"temp_{uuid.uuid4()}{ext}"
+    temp_path = settings.UPLOAD_DIR / unique_filename
+    with open(temp_path, "wb") as f:
+        f.write(contents)
+
+    try:
+        parsed_result = parser.parse_resume(temp_path)
+        return parsed_result
+    finally:
+        if temp_path.exists():
+            try:
+                temp_path.unlink()
+            except Exception:
+                pass
+
 @router.post("/upload", response_model=ResumeUploadResponse)
 async def upload_resume(
     file: UploadFile = File(...),
@@ -40,6 +74,7 @@ async def upload_resume(
     # 1. File extension validation
     ext = Path(file.filename).suffix.lower()
     if ext not in settings.ALLOWED_EXTENSIONS:
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported file type: '{ext}'. Please upload PDF or DOCX format."

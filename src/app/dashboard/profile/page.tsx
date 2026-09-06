@@ -235,24 +235,30 @@ export default function StudentProfilePage() {
         <div className="space-y-6 lg:col-span-1">
           {/* User Card */}
           <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm text-center">
-            <img
-              src={profile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-              alt="Profile Avatar"
-              className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-slate-100 shadow-md mb-4"
-            />
-            <h2 className="text-xl font-black text-slate-900">{profile?.name}</h2>
-            <p className="text-xs font-semibold text-brand-600 mt-0.5">{profile?.targetRole} Candidate</p>
-            <p className="text-xs text-slate-500 mt-1">{profile?.email}</p>
+            {profile?.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt="Profile Avatar"
+                className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-slate-100 shadow-md mb-4"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white text-3xl font-extrabold flex items-center justify-center mx-auto border-4 border-slate-100 shadow-md mb-4">
+                {profile?.name ? profile.name.charAt(0).toUpperCase() : 'S'}
+              </div>
+            )}
+            <h2 className="text-xl font-black text-slate-900">{profile?.name || 'Student Candidate'}</h2>
+            <p className="text-xs font-semibold text-brand-600 mt-0.5">{profile?.targetRole || 'Robotics Engineer'} Candidate</p>
+            <p className="text-xs text-slate-500 mt-1">{profile?.email || 'Registered User'}</p>
 
             <div className="mt-6 pt-6 border-t border-slate-100 space-y-3 text-left text-xs font-medium text-slate-600">
               <div className="flex items-center gap-2.5">
                 <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                <span>Current Location: <strong className="text-slate-900">{profile?.location}</strong></span>
+                <span>Current Location: <strong className="text-slate-900">{profile?.location || 'India (Default)'}</strong></span>
               </div>
               <div className="flex items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2.5">
                   <Compass className="w-4 h-4 text-brand-600 shrink-0" />
-                  <span>Target Role: <strong className="text-slate-900">{profile?.targetRole}</strong></span>
+                  <span>Target Role: <strong className="text-slate-900">{profile?.targetRole || 'Robotics Engineer'}</strong></span>
                 </div>
                 <button
                   onClick={() => {
@@ -267,7 +273,7 @@ export default function StudentProfilePage() {
               </div>
               <div className="flex items-center gap-2.5">
                 <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                <span>Target Location: <strong className="text-slate-900">{profile?.targetLocation}</strong></span>
+                <span>Target Location: <strong className="text-slate-900">{profile?.targetLocation || 'Bengaluru'}</strong></span>
               </div>
             </div>
           </div>
@@ -284,7 +290,7 @@ export default function StudentProfilePage() {
               </span>
             </div>
             <div>
-              <p className="text-base font-black text-white">{profile?.targetRole}</p>
+              <p className="text-base font-black text-white">{profile?.targetRole || 'Robotics Engineer'}</p>
               <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
                 Skill gaps, market benchmarks, and job matching scores are actively tuned for this career path.
               </p>
@@ -309,12 +315,12 @@ export default function StudentProfilePage() {
               <h3 className="text-base font-extrabold text-slate-900">Education Details</h3>
             </div>
             <div className="space-y-2 text-xs">
-              <h4 className="font-extrabold text-slate-900 text-sm">{profile?.education.institution}</h4>
-              <p className="text-slate-600 font-medium">{profile?.education.degree}</p>
-              <p className="text-slate-500 font-medium">Field: {profile?.education.fieldOfStudy}</p>
+              <h4 className="font-extrabold text-slate-900 text-sm">{profile?.education?.institution || 'Academic Institution (Not specified)'}</h4>
+              <p className="text-slate-600 font-medium">{profile?.education?.degree || 'Degree'}</p>
+              <p className="text-slate-500 font-medium">Field: {profile?.education?.fieldOfStudy || 'Engineering & Technology'}</p>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 font-bold text-slate-700">
-                <span>Graduation: {profile?.education.graduationYear}</span>
-                <span className="text-brand-600">CGPA: {profile?.education.cgpa}</span>
+                <span>Graduation: {profile?.education?.graduationYear || '2026'}</span>
+                <span className="text-brand-600">CGPA: {profile?.education?.cgpa || 'N/A'}</span>
               </div>
             </div>
           </div>
@@ -326,22 +332,32 @@ export default function StudentProfilePage() {
                 <FileText className="w-5 h-5 text-purple-600" />
                 <h3 className="text-base font-extrabold text-slate-900">Resume Metadata</h3>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Parsed
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                profile?.resume?.fileName
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}>
+                {profile?.resume?.fileName ? 'Parsed' : 'Pending Upload'}
               </span>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs space-y-1">
-              <p className="font-extrabold text-slate-900 truncate">{profile?.resume.fileName}</p>
-              <p className="text-slate-500 font-medium">Uploaded: {profile?.resume.uploadDate} • {profile?.resume.fileSize}</p>
-            </div>
+            {profile?.resume?.fileName ? (
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs space-y-1">
+                <p className="font-extrabold text-slate-900 truncate">{profile.resume.fileName}</p>
+                <p className="text-slate-500 font-medium">Uploaded: {profile.resume.uploadDate || 'Recent'} • {profile.resume.fileSize || 'PDF'}</p>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-xs text-center text-slate-500 font-medium">
+                No resume uploaded yet. Upload below for automated skill extraction.
+              </div>
+            )}
 
             <button
               onClick={() => setIsUpdateResumeOpen(true)}
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200/60 transition-colors cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
-              Upload Updated Resume
+              {profile?.resume?.fileName ? 'Upload Updated Resume' : 'Upload Resume Now'}
             </button>
           </div>
         </div>
@@ -364,31 +380,59 @@ export default function StudentProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {profile?.skills.map((skill) => (
-                <div
-                  key={skill.id}
-                  className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 hover:bg-white hover:shadow-soft-sm transition-all"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{skill.category}</span>
-                      <h4 className="text-sm font-extrabold text-slate-900 mt-0.5">{skill.name}</h4>
+            {profile?.skills && profile.skills.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {profile.skills.map((skill) => (
+                  <div
+                    key={skill.id}
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 hover:bg-white hover:shadow-soft-sm transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{skill.category}</span>
+                        <h4 className="text-sm font-extrabold text-slate-900 mt-0.5">{skill.name}</h4>
+                      </div>
+                      <SkillBadge type={skill.type} />
                     </div>
-                    <SkillBadge type={skill.type} />
-                  </div>
 
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-600 pt-1">
-                    <span>Level: <strong className="text-slate-900">{skill.level}</strong></span>
-                    <span className="text-brand-600">{skill.proficiencyScore}% Score</span>
-                  </div>
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-600 pt-1">
+                      <span>Level: <strong className="text-slate-900">{skill.level}</strong></span>
+                      <span className="text-brand-600">{skill.proficiencyScore}% Score</span>
+                    </div>
 
-                  {skill.verifiedBy && (
-                    <p className="text-[10px] text-slate-400 italic">Validated by: {skill.verifiedBy}</p>
-                  )}
+                    {skill.verifiedBy && (
+                      <p className="text-[10px] text-slate-400 italic">Validated by: {skill.verifiedBy}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto">
+                  <Sparkles className="w-6 h-6" />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800">No skills added to your profile yet</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    Upload your resume to automatically extract your technical skills or add self-reported skills manually.
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => setIsAddSkillOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs shadow-sm cursor-pointer"
+                  >
+                    + Add First Skill
+                  </button>
+                  <button
+                    onClick={() => setIsUpdateResumeOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold text-xs shadow-sm cursor-pointer"
+                  >
+                    Upload Resume
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Work Experience / Internships Section */}
@@ -437,22 +481,26 @@ export default function StudentProfilePage() {
             </div>
 
             <div className="space-y-4">
-              {profile?.projects.map((proj) => (
-                <div key={proj.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-extrabold text-slate-900">{proj.title}</h4>
-                    <span className="text-xs font-semibold text-slate-400">{proj.date}</span>
+              {profile?.projects && profile.projects.length > 0 ? (
+                profile.projects.map((proj) => (
+                  <div key={proj.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-extrabold text-slate-900">{proj.title}</h4>
+                      <span className="text-xs font-semibold text-slate-400">{proj.date}</span>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium">{proj.description}</p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {proj.skillsUsed.map((sk) => (
+                        <span key={sk} className="px-2 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 text-[11px] font-semibold">
+                          {sk}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">{proj.description}</p>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {proj.skillsUsed.map((sk) => (
-                      <span key={sk} className="px-2 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 text-[11px] font-semibold">
-                        {sk}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 italic py-2">No projects extracted yet.</p>
+              )}
             </div>
           </div>
 
@@ -464,28 +512,33 @@ export default function StudentProfilePage() {
             </div>
 
             <div className="space-y-4">
-              {profile?.certifications.map((cert) => (
-                <div key={cert.id} className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-extrabold text-slate-900">{cert.title}</h4>
-                    <span className="text-xs font-bold text-emerald-700">{cert.issueDate}</span>
+              {profile?.certifications && profile.certifications.length > 0 ? (
+                profile.certifications.map((cert) => (
+                  <div key={cert.id} className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-extrabold text-slate-900">{cert.title}</h4>
+                      <span className="text-xs font-bold text-emerald-700">{cert.issueDate}</span>
+                    </div>
+                    <p className="text-xs text-slate-600 font-medium">Issuer: {cert.issuer}</p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {cert.skillsValidated.map((sk) => (
+                        <span key={sk} className="px-2 py-0.5 rounded-md bg-white text-emerald-800 border border-emerald-200 text-[11px] font-bold">
+                          ✓ {sk}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-600 font-medium">Issuer: {cert.issuer}</p>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {cert.skillsValidated.map((sk) => (
-                      <span key={sk} className="px-2 py-0.5 rounded-md bg-white text-emerald-800 border border-emerald-200 text-[11px] font-bold">
-                        ✓ {sk}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 italic py-2">No certifications extracted yet.</p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Modal for Adding Self-Reported Skill */}
+
       <Modal
         isOpen={isAddSkillOpen}
         onClose={() => setIsAddSkillOpen(false)}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -30,6 +30,7 @@ import {
 import { api, BasicProfileData, ResumeAnalysisResult, ExtractedSkill } from '@/services/api';
 import { useApp } from '@/context/AppContext';
 import { careerService } from '@/services/careerService';
+import { authService } from '@/services/authService';
 
 export const CAREER_ROLE_CATEGORIES = [
   {
@@ -144,6 +145,17 @@ export default function OnboardingPage() {
   // Step 5: Review & Editing Skills
   const [reviewSkills, setReviewSkills] = useState<ExtractedSkill[]>([]);
   const [newSkillName, setNewSkillName] = useState('');
+
+  // Prefill authenticated user info from Google/Email login
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      if (currentUser.name) setName(currentUser.name);
+      if (currentUser.email) setEmail(currentUser.email);
+      // If user is already authenticated, jump to Step 2 (Academic & Career Target)
+      setCurrentStep(2);
+    }
+  }, []);
 
   // ----------------------------------------------------
   // HANDLERS

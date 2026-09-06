@@ -30,12 +30,21 @@ class CareerService {
         if (saved) {
           const parsed = JSON.parse(saved);
           this.profile = { ...this.profile, ...parsed };
+        } else {
+          const session = localStorage.getItem('skillvantage_user_session');
+          if (session) {
+            const parsedSession = JSON.parse(session);
+            if (parsedSession.name && !this.profile.name) this.profile.name = parsedSession.name;
+            if (parsedSession.email && !this.profile.email) this.profile.email = parsedSession.email;
+            if (parsedSession.avatar_url && !this.profile.avatarUrl) this.profile.avatarUrl = parsedSession.avatar_url;
+          }
         }
       } catch (e) {
         console.warn('Could not read user profile from localStorage:', e);
       }
     }
   }
+
 
   private saveToStorage() {
     if (typeof window !== 'undefined') {
@@ -236,10 +245,14 @@ class CareerService {
       else if (s.studentLevel === 'Basic') earnedWeight += weight * 0.35;
     });
 
-    this.profile.readinessScore = Math.max(10, Math.round((earnedWeight / Math.max(1, totalWeight)) * 100));
+    const studentSkillsCount = this.profile.skills?.length || 0;
+    this.profile.readinessScore = studentSkillsCount === 0 || totalWeight === 0 
+      ? 0 
+      : Math.round((earnedWeight / totalWeight) * 100);
     this.saveToStorage();
 
     return domainSkills;
+
   }
 
   generateDomainSkills(role: string): IndustrySkill[] {

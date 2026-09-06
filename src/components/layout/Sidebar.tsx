@@ -26,7 +26,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { profile, activeRole, openAiDrawerWithTopic, addToast } = useApp();
+  const { profile, activeRole, openAiDrawerWithTopic, addToast, logout } = useApp();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -42,12 +42,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { label: 'Job Readiness', href: '/dashboard/job-readiness', icon: Briefcase },
   ];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (confirm('Are you sure you want to log out of SkillVantage AI?')) {
-      addToast('Logged out successfully', 'info');
-      router.push('/login');
+      await logout();
     }
   };
+
 
   const displayName = mounted && profile?.name ? profile.name : 'Student Profile';
   const displayRole = mounted && (profile?.targetRole || activeRole) ? (profile?.targetRole || activeRole) : 'Robotics Engineer';

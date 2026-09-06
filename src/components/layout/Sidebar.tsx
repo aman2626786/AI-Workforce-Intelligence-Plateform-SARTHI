@@ -52,6 +52,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const displayName = mounted && profile?.name ? profile.name : 'Student Profile';
   const displayRole = mounted && profile?.targetRole ? profile.targetRole : 'Target Role Not Set';
 
+  const isItemActive = (itemHref: string) => {
+    if (!pathname) return false;
+    const current = pathname.replace(/\/+$/, '') || '/';
+    const target = itemHref.replace(/\/+$/, '') || '/';
+    if (target === '/dashboard') {
+      return current === '/dashboard';
+    }
+    return current === target || current.startsWith(target + '/');
+  };
+
   return (
     <>
       {/* Backdrop for mobile */}
@@ -97,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               Student Intelligence
             </div>
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = isItemActive(item.href);
               const Icon = item.icon;
 
               return (
@@ -105,10 +115,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                  className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-bold text-sm transition-all ${
                     isActive
-                      ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-brand-600'
+                      ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
@@ -142,13 +152,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <Link
             href="/dashboard/settings"
             onClick={onClose}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              pathname === '/dashboard/settings'
-                ? 'bg-brand-600 text-white shadow-md'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              isItemActive('/dashboard/settings')
+                ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <Settings className={`w-4 h-4 ${pathname === '/dashboard/settings' ? 'text-white' : 'text-slate-400'}`} />
+            <Settings className={`w-4 h-4 ${isItemActive('/dashboard/settings') ? 'text-white' : 'text-slate-400'}`} />
             Settings
           </Link>
 

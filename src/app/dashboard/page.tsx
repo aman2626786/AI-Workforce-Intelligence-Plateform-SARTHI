@@ -48,17 +48,17 @@ export default function DashboardHome() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           <Link
             href="/dashboard/job-readiness"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer flex-1 sm:flex-initial text-center"
           >
-            <span>Explore 6,869+ Jobs & 310+ Companies</span>
+            <span>Explore Jobs & Companies</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <Link
             href="/dashboard/industry-skills"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 hover:bg-sky-50 text-xs sm:text-sm font-semibold text-slate-800 shadow-2xs hover:border-sky-300 transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-white border border-sky-200 hover:bg-sky-50 text-xs sm:text-sm font-semibold text-slate-800 shadow-2xs hover:border-sky-300 transition-all cursor-pointer flex-1 sm:flex-initial text-center"
           >
             Industry Skills
           </Link>

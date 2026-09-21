@@ -134,9 +134,9 @@ class CareerService {
       };
       this.saveToStorage();
     } catch (error: any) {
-      // Graceful fallback to cached local profile.
-      // Never delete auth credentials automatically; the user stays permanently logged in until manual logout.
-      console.warn('Backend profile unavailable; using cached profile:', error?.message || error);
+      if (!error?.message?.includes('not found')) {
+        console.warn('Backend profile unavailable; using cached profile:', error?.message || error);
+      }
     }
     return { ...this.profile };
   }

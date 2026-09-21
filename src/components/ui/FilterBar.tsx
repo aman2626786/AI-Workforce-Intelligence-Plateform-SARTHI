@@ -125,15 +125,17 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         Market Filters
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
         {/* Role Select */}
-        <div className="flex items-center gap-2 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700">
-          <Briefcase className="w-4 h-4 text-sky-600" />
-          <span className="text-slate-400 font-semibold">Role:</span>
+        <div className="flex items-center gap-2 px-3 sm:px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-700 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Briefcase className="w-4 h-4 text-sky-600" />
+            <span className="text-slate-400 font-semibold">Role:</span>
+          </div>
           <select
             value={selectedRole}
             onChange={(e) => onRoleChange(e.target.value)}
-            className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer max-w-[220px] truncate text-sm"
+            className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer flex-1 sm:max-w-[220px] truncate text-xs sm:text-sm"
           >
             {isCustomSelected && (
               <option value={selectedRole} className="bg-white text-slate-900 font-bold">

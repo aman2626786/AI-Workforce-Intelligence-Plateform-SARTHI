@@ -17,8 +17,8 @@ export const CareerReadinessCard: React.FC<CareerReadinessCardProps> = ({
   const strokeDashoffset = circumference - (readinessScore / 100) * circumference;
 
   return (
-    <div className="p-6 sm:p-7 rounded-3xl bg-white border border-sky-200 shadow-soft-sm relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 transition-all">
-      <div className="space-y-3 flex-1">
+    <div className="p-5 sm:p-7 rounded-2xl sm:rounded-3xl bg-white border border-sky-200 shadow-soft-sm relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all min-w-0">
+      <div className="space-y-3 flex-1 min-w-0">
         <div>
           <span className="px-3 py-1 rounded-full bg-sky-50 text-sky-800 text-xs font-semibold tracking-wide uppercase border border-sky-200">
             Target Career Profile
@@ -26,29 +26,29 @@ export const CareerReadinessCard: React.FC<CareerReadinessCardProps> = ({
         </div>
 
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{role}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight break-words">{role}</h2>
           <p className="text-slate-600 text-sm sm:text-base mt-1 font-normal">
             Optimized against 10,000+ real-time market job postings
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 text-sm font-medium pt-1">
-          <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-medium pt-1 max-w-full">
+          <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 truncate max-w-full">
             Role: <span className="text-slate-900 font-semibold ml-1">{role}</span>
           </div>
 
-          <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+          <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 truncate max-w-full">
             Location: <span className="text-slate-900 font-semibold ml-1">{location}</span>
           </div>
 
-          <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+          <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 truncate max-w-full">
             Target: <span className="text-slate-900 font-semibold ml-1">{company}</span>
           </div>
         </div>
       </div>
 
       {/* Circular Readiness Meter */}
-      <div className="flex flex-col items-center justify-center shrink-0">
+      <div className="flex flex-col items-center justify-center shrink-0 self-center md:self-auto">
         <div className="relative w-28 h-28 flex items-center justify-center">
           <svg className="w-full h-full transform -rotate-90">
             {/* Background ring */}

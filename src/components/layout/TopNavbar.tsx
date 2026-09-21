@@ -147,7 +147,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 w-full h-16 border-b border-sky-200/50 bg-sky-100/40 backdrop-blur-md px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all">
+    <header className="fixed top-0 left-0 right-0 z-40 w-full h-16 border-b border-sky-200/50 bg-sky-100/40 backdrop-blur-md px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 transition-all">
       {/* Left side: Mobile Toggle + Complete Brand Logo */}
       <div className="flex items-center gap-3 shrink-0">
         {/* Mobile menu trigger */}
@@ -219,7 +219,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
 
           {/* Notifications Dropdown Panel */}
           {isNotificationsOpen && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50 animate-fade-in font-sans">
+            <div className="absolute right-0 mt-2 w-[calc(100vw-24px)] max-w-sm sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50 animate-fade-in font-sans">
               {/* Header */}
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
                 <div className="flex items-center gap-2">
@@ -345,7 +345,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
 
           {/* User Dropdown Menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-fade-in">
+            <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-fade-in">
               <div className="px-4 py-2.5 border-b border-slate-100">
                 <p className="text-sm font-semibold text-slate-900 truncate" suppressHydrationWarning>
                   {profile?.name || 'Student Profile'}

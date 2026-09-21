@@ -20,8 +20,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* Main Content Area - Generous breathing room, no cramped columns */}
-      <div className="flex-1 pt-16 lg:pl-64 flex flex-col min-h-screen">
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-7">
+      <div className="flex-1 pt-16 lg:pl-64 flex flex-col min-h-screen min-w-0">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6 sm:space-y-7 min-w-0">
           {children}
         </main>
       </div>

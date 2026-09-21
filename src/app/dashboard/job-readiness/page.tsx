@@ -269,17 +269,17 @@ export default function JobReadinessPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
             <Link
               href="/dashboard/industry-skills"
-              className="px-4 py-2.5 rounded-xl bg-white border border-sky-200 hover:bg-sky-50 text-xs font-bold text-slate-800 shadow-2xs hover:border-sky-300 transition-all flex items-center gap-2"
+              className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-white border border-sky-200 hover:bg-sky-50 text-xs font-bold text-slate-800 shadow-2xs hover:border-sky-300 transition-all flex items-center justify-center gap-2 flex-1 sm:flex-initial text-center"
             >
               <TrendingUp className="w-4 h-4 text-sky-600" />
               <span>Skill Gap Analysis</span>
             </Link>
             <Link
               href="/dashboard/roadmap"
-              className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2"
+              className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 flex-1 sm:flex-initial text-center"
             >
               <span>View Roadmap</span>
               <ArrowRight className="w-3.5 h-3.5" />

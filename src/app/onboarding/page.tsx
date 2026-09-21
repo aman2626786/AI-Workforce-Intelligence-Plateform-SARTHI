@@ -451,9 +451,25 @@ export default function OnboardingPage() {
       </header>
 
       {/* Main Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Progress Steps */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft-sm space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start min-w-0">
+        {/* Mobile Progress Bar (Visible only on < lg screens) */}
+        <div className="lg:hidden col-span-1 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-slate-800">
+              Step {currentStep}: <span className="text-brand-600">{stepsConfig[currentStep - 1]?.label}</span>
+            </span>
+            <span className="font-semibold text-slate-500">{Math.round((currentStep / 6) * 100)}% Complete</span>
+          </div>
+          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-brand-600 rounded-full transition-all duration-300"
+              style={{ width: `${(currentStep / 6) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Left Column: Progress Steps (Desktop only) */}
+        <div className="hidden lg:block lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-soft-sm space-y-6">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900">Onboarding Roadmap</h2>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
@@ -510,7 +526,7 @@ export default function OnboardingPage() {
         </div>
 
         {/* Right Column: Active Form Step */}
-        <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-soft-sm">
+        <div className="col-span-1 lg:col-span-8 bg-white p-4 sm:p-8 rounded-3xl border border-slate-200/90 shadow-soft-sm min-w-0">
           {/* STEP 1: GOOGLE AUTHENTICATION */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-fade-in text-center py-8">

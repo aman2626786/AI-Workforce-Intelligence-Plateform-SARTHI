@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Sparkles,
   ArrowLeft,
-  UserCheck,
 } from 'lucide-react';
 import { authService } from '@/services/authService';
 import { useApp } from '@/context/AppContext';
@@ -24,7 +23,6 @@ export default function SignupPage() {
   // Mode: default to 'signup'
   const [authMode, setAuthMode] = useState<'signup' | 'signin'>('signup');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isDemoLoading, setIsDemoLoading] = useState(false);
   // Notice / feedback: { type: 'info' | 'blocked' | 'error', message: string }
   const [authNotice, setAuthNotice] = useState<{
     type: 'info' | 'blocked' | 'error';
@@ -69,37 +67,17 @@ export default function SignupPage() {
       } else if (err?.code === 'auth/popup-blocked') {
         setAuthNotice({
           type: 'blocked',
-          message: 'Google popup was blocked by your browser. Please allow popups for localhost:3000, or explore with Demo Student access below.',
+          message: 'Google popup was blocked by your browser. Please allow popups for localhost:3000 to continue.',
         });
       } else {
         console.warn('Google Auth notice:', err?.message || err);
         setAuthNotice({
           type: 'error',
-          message: err?.message || 'Google registration could not be completed. Please try again or explore with Demo Access.',
+          message: err?.message || 'Google registration could not be completed. Please try again.',
         });
       }
     } finally {
       setIsGoogleLoading(false);
-    }
-  };
-
-  // 1-Click Demo Explorer
-  const handleDemoSignIn = async () => {
-    setIsDemoLoading(true);
-    setAuthNotice(null);
-    try {
-      const demoUser = await authService.demoLogin();
-      addToast(`Signed in as Demo Student (${demoUser.name})!`, 'info');
-      await refreshData();
-      window.location.assign('/dashboard');
-    } catch (err: any) {
-      console.warn('Demo login notice:', err);
-      setAuthNotice({
-        type: 'error',
-        message: 'Could not launch demo session. Please try Google authentication.',
-      });
-    } finally {
-      setIsDemoLoading(false);
     }
   };
 
@@ -308,26 +286,6 @@ export default function SignupPage() {
                 </button>
               </div>
             )}
-          </div>
-
-          {/* Quick Demo Student Access (Highlighted on hover) */}
-          <div className="space-y-3 pt-1">
-            <div className="relative flex items-center justify-center">
-              <div className="border-t border-sky-200 w-full" />
-              <span className="bg-white px-3 text-[10px] uppercase tracking-wider text-slate-400 font-extrabold shrink-0">
-                1-Click Instant Preview
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleDemoSignIn}
-              disabled={isDemoLoading}
-              className="w-full py-2.5 px-4 rounded-xl border-2 border-sky-200/90 hover:border-sky-400 bg-sky-50/60 hover:bg-sky-100/80 text-sky-900 text-xs font-extrabold shadow-2xs hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer group"
-            >
-              <UserCheck className="w-4 h-4 text-sky-600 group-hover:scale-110 transition-transform" />
-              <span>{isDemoLoading ? 'Launching demo dashboard...' : 'Explore as Demo Student (Instant)'}</span>
-            </button>
           </div>
         </div>
       </main>

@@ -609,14 +609,42 @@ export const api = {
   getStudentProfile: async () => {
     const token = getToken();
     if (!token) throw new Error('Authentication required.');
-    const res = await fetch(`${API_BASE_URL}/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({}));
-      throw new Error(error.detail || 'Failed to load student profile.');
+    try {
+      const res = await fetch(`${API_BASE_URL}/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 404) {
+        return {
+          id: 'default_student_profile',
+          name: 'Student',
+          target_role: 'Data Analyst',
+          preferred_location: 'Bengaluru',
+          education: [],
+          experience: [],
+          projects: [],
+          certifications: [],
+        };
+      }
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.detail || 'Failed to load student profile.');
+      }
+      return await res.json();
+    } catch (e: any) {
+      if (e?.message?.includes('not found') || e?.message?.includes('404')) {
+        return {
+          id: 'default_student_profile',
+          name: 'Student',
+          target_role: 'Data Analyst',
+          preferred_location: 'Bengaluru',
+          education: [],
+          experience: [],
+          projects: [],
+          certifications: [],
+        };
+      }
+      throw e;
     }
-    return await res.json();
   },
 
   // 5. Analyze Resume (retrieves real cached file or sends request)

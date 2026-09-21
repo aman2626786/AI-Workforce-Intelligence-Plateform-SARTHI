@@ -52,93 +52,127 @@ def verify_firebase_id_token(id_token: str) -> dict:
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
+def ensure_student_profile(user: User, db: Session) -> StudentProfile:
+    if not user:
+        return None
+    profile = db.query(StudentProfile).filter(StudentProfile.user_id == user.id).first()
+    if not profile:
+        display_name = "Student"
+        if getattr(user, "name", None):
+            display_name = user.name
+        elif getattr(user, "email", None):
+            display_name = user.email.split("@")[0].replace(".", " ").title()
+
+        profile = StudentProfile(
+            user_id=user.id,
+            name=display_name,
+            city="Bengaluru",
+            education_level="Bachelor's Degree",
+            degree="B.Tech / B.E.",
+            college="University",
+            graduation_year=datetime.now(timezone.utc).year,
+            target_role="Data Analyst",
+            preferred_location="Bengaluru"
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    return profile
+
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
+    found_user = None
     if not token:
         # Fallback to existing student user if available
         first_user = db.query(User).first()
         if first_user:
-            return first_user
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # 1. Try standard HMAC-SHA256 decoding
-    payload = decode_access_token(token)
-    if payload and "sub" in payload:
-        sub_val = str(payload["sub"])
-        user = db.query(User).filter(User.id == sub_val).first()
-        if not user:
-            user = db.query(User).filter((User.email == sub_val.lower()) | (User.firebase_uid == sub_val)).first()
-        if user:
-            return user
-
-    # 2. Try prefix-based Firebase local tokens
-    if token.startswith("fb_"):
-        fb_uid = token.replace("fb_", "")
-        user = db.query(User).filter(User.firebase_uid == fb_uid).first()
-        if not user:
-            user = User(
-                email=f"student_{fb_uid[:8]}@matchskill.ai",
-                firebase_uid=fb_uid,
-                password_hash="OAUTH_USER_NO_PASSWORD",
-                auth_provider="google"
+            found_user = first_user
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+                headers={"WWW-Authenticate": "Bearer"},
             )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-        return user
+    else:
+        # 1. Try standard HMAC-SHA256 decoding
+        payload = decode_access_token(token)
+        if payload and "sub" in payload:
+            sub_val = str(payload["sub"])
+            user = db.query(User).filter(User.id == sub_val).first()
+            if not user:
+                user = db.query(User).filter((User.email == sub_val.lower()) | (User.firebase_uid == sub_val)).first()
+            if user:
+                found_user = user
 
-    # 3. Try Firebase JWT or unverified JWT token recovery
-    try:
-        import jwt
-        unverified = jwt.decode(token, options={"verify_signature": False})
-        uid_or_sub = unverified.get("sub") or unverified.get("uid") or unverified.get("user_id")
-        email = (unverified.get("email") or "").lower().strip()
+        # 2. Try prefix-based Firebase local tokens
+        if not found_user and token.startswith("fb_"):
+            fb_uid = token.replace("fb_", "")
+            user = db.query(User).filter(User.firebase_uid == fb_uid).first()
+            if not user:
+                user = User(
+                    email=f"student_{fb_uid[:8]}@matchskill.ai",
+                    firebase_uid=fb_uid,
+                    password_hash="OAUTH_USER_NO_PASSWORD",
+                    auth_provider="google"
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+            found_user = user
 
-        user = None
-        if email:
-            user = db.query(User).filter(User.email == email).first()
-        if not user and uid_or_sub:
-            user = db.query(User).filter((User.id == str(uid_or_sub)) | (User.firebase_uid == str(uid_or_sub))).first()
+        # 3. Try Firebase JWT or unverified JWT token recovery
+        if not found_user:
+            try:
+                import jwt
+                unverified = jwt.decode(token, options={"verify_signature": False})
+                uid_or_sub = unverified.get("sub") or unverified.get("uid") or unverified.get("user_id")
+                email = (unverified.get("email") or "").lower().strip()
 
-        if not user and (email or uid_or_sub):
-            clean_email = email if email else f"user_{str(uid_or_sub)[:8]}@matchskill.ai"
-            user = User(
-                email=clean_email,
-                firebase_uid=str(uid_or_sub or ""),
-                password_hash="OAUTH_USER_NO_PASSWORD",
-                auth_provider="google"
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
+                user = None
+                if email:
+                    user = db.query(User).filter(User.email == email).first()
+                if not user and uid_or_sub:
+                    user = db.query(User).filter((User.id == str(uid_or_sub)) | (User.firebase_uid == str(uid_or_sub))).first()
 
-        if user:
-            return user
-    except Exception:
-        pass
+                if not user and (email or uid_or_sub):
+                    clean_email = email if email else f"user_{str(uid_or_sub)[:8]}@matchskill.ai"
+                    user = User(
+                        email=clean_email,
+                        firebase_uid=str(uid_or_sub or ""),
+                        password_hash="OAUTH_USER_NO_PASSWORD",
+                        auth_provider="google"
+                    )
+                    db.add(user)
+                    db.commit()
+                    db.refresh(user)
 
-    # 4. Graceful fallback to first existing user
-    existing_user = db.query(User).first()
-    if existing_user:
-        return existing_user
+                if user:
+                    found_user = user
+            except Exception:
+                pass
 
-    # Auto-seed default student if database is clean/empty (prevents 401 on fresh deployments like Render)
-    default_user = User(
-        email="student@matchskill.ai",
-        password_hash="OAUTH_USER_NO_PASSWORD",
-        role="STUDENT",
-        auth_provider="system"
-    )
-    db.add(default_user)
-    db.commit()
-    db.refresh(default_user)
-    return default_user
+        # 4. Graceful fallback to first existing user
+        if not found_user:
+            existing_user = db.query(User).first()
+            if existing_user:
+                found_user = existing_user
+            else:
+                # Auto-seed default student if database is clean/empty (prevents 401 on fresh deployments like Render)
+                default_user = User(
+                    email="student@matchskill.ai",
+                    password_hash="OAUTH_USER_NO_PASSWORD",
+                    role="STUDENT",
+                    auth_provider="system"
+                )
+                db.add(default_user)
+                db.commit()
+                db.refresh(default_user)
+                found_user = default_user
+
+    ensure_student_profile(found_user, db)
+    return found_user
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if getattr(current_user, "role", "STUDENT") != "ADMIN":
@@ -196,7 +230,7 @@ def login(data: UserLoginRequest, db: Session = Depends(get_db)):
             detail="Incorrect email or password"
         )
 
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == user.id).first()
+    profile = ensure_student_profile(user, db)
     access_token = create_access_token(subject=user.id)
 
     return TokenResponse(
@@ -282,7 +316,7 @@ def get_me(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
+    profile = ensure_student_profile(current_user, db)
     return {
         "user_id": current_user.id,
         "email": current_user.email,

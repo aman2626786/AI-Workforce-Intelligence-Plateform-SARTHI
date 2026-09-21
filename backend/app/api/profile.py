@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.app.core.database import get_db
@@ -8,14 +9,37 @@ from backend.app.schemas.profile import BasicProfileUpdateRequest, CareerPrefere
 
 router = APIRouter(prefix="/profile", tags=["Student Profile"])
 
+def get_or_create_student_profile(current_user: User, db: Session) -> StudentProfile:
+    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
+    if not profile:
+        display_name = "Student"
+        if getattr(current_user, "name", None):
+            display_name = current_user.name
+        elif getattr(current_user, "email", None):
+            display_name = current_user.email.split("@")[0].replace(".", " ").title()
+
+        profile = StudentProfile(
+            user_id=current_user.id,
+            name=display_name,
+            city="Bengaluru",
+            education_level="Bachelor's Degree",
+            degree="B.Tech / B.E.",
+            college="University",
+            graduation_year=datetime.now(timezone.utc).year,
+            target_role="Data Analyst",
+            preferred_location="Bengaluru"
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    return profile
+
 @router.get("", response_model=StudentProfileResponse)
 def get_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
     return profile
 
 @router.put("", response_model=StudentProfileResponse)
@@ -24,9 +48,7 @@ def update_basic_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
 
     # Update basic profile fields
     if data.name:
@@ -62,9 +84,7 @@ def update_career_preferences(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
 
     if data.target_role is not None:
         profile.target_role = data.target_role.strip() or None
@@ -74,3 +94,4 @@ def update_career_preferences(
     db.commit()
     db.refresh(profile)
     return profile
+

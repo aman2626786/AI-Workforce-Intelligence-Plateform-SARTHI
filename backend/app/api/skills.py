@@ -22,7 +22,7 @@ def get_student_skills(
 ):
     profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
     if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+        return []
 
     student_skills = db.query(StudentSkill).filter(StudentSkill.student_id == profile.id).all()
     results = []

@@ -134,7 +134,7 @@ class CareerService {
       };
       this.saveToStorage();
     } catch (error: any) {
-      if (!error?.message?.includes('not found')) {
+      if (!error?.message?.includes('not found') && !error?.message?.includes('404')) {
         console.warn('Backend profile unavailable; using cached profile:', error?.message || error);
       }
     }

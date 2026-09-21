@@ -15,6 +15,7 @@ from sqlalchemy import desc
 
 from backend.app.core.database import get_db
 from backend.app.api.auth import get_current_user, require_admin
+from backend.app.api.profile import get_or_create_student_profile
 from backend.app.models.user import User
 from backend.app.models.profile import StudentProfile
 from backend.app.models.job import Job
@@ -55,9 +56,7 @@ def get_profile_intelligence_summary(
     - High-priority skill gaps
     - Top 3 recommended jobs with match scores and rationales
     """
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
 
     # Check if analysis exists, otherwise run on-the-fly
     state = db.query(ProfileIntelligenceState).filter(ProfileIntelligenceState.student_id == profile.id).first()
@@ -173,9 +172,7 @@ def get_student_skill_gaps(
     """
     Returns full personalized skill gap analysis for the logged-in student against target role industry demands.
     """
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
 
     state = db.query(ProfileIntelligenceState).filter(ProfileIntelligenceState.student_id == profile.id).first()
     if not state or state.analysis_status != "COMPLETED":
@@ -239,9 +236,7 @@ def get_student_recommendations(
     """
     Returns personalized job recommendations with match scores, skill breakdowns, and deterministic explanations.
     """
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
 
     state = db.query(ProfileIntelligenceState).filter(ProfileIntelligenceState.student_id == profile.id).first()
     if not state or state.analysis_status != "COMPLETED":
@@ -314,9 +309,7 @@ def get_recommendation_detail(
     """
     Fetches detailed match breakdown for a specific recommended job.
     """
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
 
     rec = (
         db.query(ProfileRecommendation)
@@ -372,9 +365,7 @@ def recalculate_profile_intelligence(
     """
     Forces immediate re-analysis of student skill gaps and job recommendations.
     """
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
 
     agent = ProfileIntelligenceAgent(db)
     result = agent.analyze_profile(student_id=profile.id, trigger_event="USER_RECALCULATE_CLICK", force_recalculate=True)
@@ -398,9 +389,7 @@ def refresh_profile_intelligence_if_stale(
     """
     Checks if student intelligence is stale or missing and refreshes if necessary.
     """
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
 
     state = db.query(ProfileIntelligenceState).filter(ProfileIntelligenceState.student_id == profile.id).first()
     if not state or state.analysis_status != "COMPLETED":

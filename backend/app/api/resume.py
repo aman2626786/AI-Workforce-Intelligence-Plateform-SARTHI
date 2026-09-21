@@ -10,6 +10,7 @@ from sqlalchemy import desc
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.api.auth import get_current_user
+from backend.app.api.profile import get_or_create_student_profile
 from backend.app.models.user import User
 from backend.app.models.profile import (
     StudentProfile,
@@ -251,9 +252,7 @@ def confirm_and_save_profile(
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume record not found")
 
-    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+    profile = get_or_create_student_profile(current_user, db)
 
     # 1. Update personal info if user allowed or if empty
     if data.personal_info:

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { StudentProfile } from '../data/profile';
 import { IndustrySkill } from '../data/skills';
 import { IndustryOverview } from '../data/industry';
@@ -82,16 +82,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAiDrawerOpen(true);
   };
 
+  const lastFetchedRef = useRef<{ role: string; location: string }>({ role: '', location: '' });
+  const isRefreshingRef = useRef<boolean>(false);
+
   const refreshData = async () => {
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
-      setIsLoading(false);
-      return;
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/admin') || path.startsWith('/login') || path.startsWith('/signup')) {
+        setIsLoading(false);
+        return;
+      }
     }
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
     setIsLoading(true);
     try {
       const profData = await careerService.getStudentProfile();
       const currentRole = profData.targetRole || activeRole || 'Data Scientist';
       const currentLocation = profData.targetLocation || profData.location || activeLocation || 'India';
+
+      lastFetchedRef.current = { role: currentRole, location: currentLocation };
 
       if (profData.targetRole && profData.targetRole !== activeRole) {
         setActiveRole(profData.targetRole);
@@ -107,8 +117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         careerService.getCareerRoadmap(currentRole),
       ]);
 
-      const freshProfile = await careerService.getStudentProfile();
-      setProfile(freshProfile);
+      setProfile(profData);
       setSkills(skillsData);
       setIndustryOverview(indData);
       setJobs(jobsData);
@@ -117,13 +126,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('Career data loading notice:', err);
     } finally {
       setIsLoading(false);
+      isRefreshingRef.current = false;
     }
   };
 
   // Client-side hydration sync for saved user profile
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      if (window.location.pathname.startsWith('/admin')) {
+      const path = window.location.pathname;
+      if (path.startsWith('/admin') || path.startsWith('/login') || path.startsWith('/signup')) {
         return;
       }
       try {
@@ -139,17 +150,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } catch (e) {}
     }
-    careerService.getStudentProfile().then((p) => {
-      if (p && p.targetRole && p.targetRole !== activeRole) {
-        setActiveRole(p.targetRole);
-      }
-      if (p && (p.targetLocation || p.location)) {
-        setActiveLocation(p.targetLocation || p.location);
-      }
-    });
   }, []);
 
   useEffect(() => {
+    if (
+      lastFetchedRef.current.role === activeRole &&
+      lastFetchedRef.current.location === activeLocation
+    ) {
+      return;
+    }
     refreshData();
   }, [activeRole, activeLocation]);
 

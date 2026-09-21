@@ -15,7 +15,6 @@ export interface CommentRecord {
 }
 
 const COMMENTS_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'resourceComments.json');
-const FALLBACK_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'fallbackResources.json');
 
 function readCommentsFromDisk(): CommentRecord[] {
   try {
@@ -38,29 +37,9 @@ function writeCommentsToDisk(comments: CommentRecord[]): void {
   }
 }
 
-function updateResourceCommentCount(resourceId: string, delta: number): void {
-  try {
-    if (fs.existsSync(FALLBACK_FILE_PATH)) {
-      const raw = fs.readFileSync(FALLBACK_FILE_PATH, 'utf-8');
-      const data = JSON.parse(raw);
-      if (Array.isArray(data.resources)) {
-        let changed = false;
-        data.resources = data.resources.map((r: any) => {
-          if (r.id === resourceId || r.slug === resourceId) {
-            const current = Number(r.comment_count) || 0;
-            changed = true;
-            return { ...r, comment_count: Math.max(0, current + delta), updated_at: new Date().toISOString() };
-          }
-          return r;
-        });
-        if (changed) {
-          fs.writeFileSync(FALLBACK_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
-        }
-      }
-    }
-  } catch (err) {
-    console.error('Error updating resource comment_count:', err);
-  }
+function updateResourceCommentCount(_resourceId: string, _delta: number): void {
+  // Counts are dynamically computed by API routes from getCommentsForResource
+  // Disk writes to fallbackResources.json are omitted to avoid triggering Next.js Fast Refresh reload
 }
 
 export function getCommentsForResource(resourceIdOrSlug: string): CommentRecord[] {

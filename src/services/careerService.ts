@@ -131,9 +131,13 @@ class CareerService {
       this.saveToStorage();
     } catch (error: any) {
       const message = error?.message || '';
-      if (/authentication required|invalid or expired token/i.test(message)) {
+      if (/authentication required|invalid or expired token|user not found|not authenticated|could not validate credentials/i.test(message)) {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('skillvantage_auth_token');
+          localStorage.removeItem('skillvantage_auth_user');
+          localStorage.removeItem('skillvantage_user_session');
+          localStorage.removeItem('matchskill_auth_token');
+          localStorage.removeItem('matchskill_auth_user');
         }
         return { ...this.profile };
       }

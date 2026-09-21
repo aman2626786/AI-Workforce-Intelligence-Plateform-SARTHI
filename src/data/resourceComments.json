@@ -1,5 +1,15 @@
 [
   {
+    "id": "comm_1789968505874_kl40d",
+    "resource_id": "res_1789962574289_pzj63",
+    "user_id": "current-user",
+    "user_name": "aman sharma",
+    "content": "good resources.",
+    "status": "APPROVED",
+    "created_at": "2026-09-21T05:28:25.876Z",
+    "updated_at": "2026-09-21T05:28:25.876Z"
+  },
+  {
     "id": "local-1789967054903-vwjio",
     "resource_id": "res_1789962574289_pzj63",
     "user_id": "student_aman_101",
@@ -11,6 +21,16 @@
     "updated_at": "2026-09-21T05:04:14.903Z"
   },
   {
+    "id": "comm_1789968313121_t9zp6",
+    "resource_id": "res_1789962574289_pzj63",
+    "user_id": "current-user",
+    "user_name": "aman sharma",
+    "content": "good resources.",
+    "status": "APPROVED",
+    "created_at": "2026-09-21T05:25:13.121Z",
+    "updated_at": "2026-09-21T05:25:13.121Z"
+  },
+  {
     "id": "local-1789965604071-dch2j",
     "resource_id": "res_1789962574289_pzj63",
     "user_id": "dcafdb9d-c243-4963-9049-4cfd799ff1b0",
@@ -20,16 +40,5 @@
     "status": "APPROVED",
     "created_at": "2026-09-21T04:40:04.072Z",
     "updated_at": "2026-09-21T04:40:04.072Z"
-  },
-  {
-    "id": "local-1789965929502-6pvh5",
-    "resource_id": "res_1789962574289_pzj63",
-    "user_id": "dcafdb9d-c243-4963-9049-4cfd799ff1b0",
-    "user_name": "aman sharma",
-    "email": "aman2626786@gmail.com",
-    "content": "good resources.",
-    "status": "APPROVED",
-    "created_at": "2026-09-21T04:45:29.502Z",
-    "updated_at": "2026-09-21T04:45:29.502Z"
   }
 ]

@@ -12,7 +12,6 @@ export interface LikeRecord {
 }
 
 const LIKES_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'resourceLikes.json');
-const FALLBACK_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'fallbackResources.json');
 
 function readLikesFromDisk(): LikeRecord[] {
   try {
@@ -35,28 +34,9 @@ function writeLikesToDisk(likes: LikeRecord[]): void {
   }
 }
 
-function updateResourceLikeCount(resourceId: string, count: number): void {
-  try {
-    if (fs.existsSync(FALLBACK_FILE_PATH)) {
-      const raw = fs.readFileSync(FALLBACK_FILE_PATH, 'utf-8');
-      const data = JSON.parse(raw);
-      if (Array.isArray(data.resources)) {
-        let changed = false;
-        data.resources = data.resources.map((r: any) => {
-          if (r.id === resourceId || r.slug === resourceId) {
-            changed = true;
-            return { ...r, like_count: count, updated_at: new Date().toISOString() };
-          }
-          return r;
-        });
-        if (changed) {
-          fs.writeFileSync(FALLBACK_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
-        }
-      }
-    }
-  } catch (err) {
-    console.error('Error updating resource like_count:', err);
-  }
+function updateResourceLikeCount(_resourceId: string, _count: number): void {
+  // Counts are dynamically computed by API routes from getLikesForResource
+  // Disk writes to fallbackResources.json are omitted to avoid triggering Next.js Fast Refresh reload
 }
 
 export function getLikesForResource(resourceIdOrSlug: string): { total: number; userLiked: boolean } {

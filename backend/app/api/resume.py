@@ -1,8 +1,10 @@
 import os
 import uuid
 from datetime import datetime, timezone
+import json
+from typing import Optional
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from backend.app.core.config import settings
@@ -35,8 +37,9 @@ _analysis_cache = {}
 @router.post("/analyze-direct")
 async def analyze_resume_direct(
     file: UploadFile = File(...),
+    user_profile_data: Optional[str] = Form(None)
 ):
-    """Directly parse uploaded resume file and return extracted sections & skills."""
+    """Directly parse uploaded resume file using local deterministic model and return extracted sections & skills."""
     ext = Path(file.filename).suffix.lower()
     if ext not in settings.ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -56,9 +59,21 @@ async def analyze_resume_direct(
     with open(temp_path, "wb") as f:
         f.write(contents)
 
+    profile_dict = None
+    if user_profile_data:
+        try:
+            profile_dict = json.loads(user_profile_data)
+        except Exception:
+            profile_dict = None
+
     try:
-        parsed_result = parser.parse_resume(temp_path)
+        parsed_result = parser.parse_resume(temp_path, user_profile_data=profile_dict)
         return parsed_result
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Resume parsing error: {str(exc)}"
+        )
     finally:
         if temp_path.exists():
             try:

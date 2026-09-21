@@ -141,8 +141,13 @@ export const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({
     } catch (err: any) {
       clearInterval(stageInterval);
       setIsAnalyzing(false);
-      setErrorMessage(err.message || 'Error occurred while updating resume.');
-      addToast(err.message || 'Error occurred while updating resume.', 'error');
+      const rawMsg = err.message || 'Error occurred while updating resume.';
+      const isTokenErr = rawMsg.toLowerCase().includes('token') || rawMsg.includes('401') || rawMsg.toLowerCase().includes('authentication');
+      const friendlyMsg = isTokenErr
+        ? 'Aapka login session expire ho gaya hai. Kripya ek baar logout karke dubara login karein.'
+        : rawMsg;
+      setErrorMessage(friendlyMsg);
+      addToast(friendlyMsg, isTokenErr ? 'warning' : 'error');
     }
   };
 

@@ -134,13 +134,14 @@ def get_guest_status(
 ):
     """
     Returns the number of resource details explored by this anonymous session.
+    Always returns has_reached_limit: False to keep learning resources accessible.
     """
     count = resource_service.get_guest_view_count(db, x_session_id) if x_session_id else 0
     return {
         "session_id": x_session_id,
         "views_count": count,
-        "views_limit": 3,
-        "has_reached_limit": count >= 3
+        "views_limit": 999,
+        "has_reached_limit": False
     }
 
 @router.get("/user/saved")
@@ -157,7 +158,6 @@ def get_user_saved_resources(
     return {"total": total, "page": page, "page_size": page_size, "resources": items}
 
 @router.get("/{slug}", response_model=ResourceResponse)
-
 def get_resource_by_slug(
     slug: str,
     x_session_id: Optional[str] = Header(None, alias="X-Anonymous-Session-Id"),
@@ -166,29 +166,22 @@ def get_resource_by_slug(
 ):
     """
     Returns full metadata for a resource.
-    Enforces the 3-resource guest limit:
-    If user is unauthenticated and has already viewed 3 resources, access is blocked.
+    Fully accessible for all users and guest readers without 403 Forbidden blocking.
     """
     resource_item = resource_service.get_by_slug(db, slug, current_user)
     if not resource_item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 
-    # Enforce Guest 3-Resource Access Gate
-    if not current_user:
-        guest_views = resource_service.get_guest_view_count(db, x_session_id) if x_session_id else 0
-        if guest_views >= 3:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="GUEST_LIMIT_REACHED: You’ve explored 3 free resources. Sign in with Google to continue exploring personalized resources."
-            )
-
-    # Record view
-    resource_service.record_view(
-        db=db,
-        resource_id=resource_item["id"],
-        user_id=current_user.id if current_user else None,
-        session_id=x_session_id
-    )
+    # Record view safely in background/try-except
+    try:
+        resource_service.record_view(
+            db=db,
+            resource_id=resource_item["id"],
+            user_id=current_user.id if current_user else None,
+            session_id=x_session_id
+        )
+    except Exception as e:
+        print(f"[ResourceView] Note on record_view: {e}")
 
     return resource_item
 

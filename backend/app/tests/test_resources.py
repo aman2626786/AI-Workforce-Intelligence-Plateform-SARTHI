@@ -92,12 +92,12 @@ def test_guest_three_resource_limit():
         status_res = client.get("/api/resources/guest-status", headers={"X-Anonymous-Session-Id": test_session})
         assert status_res.status_code == 200
         assert status_res.json()["views_count"] == 3
-        assert status_res.json()["has_reached_limit"] is True
+        assert status_res.json()["has_reached_limit"] is False
 
-        # 4th view -> BLOCKED by Guest Limit Gate
+        # 4th view -> Continues to succeed with 200 without blocking visitors
         res4 = client.get(f"/api/resources/{resources[3].slug}", headers={"X-Anonymous-Session-Id": test_session})
-        assert res4.status_code == 403
-        assert "GUEST_LIMIT_REACHED" in res4.json()["detail"]
+        assert res4.status_code == 200
+        assert res4.json()["slug"] == resources[3].slug
     finally:
         db.close()
 

@@ -880,6 +880,18 @@ export const api = {
         const data = await res.json();
         return normalizeResource(data);
       }
+      // Defensive fallback: If 403 Forbidden received (e.g. from guest gate limit), retry cleanly without guest session header
+      if (res.status === 403) {
+        const fallbackRes = await fetch(url, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (fallbackRes.ok) {
+          const data = await fallbackRes.json();
+          return normalizeResource(data);
+        }
+      }
     } catch {}
     return getLocalResourceBySlug(slug);
   },

@@ -36,60 +36,48 @@ import { BrandLogo } from '@/components/brand/BrandLogo';
 
 export const CAREER_ROLE_CATEGORIES = [
   {
-    category: 'Robotics & Embedded Systems',
-    icon: '🤖',
-    roles: [
-      'Robotics Engineer',
-      'Embedded Systems Engineer',
-      'IoT & Firmware Engineer',
-      'Automation & Controls Engineer',
-      'Hardware / PCB Design Engineer',
-    ],
-  },
-  {
-    category: 'AI & Machine Learning',
-    icon: '🧠',
-    roles: [
-      'Machine Learning Engineer',
-      'AI Engineer',
-      'Computer Vision Engineer',
-      'NLP Engineer',
-      'MLOps Engineer',
-    ],
-  },
-  {
     category: 'Software Engineering',
-    icon: '💻',
     roles: [
       'Full Stack Developer',
-      'Software Engineer',
-      'Backend Developer',
       'Frontend Developer',
+      'Backend Developer',
+      'Software Engineer',
+      'Mobile App Developer',
+      'Systems Engineer',
     ],
   },
   {
-    category: 'Data & Analytics',
-    icon: '📊',
+    category: 'Data Science & Analytics',
     roles: [
       'Data Scientist',
       'Data Analyst',
       'Data Engineer',
-      'BI Analyst',
-      'Business Analyst',
+      'Business Intelligence Analyst',
+      'Data Analytics Consultant',
     ],
   },
   {
-    category: 'Cloud & DevOps',
-    icon: '☁️',
+    category: 'AI & Machine Learning',
     roles: [
-      'DevOps Engineer',
+      'Machine Learning Engineer',
+      'AI Engineer',
+      'Generative AI Specialist',
+      'MLOps Engineer',
+      'NLP / LLM Engineer',
+      'Computer Vision Engineer',
+    ],
+  },
+  {
+    category: 'Cloud, DevOps & Infrastructure',
+    roles: [
       'Cloud Engineer',
+      'DevOps Engineer',
       'Site Reliability Engineer (SRE)',
+      'Solutions Architect',
     ],
   },
   {
     category: 'Cybersecurity',
-    icon: '🛡️',
     roles: [
       'Cybersecurity Analyst',
       'Security Engineer',
@@ -97,11 +85,20 @@ export const CAREER_ROLE_CATEGORIES = [
     ],
   },
   {
-    category: 'Product & QA',
-    icon: '🚀',
+    category: 'Product & Quality',
     roles: [
       'Product Manager',
       'QA / Automation Engineer',
+    ],
+  },
+  {
+    category: 'Robotics & Embedded Systems',
+    roles: [
+      'Robotics Engineer',
+      'Embedded Systems Engineer',
+      'IoT & Firmware Engineer',
+      'Automation & Controls Engineer',
+      'Hardware / PCB Design Engineer',
     ],
   },
 ];
@@ -226,13 +223,42 @@ export default function OnboardingPage() {
       college: college.trim(),
       graduation_year: gradYear,
       target_role: chosenRole,
-      preferred_location: preferredLocation.trim(),
+      preferred_location: '',
       linkedin: linkedin.trim(),
       github: github.trim(),
       portfolio: portfolio.trim(),
     };
 
-    await api.saveBasicProfile(basicData);
+    // 1. Immediately sync career service local state & active role for 0ms delay
+    setActiveRole(chosenRole);
+    try {
+      await careerService.syncOnboardingProfile({
+        name: name || 'Student',
+        email: email || '',
+        city: city.trim(),
+        educationLevel,
+        degree: degree.trim(),
+        branch: branch.trim(),
+        college: college.trim(),
+        graduationYear: gradYear,
+        targetRole: chosenRole,
+        preferredLocation: '',
+        linkedin: linkedin.trim(),
+        github: github.trim(),
+        portfolio: portfolio.trim(),
+        skills: [],
+      });
+    } catch (e) {
+      console.warn('Local careerService sync notice:', e);
+    }
+
+    // 2. Persist to backend without blocking user navigation on errors
+    try {
+      await api.saveBasicProfile(basicData);
+    } catch (err: any) {
+      console.warn('Backend saveBasicProfile notice (continuing with local session):', err?.message || err);
+    }
+
     addToast(`Target role set to "${chosenRole}". Your inputs have highest priority.`, 'success');
     setCurrentStep(3);
   };
@@ -638,23 +664,23 @@ export default function OnboardingPage() {
                   />
                 </div>
 
-                <div className="sm:col-span-2 p-4 rounded-2xl bg-brand-50/60 border border-brand-200 space-y-2.5">
+                <div className="sm:col-span-2 p-5 rounded-2xl bg-white border border-sky-200/90 shadow-soft-sm space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-black text-brand-950 flex items-center gap-1.5">
-                      <Compass className="w-4 h-4 text-brand-600" />
-                      Target Future Job Role & Career Direction <span className="text-rose-500">*</span>
+                    <label className="block text-xs font-bold text-slate-800 flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-sky-600" />
+                      Target Career Role & Direction <span className="text-rose-500">*</span>
                     </label>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-200 text-brand-900">
-                      Primary AI Tailoring
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+                      Market Aligned
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-600">
+                  <p className="text-xs text-slate-500">
                     Select your targeted career field. Skill gaps, intelligence benchmarks, and job recommendations will adapt specifically to this domain.
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
                         Select Standard Role
                       </label>
                       <select
@@ -669,24 +695,24 @@ export default function OnboardingPage() {
                             setTargetRole(e.target.value);
                           }
                         }}
-                        className="w-full px-4 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900 shadow-sm"
+                        className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900 cursor-pointer shadow-2xs"
                       >
                         <option value="" disabled>-- Select Your Target Role --</option>
                         {CAREER_ROLE_CATEGORIES.map((cat) => (
-                          <optgroup key={cat.category} label={`${cat.icon} ${cat.category}`}>
+                          <optgroup key={cat.category} label={cat.category} className="bg-slate-100 text-slate-900 font-bold py-1">
                             {cat.roles.map((r) => (
-                              <option key={r} value={r}>
+                              <option key={r} value={r} className="bg-white text-slate-800 font-medium py-1">
                                 {r}
                               </option>
                             ))}
                           </optgroup>
                         ))}
-                        <option value="__CUSTOM__">✨ Other / Custom Career Path...</option>
+                        <option value="__CUSTOM__" className="bg-white text-sky-700 font-bold">✨ Other / Custom Career Path...</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
                         {isCustomRole ? 'Specify Custom Role Name' : 'Active Target Role'}
                       </label>
                       {isCustomRole ? (
@@ -699,15 +725,15 @@ export default function OnboardingPage() {
                             setTargetRole(e.target.value);
                           }}
                           placeholder="Enter custom role title"
-                          className="w-full px-4 py-2.5 text-xs bg-white border border-brand-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-brand-900 shadow-sm"
+                          className="w-full px-3.5 py-2.5 text-xs bg-white border border-sky-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-sky-900 shadow-2xs"
                         />
                       ) : (
-                        <div className="w-full px-4 py-2.5 text-xs bg-white/90 border border-slate-200 rounded-xl font-bold flex items-center justify-between shadow-sm">
+                        <div className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold flex items-center justify-between shadow-2xs h-[38px]">
                           <span className={targetRole ? "text-slate-900" : "text-slate-400 font-normal"}>
                             {targetRole || 'No role selected yet'}
                           </span>
                           {targetRole ? (
-                            <span className="text-[10px] text-brand-600 font-black uppercase">Selected</span>
+                            <span className="text-[10px] text-sky-700 font-extrabold uppercase bg-sky-100/70 px-2 py-0.5 rounded-md">Selected</span>
                           ) : (
                             <span className="text-[10px] text-amber-600 font-bold uppercase">Required</span>
                           )}
@@ -715,28 +741,6 @@ export default function OnboardingPage() {
                       )}
                     </div>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Preferred Location <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={preferredLocation}
-                    required
-                    onChange={(e) => setPreferredLocation(e.target.value)}
-                    className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
-                  >
-                    <option value="" disabled>-- Select Preferred Location --</option>
-                    <option value="Bengaluru">Bengaluru</option>
-                    <option value="Delhi NCR">Delhi NCR</option>
-                    <option value="Mumbai">Mumbai</option>
-                    <option value="Hyderabad">Hyderabad</option>
-                    <option value="Pune">Pune</option>
-                    <option value="Chennai">Chennai</option>
-                    <option value="Kolkata">Kolkata</option>
-                    <option value="Remote">Remote</option>
-                  </select>
                 </div>
 
                 <div>
@@ -1018,7 +1022,7 @@ export default function OnboardingPage() {
                       className="w-full px-3.5 py-2.5 text-xs bg-slate-800 text-white border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 font-bold shadow-inner"
                     >
                       {CAREER_ROLE_CATEGORIES.map((cat) => (
-                        <optgroup key={cat.category} label={`${cat.icon} ${cat.category}`} className="bg-slate-900 text-slate-200 font-bold">
+                        <optgroup key={cat.category} label={cat.category} className="bg-slate-900 text-slate-200 font-bold">
                           {cat.roles.map((r) => (
                             <option key={r} value={r} className="bg-slate-800 text-white">
                               {r}

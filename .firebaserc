@@ -1,6 +1,18 @@
 {
   "projects": {
     "default": "sarthi-2a9e2"
-  }
+  },
+  "targets": {
+    "sarthi-2a9e2": {
+      "hosting": {
+        "matchskills-app": [
+          "matchskills-app"
+        ],
+        "sarthi-default": [
+          "sarthi-2a9e2"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
-

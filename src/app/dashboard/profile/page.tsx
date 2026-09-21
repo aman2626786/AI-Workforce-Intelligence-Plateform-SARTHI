@@ -1372,7 +1372,7 @@ export default function StudentProfilePage() {
               className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
             >
               {CAREER_ROLE_CATEGORIES.map((cat) => (
-                <optgroup key={cat.category} label={`${cat.icon} ${cat.category}`}>
+                <optgroup key={cat.category} label={cat.category}>
                   {cat.roles.map((r) => (
                     <option key={r} value={r}>
                       {r}

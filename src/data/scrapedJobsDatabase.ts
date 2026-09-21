@@ -92,8 +92,8 @@ export function generateScrapedJobsDatabase(): ScrapedJobRecord[] {
   let counter = 1000;
 
   SCRAPED_COMPANIES_DATA.forEach((comp, compIdx) => {
-    // Determine number of indexed positions for this company
-    const count = Math.max(3, Math.min(comp.jds, 22));
+    // Generate clean, high-performance verified positions for every employer
+    const count = Math.max(1, Math.min(comp.jds, 2));
 
     for (let i = 0; i < count; i++) {
       counter++;

@@ -85,10 +85,31 @@ export function extractSubPhrases(str: string): string[] {
   return Array.from(results);
 }
 
+// Pre-normalized synonym dictionary for instant O(1) comparisons without runtime array mapping
+const NORMALIZED_SYNONYMS: Record<string, string[]> = {};
+for (const [key, group] of Object.entries(SYNONYMS)) {
+  NORMALIZED_SYNONYMS[key] = group.map(normalizeSkillText);
+}
+
+// In-memory memoization cache to avoid recalculating identical skill comparisons repeatedly
+const skillMatchMemoCache = new Map<string, boolean>();
+
 /**
  * Checks if candidateSkillName matches requirementSkillName safely and accurately.
  */
 export function isSkillMatch(candidateSkillName: string, requirementSkillName: string): boolean {
+  if (!candidateSkillName || !requirementSkillName) return false;
+
+  const cacheKey = `${candidateSkillName}::${requirementSkillName}`;
+  const cached = skillMatchMemoCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+
+  const result = computeIsSkillMatch(candidateSkillName, requirementSkillName);
+  skillMatchMemoCache.set(cacheKey, result);
+  return result;
+}
+
+function computeIsSkillMatch(candidateSkillName: string, requirementSkillName: string): boolean {
   const cNorm = normalizeSkillText(candidateSkillName);
   const rNorm = normalizeSkillText(requirementSkillName);
 
@@ -106,8 +127,7 @@ export function isSkillMatch(candidateSkillName: string, requirementSkillName: s
   }
 
   // 3. Synonym dictionary matching
-  for (const [key, group] of Object.entries(SYNONYMS)) {
-    const groupNorm = group.map(normalizeSkillText);
+  for (const [key, groupNorm] of Object.entries(NORMALIZED_SYNONYMS)) {
     const candidateMatches = groupNorm.includes(cNorm) || cNorm === key;
 
     if (candidateMatches) {

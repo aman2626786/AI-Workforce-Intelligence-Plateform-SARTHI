@@ -1561,57 +1561,25 @@ def seed_resources_if_empty():
                     description=cat["description"]
                 ))
         db.commit()
-
-        count = db.query(Resource).count()
-        if count < 50:
-            print(f"[SeedResources] Current count: {count}. Seeding 50 verified resources...")
-            existing_urls = {r[0] for r in db.query(Resource.original_url).all()}
-            for item in SEED_RESOURCES:
-                if item["original_url"] in existing_urls:
-                    continue
-                res = Resource(
-                    title=item["title"],
-                    slug=slugify(item["title"]),
-                    resource_type=item["resource_type"],
-                    short_description=item["short_description"],
-                    content_summary=item.get("content_summary"),
-                    original_url=item["original_url"],
-                    source_name=item.get("source_name"),
-                    source_domain=item.get("source_domain"),
-                    author=item.get("author"),
-                    organization=item.get("organization"),
-                    publisher=item.get("publisher"),
-                    published_at=item.get("published_at"),
-                    thumbnail_url=item.get("thumbnail_url"),
-                    language=item.get("language", "en"),
-                    difficulty=item.get("difficulty", "All Levels"),
-                    category=item["category"],
-                    subcategory=item.get("subcategory"),
-                    tags=item.get("tags", []),
-                    hashtags=item.get("hashtags", []),
-                    keywords=item.get("keywords", []),
-                    skills=item.get("skills", []),
-                    target_roles=item.get("target_roles", []),
-                    location=item.get("location"),
-                    deadline=item.get("deadline"),
-                    is_verified=item.get("is_verified", True),
-                    verification_status=item.get("verification_status", "VERIFIED"),
-                    verified_at=datetime.now(timezone.utc),
-                    status=item.get("status", "PUBLISHED"),
-                    view_count=item.get("view_count", 0),
-                    like_count=item.get("like_count", 0),
-                    save_count=item.get("save_count", 0),
-                    share_count=item.get("share_count", 0),
-                    comment_count=item.get("comment_count", 0),
-                )
-                db.add(res)
-            db.commit()
-            print("[SeedResources] Successfully seeded 50 verified resources into database.")
+        print("[SeedResources] Verified categories taxonomy initialized.")
     except Exception as e:
-        print(f"[SeedResources] Error during seeding: {e}")
+        print(f"[SeedResources] Error during categories initialization: {e}")
         db.rollback()
     finally:
         db.close()
 
+def purge_seed_dummy_resources(db: SessionLocal):
+    """Purge pre-seeded mock resources from the database."""
+    try:
+        seed_urls = {item["original_url"] for item in SEED_RESOURCES}
+        deleted_count = db.query(Resource).filter(Resource.original_url.in_(seed_urls)).delete(synchronize_session=False)
+        db.commit()
+        if deleted_count > 0:
+            print(f"[PurgeDummy] Successfully purged {deleted_count} dummy seed resources from database.")
+    except Exception as e:
+        print(f"[PurgeDummy] Note on dummy purge: {e}")
+        db.rollback()
+
 if __name__ == "__main__":
     seed_resources_if_empty()
+

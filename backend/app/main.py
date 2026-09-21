@@ -80,17 +80,52 @@ def run_migrations():
 
 import threading
 
+def cleanup_duplicates_and_dummy_resources():
+    """Removes dummy seed data and deletes duplicate resources created with -1, -2 suffixes."""
+    from backend.app.data.seed_resources import purge_seed_dummy_resources
+    import re
+    db = SessionLocal()
+    try:
+        # 1. Purge pre-seeded dummy resources
+        purge_seed_dummy_resources(db)
+
+        # 2. Deduplicate resources with identical titles or base slugs
+        all_res = db.query(Resource).order_by(Resource.updated_at.desc(), Resource.created_at.desc()).all()
+        seen_keys = set()
+        to_delete = []
+
+        for r in all_res:
+            norm_title = r.title.strip().lower()
+            base_slug = re.sub(r'-\d+$', '', r.slug)
+            key = (norm_title, base_slug)
+            if key in seen_keys:
+                to_delete.append(r.id)
+            else:
+                seen_keys.add(key)
+
+        if to_delete:
+            deleted_dups = db.query(Resource).filter(Resource.id.in_(to_delete)).delete(synchronize_session=False)
+            db.commit()
+            print(f"[Cleanup] Successfully purged {deleted_dups} duplicate resource entries.")
+    except Exception as e:
+        print(f"[Cleanup] Note on duplicate cleanup: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
 def _init_db_in_background():
-    """Run table creation, schema migrations, and seeding asynchronously without blocking server port binding."""
+    """Run table creation, schema migrations, and cleanups asynchronously without blocking server port binding."""
     try:
         print("[Startup] Initializing database tables & migrations...")
         Base.metadata.create_all(bind=engine)
         run_migrations()
         seed_skills_if_empty()
-        seed_resources_if_empty()
-        print("[Startup] Database initialization and seeding completed.")
+        seed_resources_if_empty()  # Only initializes taxonomy categories
+        cleanup_duplicates_and_dummy_resources()
+        print("[Startup] Database initialization, migrations and cleanups completed.")
     except Exception as e:
         print(f"[Startup] Background DB init note: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

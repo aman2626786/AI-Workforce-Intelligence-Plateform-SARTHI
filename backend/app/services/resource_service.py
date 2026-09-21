@@ -142,7 +142,10 @@ class ResourceService:
                 Resource.published_at.desc()
             )
         else:  # "latest"
-            query = query.order_by(Resource.published_at.desc().nullslast(), Resource.created_at.desc())
+            query = query.order_by(
+                func.coalesce(Resource.updated_at, Resource.published_at, Resource.created_at).desc(),
+                Resource.created_at.desc()
+            )
 
         total = query.count()
         offset = (page - 1) * page_size

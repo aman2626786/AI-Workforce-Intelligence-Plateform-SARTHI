@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from backend.app.core.database import get_db
 from backend.app.models.user import User
 from backend.app.models.resource import Resource, ResourceCategory, ResourceLike, SavedResource, ResourceComment
@@ -104,7 +105,7 @@ def admin_list_resources(
     type: Optional[str] = Query(None, alias="type"),
     q: Optional[str] = None,
     page: int = Query(1, ge=1),
-    page_size: int = Query(15, ge=1, le=100),
+    page_size: int = Query(50, ge=1, le=500),
     current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
@@ -123,7 +124,10 @@ def admin_list_resources(
 
     total = query.count()
     offset = (page - 1) * page_size
-    resources = query.order_by(Resource.created_at.desc()).offset(offset).limit(page_size).all()
+    resources = query.order_by(
+        func.coalesce(Resource.updated_at, Resource.published_at, Resource.created_at).desc(),
+        Resource.created_at.desc()
+    ).offset(offset).limit(page_size).all()
 
     items = [
         {
@@ -181,27 +185,70 @@ def admin_list_resources(
         resources=items
     )
 
+@router.post("/cleanup")
+def admin_cleanup_resources(
+    current_admin: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Purge dummy resources and deduplicate repeated resources created with -1, -2 suffixes."""
+    from backend.app.main import cleanup_duplicates_and_dummy_resources
+    cleanup_duplicates_and_dummy_resources()
+    remaining = db.query(Resource).count()
+    return {"status": "success", "message": "Dummy and duplicate resources purged.", "total_remaining": remaining}
+
 @router.post("", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED)
 def admin_create_resource(
     data: ResourceCreate,
     current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    base_slug = data.slug or slugify(data.title)
+    clean_title = data.title.strip()
+    orig_url = str(data.original_url or "https://matchskills.ai/resources").strip()
+    if not orig_url:
+        orig_url = "https://matchskills.ai/resources"
+
+    # 1. Deduplication check: If resource with exact same title or non-default url exists, update and return it!
+    existing = None
+    if orig_url and orig_url != "https://matchskills.ai/resources":
+        existing = db.query(Resource).filter(Resource.original_url == orig_url).first()
+    if not existing:
+        existing = db.query(Resource).filter(func.lower(Resource.title) == clean_title.lower()).first()
+
+    desc = (data.short_description or data.title or "Learning Resource").strip()
+
+    if existing:
+        existing.short_description = desc
+        if data.content_summary:
+            existing.content_summary = data.content_summary
+        if data.content_markdown:
+            existing.content_markdown = data.content_markdown
+        if data.attached_links:
+            existing.attached_links = data.attached_links
+        if data.skills:
+            existing.skills = data.skills
+        if data.tags:
+            existing.tags = data.tags
+        if data.category:
+            existing.category = data.category
+        if data.resource_type:
+            existing.resource_type = data.resource_type
+        existing.is_verified = True
+        existing.verification_status = "VERIFIED"
+        existing.status = data.status or "PUBLISHED"
+        existing.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(existing)
+        return existing
+
+    base_slug = data.slug or slugify(clean_title)
     slug = base_slug
     counter = 1
     while db.query(Resource).filter(Resource.slug == slug).first():
         slug = f"{base_slug}-{counter}"
         counter += 1
 
-    orig_url = str(data.original_url or "https://matchskills.ai/resources").strip()
-    if not orig_url:
-        orig_url = "https://matchskills.ai/resources"
-
-    desc = (data.short_description or data.title or "Learning Resource").strip()
-
     resource = Resource(
-        title=data.title.strip(),
+        title=clean_title,
         slug=slug,
         resource_type=data.resource_type or "LEARNING_RESOURCE",
         short_description=desc,
@@ -233,6 +280,8 @@ def admin_create_resource(
         status=data.status or "PUBLISHED",
         license=data.license,
         license_url=data.license_url,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db.add(resource)
     db.commit()

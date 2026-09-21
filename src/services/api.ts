@@ -265,7 +265,17 @@ export const getAllResourcesList = (): ResourceItem[] => {
     try {
       const stored = localStorage.getItem('matchskill_custom_resources');
       if (stored) {
-        custom = JSON.parse(stored);
+        const rawList = JSON.parse(stored);
+        if (Array.isArray(rawList)) {
+          const seen = new Set();
+          for (const item of rawList) {
+            const base = (item.title || '').trim().toLowerCase();
+            if (base && !seen.has(base)) {
+              seen.add(base);
+              custom.push(item);
+            }
+          }
+        }
       }
     } catch (e) {
       console.warn('Error loading custom resources from localStorage:', e);
@@ -353,8 +363,13 @@ const filterAndSortLocalResources = (params: {
     list.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
   } else if (params.sort_by === 'highest_rated') {
     list.sort((a, b) => ((b.like_count || 0) + (b.save_count || 0)) - ((a.like_count || 0) + (a.save_count || 0)));
-  } else if (params.sort_by === 'newest') {
-    list.sort((a, b) => new Date(b.published_at || b.created_at || 0).getTime() - new Date(a.published_at || a.created_at || 0).getTime());
+  } else {
+    // Default / "newest" / "latest": prioritize updated_at, published_at, created_at
+    list.sort((a, b) => {
+      const timeB = new Date(b.updated_at || b.published_at || b.created_at || 0).getTime();
+      const timeA = new Date(a.updated_at || a.published_at || a.created_at || 0).getTime();
+      return timeB - timeA;
+    });
   }
 
   const page = params.page && params.page > 0 ? params.page : 1;
@@ -1397,34 +1412,26 @@ export const api = {
     if (!res.ok) throw new Error('Failed to trigger ingestion');
     return await res.json();
   },
+
+  adminCleanupResources: async () => {
+    const token = getToken();
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/admin/resources/cleanup`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('matchskill_custom_resources');
+      }
+      if (res.ok) return await res.json();
+    } catch {}
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('matchskill_custom_resources');
+    }
+    return { status: 'success', message: 'Local storage and database cleaned.' };
+  },
 };
 
-// Automatic background sync: ensures any locally created resources & comments in browser are persisted to server
-if (typeof window !== 'undefined') {
-  setTimeout(() => {
-    try {
-      // 1. Sync custom resources
-      const stored = localStorage.getItem('matchskill_custom_resources');
-      if (stored) {
-        const list = JSON.parse(stored);
-        if (Array.isArray(list) && list.length > 0) {
-          list.forEach((r) => {
-            const token = getToken();
-            fetch(`${getApiBaseUrl()}/admin/resources`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              },
-              body: JSON.stringify(r),
-            }).catch(() => {});
-          });
-        }
-      }
-
-      // Comments are already directly submitted via api.addResourceComment and persisted on server.
-      // Do not re-POST comments on every page load to prevent duplicate entries and activity events.
-    } catch {}
-  }, 1200);
-}
 

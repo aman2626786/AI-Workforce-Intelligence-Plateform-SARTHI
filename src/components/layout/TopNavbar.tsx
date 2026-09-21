@@ -43,7 +43,7 @@ const DEFAULT_NOTIFICATIONS: NotificationItem[] = [
     timestamp: '15m ago',
     unread: true,
     type: 'signal',
-    href: '/dashboard/skills',
+    href: '/dashboard/industry-skills',
   },
   {
     id: '2',

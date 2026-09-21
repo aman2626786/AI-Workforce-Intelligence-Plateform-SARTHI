@@ -41,6 +41,12 @@ export default function JobReadinessPage() {
   const [expFilter, setExpFilter] = useState('ALL');
   const [matchScoreFilter, setMatchScoreFilter] = useState<'ALL' | 'HIGH' | 'MED' | 'GAP'>('ALL');
 
+  // Pagination states
+  const [jobsPage, setJobsPage] = useState(1);
+  const [companiesPage, setCompaniesPage] = useState(1);
+  const JOBS_PAGE_SIZE = 18;
+  const COMPANIES_PAGE_SIZE = 18;
+
   // Selected modals state
   const [selectedJob, setSelectedJob] = useState<JobMatch | null>(null);
   const [selectedCompany, setSelectedCompany] = useState<CompanySkillCriteria | null>(null);
@@ -60,8 +66,15 @@ export default function JobReadinessPage() {
     return SCRAPED_COMPANIES_DATA.reduce((acc, curr) => acc + curr.jds, 0);
   }, []);
 
-  // Calculate live candidate match for all 6,869+ scraped jobs
-  const allMatchedJobs: JobMatch[] = useMemo(() => {
+  // Pre-indexed raw jobs Map for O(1) instantaneous lookups
+  const rawJobsMap = useMemo(() => {
+    const map = new Map<string, ScrapedJobRecord>();
+    GLOBAL_SCRAPED_JOBS_DB.forEach((j) => map.set(j.jobId, j));
+    return map;
+  }, []);
+
+  // Calculate live candidate match for all scraped jobs with attached raw meta
+  const allMatchedJobs = useMemo(() => {
     return GLOBAL_SCRAPED_JOBS_DB.map((scraped, index) => {
       const strong: string[] = [];
       const missing: string[] = [];
@@ -118,20 +131,43 @@ export default function JobReadinessPage() {
         department: scraped.domain || scraped.category,
         applyUrl: scraped.applyUrl,
         jdSkills: enrichedJdSkills,
+        rawCategory: scraped.category,
+        rawExperienceLevel: scraped.experienceLevel,
+        rawSourceApi: scraped.sourceApi,
       };
     });
   }, [candidateSkills]);
+
+  // Reset pagination when search / filter changes
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setJobsPage(1);
+    setCompaniesPage(1);
+  };
+
+  const handleCategoryChange = (val: string) => {
+    setCategoryFilter(val);
+    setJobsPage(1);
+    setCompaniesPage(1);
+  };
+
+  const handleExpChange = (val: string) => {
+    setExpFilter(val);
+    setJobsPage(1);
+  };
+
+  const handleMatchScoreChange = (val: 'ALL' | 'HIGH' | 'MED' | 'GAP') => {
+    setMatchScoreFilter(val);
+    setJobsPage(1);
+  };
 
   // Filtered Jobs
   const filteredJobs = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
     return allMatchedJobs.filter((job) => {
-      // Find raw scraped job for experience / source
-      const raw = GLOBAL_SCRAPED_JOBS_DB.find((j) => j.jobId === job.id);
-
-      const matchesCategory = categoryFilter === 'ALL' || (raw && raw.category === categoryFilter);
-      const matchesExp = expFilter === 'ALL' || (raw && raw.experienceLevel === expFilter);
+      const matchesCategory = categoryFilter === 'ALL' || job.rawCategory === categoryFilter;
+      const matchesExp = expFilter === 'ALL' || job.rawExperienceLevel === expFilter;
 
       let matchesScore = true;
       if (matchScoreFilter === 'HIGH') matchesScore = job.matchScore >= 70;
@@ -151,6 +187,13 @@ export default function JobReadinessPage() {
     });
   }, [allMatchedJobs, searchQuery, categoryFilter, expFilter, matchScoreFilter]);
 
+  // Paginated Jobs slice (18 items for fast, responsive rendering)
+  const totalJobPages = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PAGE_SIZE));
+  const paginatedJobs = useMemo(() => {
+    const start = (jobsPage - 1) * JOBS_PAGE_SIZE;
+    return filteredJobs.slice(start, start + JOBS_PAGE_SIZE);
+  }, [filteredJobs, jobsPage]);
+
   // Filtered Companies
   const filteredCompanies = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -169,6 +212,13 @@ export default function JobReadinessPage() {
       return matchesCat && matchesQuery;
     });
   }, [searchQuery, categoryFilter]);
+
+  // Paginated Companies slice
+  const totalCompanyPages = Math.max(1, Math.ceil(filteredCompanies.length / COMPANIES_PAGE_SIZE));
+  const paginatedCompanies = useMemo(() => {
+    const start = (companiesPage - 1) * COMPANIES_PAGE_SIZE;
+    return filteredCompanies.slice(start, start + COMPANIES_PAGE_SIZE);
+  }, [filteredCompanies, companiesPage]);
 
   // Handler to open company modal
   const handleOpenCompanyModal = (comp: ScrapedCompanyInfo) => {
@@ -341,7 +391,7 @@ export default function JobReadinessPage() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder={activeTab === 'jobs' ? "Search jobs by title, company, skill, location..." : "Search companies by name, sector, tech stack..."}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-sky-200 bg-white text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-2xs"
             />
@@ -351,7 +401,7 @@ export default function JobReadinessPage() {
           <div className="lg:col-span-3">
             <select
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full px-3 py-2.5 rounded-xl border border-sky-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-2xs"
             >
               <option value="ALL">All Tech Sectors</option>
@@ -367,7 +417,7 @@ export default function JobReadinessPage() {
               <div className="lg:col-span-2">
                 <select
                   value={expFilter}
-                  onChange={(e) => setExpFilter(e.target.value)}
+                  onChange={(e) => handleExpChange(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border border-sky-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-2xs"
                 >
                   <option value="ALL">All Experience Levels</option>
@@ -380,7 +430,7 @@ export default function JobReadinessPage() {
               <div className="lg:col-span-2">
                 <select
                   value={matchScoreFilter}
-                  onChange={(e) => setMatchScoreFilter(e.target.value as any)}
+                  onChange={(e) => handleMatchScoreChange(e.target.value as any)}
                   className="w-full px-3 py-2.5 rounded-xl border border-sky-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-2xs"
                 >
                   <option value="ALL">All Match Scores</option>
@@ -394,7 +444,10 @@ export default function JobReadinessPage() {
             <div className="lg:col-span-4 flex items-center justify-end">
               <button
                 type="button"
-                onClick={() => { setSearchQuery(''); setCategoryFilter('ALL'); }}
+                onClick={() => {
+                  handleSearchChange('');
+                  handleCategoryChange('ALL');
+                }}
                 className="px-3.5 py-2.5 rounded-xl border border-sky-200 bg-white hover:bg-sky-50 text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-2xs"
               >
                 Reset Filters
@@ -416,140 +469,186 @@ export default function JobReadinessPage() {
               </p>
               <button
                 type="button"
-                onClick={() => { setSearchQuery(''); setCategoryFilter('ALL'); setExpFilter('ALL'); setMatchScoreFilter('ALL'); }}
+                onClick={() => {
+                  handleSearchChange('');
+                  handleCategoryChange('ALL');
+                  handleExpChange('ALL');
+                  handleMatchScoreChange('ALL');
+                }}
                 className="px-4 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-slate-900 transition-all cursor-pointer"
               >
                 Clear All Filters
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredJobs.map((job) => {
-                const rawScraped = GLOBAL_SCRAPED_JOBS_DB.find((j) => j.jobId === job.id);
-
-                return (
-                  <div
-                    key={job.id}
-                    className="p-6 rounded-3xl bg-white border-2 border-sky-200/80 shadow-soft-sm hover:border-sky-300 hover:shadow-soft-md transition-all flex flex-col justify-between gap-5 group"
-                  >
-                    <div className="space-y-4">
-                      {/* Card Header: Logo, Title, Company & Match Score Badge */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 min-w-0">
-                          <div className="w-11 h-11 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 shrink-0 font-black text-sm shadow-2xs">
-                            {job.companyName.slice(0, 2).toUpperCase()}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {paginatedJobs.map((job) => {
+                  return (
+                    <div
+                      key={job.id}
+                      className="p-6 rounded-3xl bg-white border-2 border-sky-200/80 shadow-soft-sm hover:border-sky-300 hover:shadow-soft-md transition-all flex flex-col justify-between gap-5 group"
+                    >
+                      <div className="space-y-4">
+                        {/* Card Header: Logo, Title, Company & Match Score Badge */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div className="w-11 h-11 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 shrink-0 font-black text-sm shadow-2xs">
+                              {job.companyName.slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-base font-bold text-slate-900 group-hover:text-sky-600 transition-colors line-clamp-1">
+                                {job.jobTitle}
+                              </h4>
+                              <p className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 mt-0.5 truncate">
+                                <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span className="truncate">{job.companyName}</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-slate-500 font-normal truncate">{job.department}</span>
+                              </p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <h4 className="text-base font-bold text-slate-900 group-hover:text-sky-600 transition-colors line-clamp-1">
-                              {job.jobTitle}
-                            </h4>
-                            <p className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 mt-0.5 truncate">
-                              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span className="truncate">{job.companyName}</span>
-                              <span className="text-slate-300">•</span>
-                              <span className="text-slate-500 font-normal truncate">{job.department}</span>
+
+                          {/* Match Ring Badge */}
+                          <div className="flex flex-col items-end shrink-0">
+                            <div
+                              className={`px-3 py-1 rounded-full text-xs font-black shadow-2xs border ${
+                                candidateSkills.length === 0
+                                  ? 'bg-slate-50 text-slate-600 border-slate-200'
+                                  : job.matchScore >= 70
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : job.matchScore >= 40
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                              }`}
+                            >
+                              {candidateSkills.length === 0 ? '0% Fit' : `${job.matchScore}% Fit`}
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                              {job.matchedSkillsCount}/{job.totalRequiredSkillsCount} matched
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Location, Salary & Experience */}
+                        <div className="p-3 rounded-2xl bg-sky-50/50 border border-sky-100 space-y-1.5 text-xs text-slate-600 font-medium">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1 text-slate-700 truncate">
+                              <MapPin className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                              <span className="truncate">{job.location}</span>
+                            </span>
+                            <span className="font-bold text-slate-900 shrink-0">{job.salaryRange}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-sky-100/60">
+                            <span>{job.rawExperienceLevel || 'All Levels'}</span>
+                            <span className="text-sky-700 font-semibold">{job.rawSourceApi || 'Verified Feed'}</span>
+                          </div>
+                        </div>
+
+                        {/* Matched Strong Skills */}
+                        <div className="space-y-1.5">
+                          <div className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                            Candidate Matched Skills ({job.strongSkills.length})
+                          </div>
+                          {job.strongSkills.length === 0 ? (
+                            <p className="text-[11px] text-slate-400 italic">
+                              {candidateSkills.length === 0 ? 'Upload resume or add skills to calculate matches.' : 'No direct matches. Add skills to increase fit.'}
                             </p>
-                          </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {job.strongSkills.map((sk) => (
+                                <span
+                                  key={`strong-${job.id}-${sk}`}
+                                  className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1"
+                                >
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  {sk}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
-                        {/* Match Ring Badge */}
-                        <div className="flex flex-col items-end shrink-0">
-                          <div
-                            className={`px-3 py-1 rounded-full text-xs font-black shadow-2xs border ${
-                              candidateSkills.length === 0
-                                ? 'bg-slate-50 text-slate-600 border-slate-200'
-                                : job.matchScore >= 70
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : job.matchScore >= 40
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : 'bg-rose-50 text-rose-700 border-rose-200'
-                            }`}
-                          >
-                            {candidateSkills.length === 0 ? '0% Fit' : `${job.matchScore}% Fit`}
-                          </div>
-                          <span className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                            {job.matchedSkillsCount}/{job.totalRequiredSkillsCount} matched
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Location, Salary & Experience */}
-                      <div className="p-3 rounded-2xl bg-sky-50/50 border border-sky-100 space-y-1.5 text-xs text-slate-600 font-medium">
-                        <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-1 text-slate-700 truncate">
-                            <MapPin className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                            <span className="truncate">{job.location}</span>
-                          </span>
-                          <span className="font-bold text-slate-900 shrink-0">{job.salaryRange}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-sky-100/60">
-                          <span>{rawScraped?.experienceLevel || 'All Levels'}</span>
-                          <span className="text-sky-700 font-semibold">{rawScraped?.sourceApi || 'Verified Feed'}</span>
-                        </div>
-                      </div>
-
-                      {/* Matched Strong Skills */}
-                      <div className="space-y-1.5">
-                        <div className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
-                          Candidate Matched Skills ({job.strongSkills.length})
-                        </div>
-                        {job.strongSkills.length === 0 ? (
-                          <p className="text-[11px] text-slate-400 italic">
-                            {candidateSkills.length === 0 ? 'Upload resume or add skills to calculate matches.' : 'No direct matches. Add skills to increase fit.'}
-                          </p>
-                        ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {job.strongSkills.map((sk) => (
-                              <span
-                                key={`strong-${job.id}-${sk}`}
-                                className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1"
-                              >
-                                <Check className="w-3 h-3 text-emerald-600" />
-                                {sk}
-                              </span>
-                            ))}
+                        {/* Missing Skill Gaps */}
+                        {job.missingSkills.length > 0 && (
+                          <div className="space-y-1.5">
+                            <div className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                              Required Skill Gaps ({job.missingSkills.length})
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {job.missingSkills.map((sk) => (
+                                <span
+                                  key={`missing-${job.id}-${sk}`}
+                                  className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"
+                                >
+                                  <X className="w-3 h-3 text-rose-600" />
+                                  {sk}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
 
-                      {/* Missing Skill Gaps */}
-                      {job.missingSkills.length > 0 && (
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
-                            Required Skill Gaps ({job.missingSkills.length})
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {job.missingSkills.map((sk) => (
-                              <span
-                                key={`missing-${job.id}-${sk}`}
-                                className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"
-                              >
-                                <X className="w-3 h-3 text-rose-600" />
-                                {sk}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      {/* Action Footer */}
+                      <div className="pt-3 border-t border-sky-100 flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-slate-400">
+                          JD ID: <span className="text-slate-700">{job.id}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedJob(job)}
+                          className="text-xs font-bold text-sky-700 hover:text-sky-900 group-hover:translate-x-0.5 transition-transform flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>View Match Analysis</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* Action Footer */}
-                    <div className="pt-3 border-t border-sky-100 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-slate-400">
-                        JD ID: <span className="text-slate-700">{job.id}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedJob(job)}
-                        className="text-xs font-bold text-sky-700 hover:text-sky-900 group-hover:translate-x-0.5 transition-transform flex items-center gap-1 cursor-pointer"
-                      >
-                        <span>View Match Analysis</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+              {/* Jobs Pagination */}
+              {totalJobPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-sky-200/80 shadow-2xs">
+                  <p className="text-xs font-semibold text-slate-600">
+                    Showing <span className="text-sky-700 font-bold">{((jobsPage - 1) * JOBS_PAGE_SIZE) + 1}</span> to{' '}
+                    <span className="text-sky-700 font-bold">{Math.min(jobsPage * JOBS_PAGE_SIZE, filteredJobs.length)}</span> of{' '}
+                    <span className="text-slate-900 font-extrabold">{filteredJobs.length.toLocaleString()}</span> positions
+                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={jobsPage <= 1}
+                      onClick={() => {
+                        setJobsPage((p) => Math.max(1, p - 1));
+                        window.scrollTo({ top: 320, behavior: 'smooth' });
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl border border-sky-200 bg-white hover:bg-sky-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-2xs"
+                    >
+                      Previous
+                    </button>
+
+                    <span className="px-3 py-1.5 rounded-xl bg-sky-50 text-sky-700 font-extrabold text-xs border border-sky-200">
+                      Page {jobsPage} of {totalJobPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={jobsPage >= totalJobPages}
+                      onClick={() => {
+                        setJobsPage((p) => Math.min(totalJobPages, p + 1));
+                        window.scrollTo({ top: 320, behavior: 'smooth' });
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl border border-sky-200 bg-white hover:bg-sky-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-2xs"
+                    >
+                      Next
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -567,80 +666,123 @@ export default function JobReadinessPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredCompanies.map((comp) => (
-                <div
-                  key={comp.name}
-                  className="p-6 rounded-3xl bg-white border-2 border-sky-200/80 shadow-soft-sm hover:border-sky-300 hover:shadow-soft-md transition-all flex flex-col justify-between gap-5 group"
-                >
-                  <div className="space-y-4">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 font-black text-base shadow-2xs">
-                          {comp.name.slice(0, 2).toUpperCase()}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {paginatedCompanies.map((comp) => (
+                  <div
+                    key={comp.name}
+                    className="p-6 rounded-3xl bg-white border-2 border-sky-200/80 shadow-soft-sm hover:border-sky-300 hover:shadow-soft-md transition-all flex flex-col justify-between gap-5 group"
+                  >
+                    <div className="space-y-4">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 font-black text-base shadow-2xs">
+                            {comp.name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="text-base font-bold text-slate-900 group-hover:text-sky-600 transition-colors line-clamp-1">
+                              {comp.name}
+                            </h4>
+                            <span className="inline-block px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 text-[10px] font-bold border border-sky-200 mt-0.5">
+                              {comp.category}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-base font-bold text-slate-900 group-hover:text-sky-600 transition-colors line-clamp-1">
-                            {comp.name}
-                          </h4>
-                          <span className="inline-block px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 text-[10px] font-bold border border-sky-200 mt-0.5">
-                            {comp.category}
-                          </span>
+
+                        <div className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black border border-emerald-200 shrink-0">
+                          {comp.jds} Active JDs
                         </div>
                       </div>
 
-                      <div className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black border border-emerald-200 shrink-0">
-                        {comp.jds} Active JDs
+                      {/* Domain & Location */}
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-1">
+                        <p className="font-semibold text-slate-800 truncate">
+                          Domain: <span className="font-normal text-slate-600">{comp.domain}</span>
+                        </p>
+                        <p className="flex items-center gap-1 text-[11px] text-slate-500">
+                          <MapPin className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                          <span className="truncate">{comp.location}</span>
+                        </p>
+                      </div>
+
+                      {/* Required Skills Stack */}
+                      <div className="space-y-1.5">
+                        <div className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                          Core Tech Stack
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {comp.skills.map((sk) => (
+                            <span
+                              key={`${comp.name}-${sk}`}
+                              className="px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-white text-slate-700 border border-slate-200"
+                            >
+                              {sk}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Domain & Location */}
-                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-1">
-                      <p className="font-semibold text-slate-800 truncate">
-                        Domain: <span className="font-normal text-slate-600">{comp.domain}</span>
-                      </p>
-                      <p className="flex items-center gap-1 text-[11px] text-slate-500">
-                        <MapPin className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                        <span className="truncate">{comp.location}</span>
-                      </p>
-                    </div>
-
-                    {/* Required Skills Stack */}
-                    <div className="space-y-1.5">
-                      <div className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
-                        Core Tech Stack
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {comp.skills.map((sk) => (
-                          <span
-                            key={`${comp.name}-${sk}`}
-                            className="px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-white text-slate-700 border border-slate-200"
-                          >
-                            {sk}
-                          </span>
-                        ))}
-                      </div>
+                    {/* Footer */}
+                    <div className="pt-3 border-t border-sky-100 flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        Verified Employer
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCompanyModal(comp)}
+                        className="text-xs font-bold text-sky-700 hover:text-sky-900 group-hover:translate-x-0.5 transition-transform flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>View Company Profile</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  {/* Footer */}
-                  <div className="pt-3 border-t border-sky-100 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      Verified Employer
-                    </span>
+              {/* Companies Pagination */}
+              {totalCompanyPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-sky-200/80 shadow-2xs">
+                  <p className="text-xs font-semibold text-slate-600">
+                    Showing <span className="text-sky-700 font-bold">{((companiesPage - 1) * COMPANIES_PAGE_SIZE) + 1}</span> to{' '}
+                    <span className="text-sky-700 font-bold">{Math.min(companiesPage * COMPANIES_PAGE_SIZE, filteredCompanies.length)}</span> of{' '}
+                    <span className="text-slate-900 font-extrabold">{filteredCompanies.length.toLocaleString()}</span> employers
+                  </p>
+
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => handleOpenCompanyModal(comp)}
-                      className="text-xs font-bold text-sky-700 hover:text-sky-900 group-hover:translate-x-0.5 transition-transform flex items-center gap-1 cursor-pointer"
+                      disabled={companiesPage <= 1}
+                      onClick={() => {
+                        setCompaniesPage((p) => Math.max(1, p - 1));
+                        window.scrollTo({ top: 320, behavior: 'smooth' });
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl border border-sky-200 bg-white hover:bg-sky-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-2xs"
                     >
-                      <span>View Company Profile</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      Previous
+                    </button>
+
+                    <span className="px-3 py-1.5 rounded-xl bg-sky-50 text-sky-700 font-extrabold text-xs border border-sky-200">
+                      Page {companiesPage} of {totalCompanyPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={companiesPage >= totalCompanyPages}
+                      onClick={() => {
+                        setCompaniesPage((p) => Math.min(totalCompanyPages, p + 1));
+                        window.scrollTo({ top: 320, behavior: 'smooth' });
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl border border-sky-200 bg-white hover:bg-sky-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-2xs"
+                    >
+                      Next
                     </button>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>

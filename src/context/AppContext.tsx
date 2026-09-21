@@ -90,6 +90,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const lastFetchedRef = useRef<{ role: string; location: string }>({ role: '', location: '' });
   const isRefreshingRef = useRef<boolean>(false);
 
+  const getCacheKey = (role: string, type: string) =>
+    `matchskill_cache_${(role || 'default').toLowerCase().replace(/[^a-z0-9]/g, '_')}_${type}`;
+
+  const loadFromCache = (role: string) => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const rawSkills = localStorage.getItem(getCacheKey(role, 'skills'));
+      const rawOverview = localStorage.getItem(getCacheKey(role, 'overview'));
+      const rawJobs = localStorage.getItem(getCacheKey(role, 'jobs'));
+      const rawRoadmap = localStorage.getItem(getCacheKey(role, 'roadmap'));
+
+      if (rawSkills && rawOverview && rawRoadmap) {
+        return {
+          skills: JSON.parse(rawSkills),
+          industryOverview: JSON.parse(rawOverview),
+          jobs: rawJobs ? JSON.parse(rawJobs) : [],
+          roadmap: JSON.parse(rawRoadmap),
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to load from browser storage cache:', e);
+    }
+    return null;
+  };
+
+  const saveToCache = (role: string, data: { skills: any; industryOverview: any; jobs: any; roadmap: any }) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(getCacheKey(role, 'skills'), JSON.stringify(data.skills));
+      localStorage.setItem(getCacheKey(role, 'overview'), JSON.stringify(data.industryOverview));
+      localStorage.setItem(getCacheKey(role, 'jobs'), JSON.stringify(data.jobs));
+      localStorage.setItem(getCacheKey(role, 'roadmap'), JSON.stringify(data.roadmap));
+    } catch (e) {
+      console.warn('Failed to save to browser storage cache:', e);
+    }
+  };
+
   const refreshData = async () => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
@@ -100,7 +137,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (isRefreshingRef.current) return;
     isRefreshingRef.current = true;
-    setIsLoading(true);
+
+    // Fast path: load instantly from local browser storage if present (0ms delay)
+    const currentTargetRole = activeRole || 'Data Scientist';
+    const cachedData = loadFromCache(currentTargetRole);
+    if (cachedData) {
+      setSkills(cachedData.skills);
+      setIndustryOverview(cachedData.industryOverview);
+      setJobs(cachedData.jobs);
+      setRoadmap(cachedData.roadmap);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
     try {
       const profData = await careerService.getStudentProfile();
       const currentRole = profData.targetRole || activeRole || 'Data Scientist';
@@ -127,6 +177,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIndustryOverview(indData);
       setJobs(jobsData);
       setRoadmap(roadmapData);
+
+      // Persist to browser localStorage so next visits/tab switches are instant
+      saveToCache(currentRole, {
+        skills: skillsData,
+        industryOverview: indData,
+        jobs: jobsData,
+        roadmap: roadmapData,
+      });
     } catch (err) {
       console.warn('Career data loading notice:', err);
     } finally {
@@ -212,12 +270,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     const updated = await careerService.addSkillToRoadmap(skill);
     setRoadmap(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(getCacheKey(activeRole, 'roadmap'), JSON.stringify(updated));
+      } catch (e) {}
+    }
     addToast(`"${skill.name}" added to your Career Roadmap!`, 'success');
   };
 
   const toggleRoadmapStatus = async (id: string) => {
     const updated = await careerService.toggleRoadmapStatus(id);
     setRoadmap(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(getCacheKey(activeRole, 'roadmap'), JSON.stringify(updated));
+      } catch (e) {}
+    }
     const updatedProfile = await careerService.getStudentProfile();
     setProfile(updatedProfile);
   };

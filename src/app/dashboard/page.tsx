@@ -110,24 +110,30 @@ export default function DashboardHome() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <ProgressCard
-            title="Industry Skills"
-            percentage={skills.length > 0 ? Math.round((skills.filter((s) => s.gapSeverity === 'Met').length / skills.length) * 100) : 0}
-            color="blue"
-            subtitle={`${skills.filter((s) => s.gapSeverity === 'Met').length} of ${skills.length} verified`}
-          />
-          <ProgressCard
-            title="Career Readiness"
-            percentage={liveReadinessScore}
-            color="emerald"
-            subtitle="Calculated on live JD weights"
-          />
-          <ProgressCard
-            title="Career Roadmap"
-            percentage={roadmap.length > 0 ? Math.round((roadmap.filter((r) => r.status === 'Completed').length / roadmap.length) * 100) : 0}
-            color="blue"
-            subtitle={`${roadmap.filter((r) => r.status === 'Completed').length} of ${roadmap.length} milestones complete`}
-          />
+          <Link href="/dashboard/industry-skills" className="block group hover:scale-[1.02] transition-transform">
+            <ProgressCard
+              title="Industry Skills"
+              percentage={skills.length > 0 ? Math.round((skills.filter((s) => s.gapSeverity === 'Met').length / skills.length) * 100) : 0}
+              color="blue"
+              subtitle={`${skills.filter((s) => s.gapSeverity === 'Met').length} of ${skills.length} verified`}
+            />
+          </Link>
+          <Link href="/dashboard/skill-gap" className="block group hover:scale-[1.02] transition-transform">
+            <ProgressCard
+              title="Career Readiness"
+              percentage={liveReadinessScore}
+              color="emerald"
+              subtitle="Calculated on live JD weights"
+            />
+          </Link>
+          <Link href="/dashboard/roadmap" className="block group hover:scale-[1.02] transition-transform">
+            <ProgressCard
+              title="Career Roadmap"
+              percentage={roadmap.length > 0 ? Math.round((roadmap.filter((r) => r.status === 'Completed').length / roadmap.length) * 100) : 0}
+              color="blue"
+              subtitle={`${roadmap.filter((r) => r.status === 'Completed').length} of ${roadmap.length} milestones complete`}
+            />
+          </Link>
           <Link href="/dashboard/job-readiness" className="block group">
             <div className="p-5 rounded-2xl bg-gradient-to-br from-sky-50 to-white border-2 border-sky-200/90 shadow-2xs hover:border-sky-400 hover:shadow-soft-md transition-all h-full flex flex-col justify-between cursor-pointer">
               <div>

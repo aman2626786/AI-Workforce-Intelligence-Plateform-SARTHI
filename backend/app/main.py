@@ -78,28 +78,37 @@ def run_migrations():
             print(f"[Migration] Auto-migration note: {e}")
 
 
-# Ensure DB tables exist & run migrations
-Base.metadata.create_all(bind=engine)
-run_migrations()
-seed_skills_if_empty()
-seed_resources_if_empty()
+import threading
 
+def _init_db_in_background():
+    """Run table creation, schema migrations, and seeding asynchronously without blocking server port binding."""
+    try:
+        print("[Startup] Initializing database tables & migrations...")
+        Base.metadata.create_all(bind=engine)
+        run_migrations()
+        seed_skills_if_empty()
+        seed_resources_if_empty()
+        print("[Startup] Database initialization and seeding completed.")
+    except Exception as e:
+        print(f"[Startup] Background DB init note: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Create DB tables
-    Base.metadata.create_all(bind=engine)
-    # 2. Seed master skills & verified resources
-    seed_skills_if_empty()
-    seed_resources_if_empty()
-    # 3. Start background job crawler scheduler
+    # 1. Run database initialization in background thread so Uvicorn binds to $PORT instantly
+    init_thread = threading.Thread(target=_init_db_in_background, daemon=True)
+    init_thread.start()
+
+    # 2. Start background job crawler scheduler
     try:
         scheduler.start()
     except Exception as e:
         print(f"[Startup] Note on scheduler start: {e}")
     yield
     # Shutdown scheduler cleanly
-    scheduler.stop()
+    try:
+        scheduler.stop()
+    except Exception:
+        pass
 
 app = FastAPI(
     title="SkillVantage AI - Career Intelligence Backend",
@@ -178,3 +187,11 @@ def health_check():
         "parser": "Deterministic / Local (PyMuPDF & python-docx)",
         "checks": {"database": database_status},
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 10000))
+    print(f"[Main] Launching SkillVantage API on 0.0.0.0:{port}...")
+    uvicorn.run("backend.app.main:app", host="0.0.0.0", port=port, reload=False)
+

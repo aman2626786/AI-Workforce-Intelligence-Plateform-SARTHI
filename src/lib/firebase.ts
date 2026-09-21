@@ -23,9 +23,12 @@ const firebaseConfig = {
 };
 
 
+import { getFirestore, Firestore } from 'firebase/firestore';
+
 // Singleton Firebase initialization
 let app: FirebaseApp;
 let auth: Auth;
+let db: Firestore;
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
@@ -34,8 +37,10 @@ if (!getApps().length) {
 }
 
 auth = getAuth(app);
+db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-export { app, auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged };
+export { app, auth, db, googleProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged };
 export type { FirebaseUser };
+

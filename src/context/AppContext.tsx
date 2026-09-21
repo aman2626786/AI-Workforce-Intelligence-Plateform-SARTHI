@@ -29,6 +29,9 @@ interface AppContextType {
   setIsAiDrawerOpen: (open: boolean) => void;
   aiDrawerTopic: string;
   openAiDrawerWithTopic: (topic: string) => void;
+  isFeedbackModalOpen: boolean;
+  setIsFeedbackModalOpen: (open: boolean) => void;
+  openFeedbackModal: () => void;
   toasts: Toast[];
   addToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
   removeToast: (id: string) => void;
@@ -58,6 +61,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState<boolean>(false);
   const [aiDrawerTopic, setAiDrawerTopic] = useState<string>('General Career Intelligence');
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState<boolean>(false);
+  const openFeedbackModal = () => setIsFeedbackModalOpen(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -258,6 +263,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsAiDrawerOpen,
         aiDrawerTopic,
         openAiDrawerWithTopic,
+        isFeedbackModalOpen,
+        setIsFeedbackModalOpen,
+        openFeedbackModal,
         toasts,
         addToast,
         removeToast,

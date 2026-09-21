@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { Compass, X } from 'lucide-react';
+import { Compass, X, MessageSquareHeart } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
-  const { logout } = useApp();
+  const { logout, openFeedbackModal } = useApp();
 
   type NavItem = {
     label: string;
@@ -111,8 +111,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Bottom Section - Settings & Logout */}
+        {/* Bottom Section - Feedback, Settings & Logout */}
         <div className="p-4 border-t border-slate-100 space-y-2">
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              openFeedbackModal();
+            }}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[15px] font-bold text-sky-700 bg-sky-50/70 hover:bg-sky-100/70 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <MessageSquareHeart className="w-4 h-4 text-sky-600" />
+              <span>Feedback</span>
+            </span>
+            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-200/80 text-sky-800">
+              Share
+            </span>
+          </button>
+
           <Link
             href="/dashboard/settings"
             onClick={onClose}

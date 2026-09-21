@@ -3,6 +3,8 @@ import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 import { ToastContainer } from "@/components/ui/ToastContainer";
 import { AiAssistantDrawer } from "@/components/features/AiAssistantDrawer";
+import { BottomFeedbackBar } from "@/components/feedback/BottomFeedbackBar";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 
 export const metadata: Metadata = {
   title: "MatchSkill - AI Workforce & Career Intelligence Platform",
@@ -27,6 +29,8 @@ export default function RootLayout({
       >
         <AppProvider>
           {children}
+          <BottomFeedbackBar />
+          <FeedbackModal />
           <ToastContainer />
           <AiAssistantDrawer />
         </AppProvider>

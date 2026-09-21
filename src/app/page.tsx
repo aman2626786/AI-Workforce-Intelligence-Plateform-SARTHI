@@ -9,6 +9,7 @@ import { ShareModal } from '@/components/resources/ShareModal';
 import { GuestLimitModal } from '@/components/resources/GuestLimitModal';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { api, ResourceItem, getToken } from '@/services/api';
+import { useApp } from '@/context/AppContext';
 import {
   ArrowRight,
   Compass,
@@ -216,6 +217,7 @@ const HERO_ROLES = [
 
 export default function LandingPage() {
   const router = useRouter();
+  const { openFeedbackModal } = useApp();
 
   // Feeds
   const [recommended, setRecommended] = useState<ResourceItem[]>([]);
@@ -912,6 +914,20 @@ export default function LandingPage() {
               <Link href="/" className="hover:text-sky-700 transition-colors">Home</Link>
               <Link href="/resources" className="hover:text-sky-700 transition-colors">Resources</Link>
               <Link href="/#how-it-works" className="hover:text-sky-700 transition-colors">How It Works</Link>
+              <button
+                type="button"
+                onClick={openFeedbackModal}
+                className="hover:text-sky-700 transition-colors cursor-pointer"
+              >
+                Feedback
+              </button>
+              <a
+                href="mailto:aiworkforceintelligence@gmail.com"
+                className="hover:text-sky-700 transition-colors"
+                title="Contact Support: aiworkforceintelligence@gmail.com"
+              >
+                Support
+              </a>
             </nav>
             <span className="h-4 w-px bg-sky-200" />
             <p className="text-xs text-slate-500 font-medium">© 2026 MatchSkill. All rights reserved.</p>

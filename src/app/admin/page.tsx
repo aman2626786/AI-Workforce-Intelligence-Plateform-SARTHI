@@ -74,6 +74,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { api, API_BASE_URL, ResourceItem } from '@/services/api';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { FormattedDocumentRenderer } from '@/components/resources/FormattedDocumentRenderer';
 import { SCRAPED_COMPANIES_DATA, ScrapedCompanyInfo } from '@/data/scrapedCompaniesData';
 import {
@@ -851,12 +852,12 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
     <div className="min-h-screen bg-gradient-to-b from-sky-100/50 via-sky-50/30 to-white text-slate-900 flex flex-col md:flex-row font-sans selection:bg-sky-500 selection:text-white">
       {/* Mobile Top Header */}
       <div className="md:hidden flex items-center justify-between p-4 bg-white border-b-2 border-sky-200">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white shadow-sm shadow-sky-600/30">
-            <ShieldCheck className="w-4 h-4" />
-          </div>
-          <span className="font-black text-sm text-slate-900">MatchSkill Admin</span>
-        </div>
+        <Link href="/" className="flex items-center gap-2">
+          <BrandLogo size="sm" />
+          <span className="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 text-[9px] font-black uppercase tracking-wider border border-sky-200">
+            Admin
+          </span>
+        </Link>
         <button
           onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
           className="p-2 text-slate-700 hover:text-sky-700 rounded-lg bg-sky-50 border border-sky-200"
@@ -878,20 +879,18 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
         <div className="flex flex-col">
           {/* Sidebar Brand Header */}
           <div className="p-4 border-b border-sky-100">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 via-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-600/30">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
+            <Link href="/" className="flex items-center gap-3 group">
+              <BrandLogo size="md" showText={false} />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-black text-slate-900 text-sm tracking-tight">MatchSkill</span>
+                  <span className="font-black text-slate-900 text-sm tracking-tight group-hover:text-sky-600 transition-colors">MatchSkill</span>
                   <span className="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 text-[9px] font-black uppercase tracking-wider border border-sky-200">
                     Admin
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">Workforce Telemetry Ops</p>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Navigation Sections (Compact & Perfectly Balanced) */}

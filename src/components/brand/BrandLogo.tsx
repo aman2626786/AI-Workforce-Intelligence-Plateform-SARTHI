@@ -11,28 +11,28 @@ type BrandLogoProps = {
 
 const sizeClasses = {
   sm: {
-    wrapper: 'gap-2',
-    mark: 'w-8 h-8',
-    full: 'h-8 w-auto',
-    text: 'text-base',
-  },
-  md: {
     wrapper: 'gap-2.5',
     mark: 'w-9 h-9',
     full: 'h-9 w-auto',
-    text: 'text-xl',
+    text: 'text-base sm:text-lg',
+  },
+  md: {
+    wrapper: 'gap-3',
+    mark: 'w-10 h-10',
+    full: 'h-10 w-auto',
+    text: 'text-xl sm:text-2xl',
   },
   lg: {
-    wrapper: 'gap-3',
-    mark: 'w-12 h-12',
-    full: 'h-12 w-auto',
-    text: 'text-2xl',
+    wrapper: 'gap-3.5',
+    mark: 'w-14 h-14',
+    full: 'h-14 w-auto',
+    text: 'text-2xl sm:text-3xl',
   },
   xl: {
-    wrapper: 'gap-3.5',
-    mark: 'w-16 h-16',
-    full: 'h-16 w-auto',
-    text: 'text-3xl',
+    wrapper: 'gap-4',
+    mark: 'w-20 h-20',
+    full: 'h-20 w-auto',
+    text: 'text-3xl sm:text-4xl',
   },
 };
 
@@ -50,9 +50,9 @@ export function BrandLogo({
     return (
       <span className={`inline-flex items-center ${className}`}>
         <img
-          src="/logo-full.png"
+          src="/logo.png"
           alt="MatchSkill"
-          className={`${classes.full} object-contain ${markClassName}`}
+          className={`${classes.full} object-contain drop-shadow-sm ${markClassName}`}
         />
       </span>
     );
@@ -61,11 +61,11 @@ export function BrandLogo({
   return (
     <span className={`inline-flex items-center ${classes.wrapper} ${className}`}>
       <span
-        className={`${classes.mark} shrink-0 rounded-xl bg-white/90 flex items-center justify-center p-0.5 shadow-2xs border border-sky-100/80 overflow-hidden ${markClassName}`}
+        className={`${classes.mark} shrink-0 flex items-center justify-center overflow-hidden drop-shadow-xs transition-transform duration-200 ${markClassName}`}
         aria-hidden="true"
       >
         <img
-          src="/logo-mark.png"
+          src="/logo.png"
           alt="MatchSkill Mark"
           className="w-full h-full object-contain"
         />
@@ -80,3 +80,4 @@ export function BrandLogo({
     </span>
   );
 }
+

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { api } from '@/services/api';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import {
   Menu,
   Search,
@@ -163,12 +164,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
           href="/"
           className="flex items-center gap-2.5 group cursor-pointer transition-transform hover:scale-105 duration-200 shrink-0"
         >
-          <div className="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white shadow-sm shadow-sky-600/20 group-hover:bg-slate-900 transition-colors">
-            <Compass className="w-4.5 h-4.5" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors">
-            MatchSkill
-          </span>
+          <BrandLogo size="sm" textClassName="group-hover:[&>span:first-child]:text-slate-800 group-hover:[&>span:last-child]:text-sky-700 transition-colors" />
         </Link>
       </div>
 

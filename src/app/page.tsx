@@ -7,6 +7,7 @@ import { LandingHeader } from '@/components/layout/LandingHeader';
 import { ResourceCard } from '@/components/resources/ResourceCard';
 import { ShareModal } from '@/components/resources/ShareModal';
 import { GuestLimitModal } from '@/components/resources/GuestLimitModal';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { api, ResourceItem, getToken } from '@/services/api';
 import {
   ArrowRight,
@@ -901,13 +902,9 @@ export default function LandingPage() {
       <footer className="py-10 bg-gradient-to-b from-sky-50/60 via-white to-sky-100/30 mt-auto border-t border-sky-200/90">
         <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white shadow-sm shadow-sky-600/20">
-              <Compass className="w-4.5 h-4.5" />
-            </div>
-            <div>
-              <span className="font-black text-base tracking-tight text-slate-900">MatchSkill</span>
-              <p className="text-xs text-slate-500 font-medium">Real-Time Labor & Skill Intelligence Platform</p>
-            </div>
+            <BrandLogo size="md" />
+            <span className="h-4 w-px bg-sky-200 hidden sm:block" />
+            <p className="text-xs text-slate-500 font-medium hidden sm:block">Real-Time Labor & Skill Intelligence Platform</p>
           </div>
 
           <div className="flex items-center gap-6">

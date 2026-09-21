@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Compass, ArrowRight, LayoutDashboard } from 'lucide-react';
+import { ArrowRight, LayoutDashboard } from 'lucide-react';
 import { getToken } from '@/services/api';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 export const LandingHeader: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -17,12 +18,7 @@ export const LandingHeader: React.FC = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo - MatchSkill (No AI badge) */}
         <Link href="/" className="flex items-center gap-2.5 group cursor-pointer transition-transform hover:scale-105 duration-200">
-          <div className="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white shadow-sm shadow-sky-600/20 group-hover:bg-slate-900 transition-colors">
-            <Compass className="w-4.5 h-4.5" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors">
-            MatchSkill
-          </span>
+          <BrandLogo size="sm" textClassName="group-hover:[&>span:first-child]:text-slate-800 group-hover:[&>span:last-child]:text-sky-700 transition-colors" />
         </Link>
 
         {/* Navigation Links - Cursor Friendly with Zoom & Highlight on Hover */}

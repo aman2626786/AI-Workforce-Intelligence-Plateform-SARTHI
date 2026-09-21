@@ -81,6 +81,8 @@ def run_migrations():
 # Ensure DB tables exist & run migrations
 Base.metadata.create_all(bind=engine)
 run_migrations()
+seed_skills_if_empty()
+seed_resources_if_empty()
 
 
 @asynccontextmanager

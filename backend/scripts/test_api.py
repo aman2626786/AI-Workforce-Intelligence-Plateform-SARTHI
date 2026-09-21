@@ -72,11 +72,15 @@ def test_full_api_flow():
     print(f"  - Skills extracted: {len(analysis['skills'])} skills")
     print(f"  - Conflicts flagged: {len(analysis['conflicts'])}")
 
-    # Verify conflict was correctly caught: User City "Jaipur" vs Resume City "Bengaluru"
-    assert len(analysis["conflicts"]) == 1
-    assert analysis["conflicts"][0]["field_name"] == "Current City"
-    assert analysis["conflicts"][0]["user_value"] == "Jaipur"
-    assert analysis["conflicts"][0]["resume_value"] == "Bengaluru"
+    # Verify the important conflict was correctly caught: User City "Jaipur" vs Resume City "Bengaluru".
+    # The parser may detect additional profile conflicts as coverage improves.
+    city_conflicts = [
+        item for item in analysis["conflicts"]
+        if item["field_name"] == "Current City"
+    ]
+    assert len(city_conflicts) == 1
+    assert city_conflicts[0]["user_value"] == "Jaipur"
+    assert city_conflicts[0]["resume_value"] == "Bengaluru"
     print("[PASS] Conflict Detection accurately preserved User City 'Jaipur' over Resume City 'Bengaluru'!")
 
     # 6. Confirm & Persist Profile (Step 5 -> 6)

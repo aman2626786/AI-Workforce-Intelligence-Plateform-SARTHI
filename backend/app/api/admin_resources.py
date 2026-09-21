@@ -18,7 +18,6 @@ from backend.app.schemas.resource import (
 router = APIRouter(
     prefix="/admin/resources",
     tags=["Admin Resource Intelligence"],
-    dependencies=[Depends(require_admin)],
 )
 
 @router.get("/activity")
@@ -27,6 +26,7 @@ def get_resource_activity(
     activity_type: Optional[str] = Query(None, alias="type"),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     from_date = datetime.fromisoformat(date_from) if date_from else None
@@ -83,7 +83,11 @@ def get_resource_activity(
     return {"total": len(activity), "activity": activity[:limit]}
 
 @router.delete("/comments/{comment_id}")
-def delete_resource_comment(comment_id: str, db: Session = Depends(get_db)):
+def delete_resource_comment(
+    comment_id: str,
+    current_admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     comment = db.query(ResourceComment).filter(ResourceComment.id == comment_id).first()
     if not comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
@@ -101,6 +105,7 @@ def admin_list_resources(
     q: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(15, ge=1, le=100),
+    current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     query = db.query(Resource)
@@ -179,6 +184,7 @@ def admin_list_resources(
 @router.post("", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED)
 def admin_create_resource(
     data: ResourceCreate,
+    current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     base_slug = data.slug or slugify(data.title)
@@ -231,6 +237,7 @@ def admin_create_resource(
 def admin_update_resource(
     id: str,
     data: ResourceUpdate,
+    current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     resource = db.query(Resource).filter(Resource.id == id).first()
@@ -252,7 +259,11 @@ def admin_update_resource(
     return resource
 
 @router.delete("/{id}")
-def admin_delete_resource(id: str, db: Session = Depends(get_db)):
+def admin_delete_resource(
+    id: str,
+    current_admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     resource = db.query(Resource).filter(Resource.id == id).first()
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
@@ -261,7 +272,11 @@ def admin_delete_resource(id: str, db: Session = Depends(get_db)):
     return {"status": "success", "message": "Resource deleted"}
 
 @router.post("/{id}/publish")
-def admin_publish_resource(id: str, db: Session = Depends(get_db)):
+def admin_publish_resource(
+    id: str,
+    current_admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     resource = db.query(Resource).filter(Resource.id == id).first()
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
@@ -270,7 +285,11 @@ def admin_publish_resource(id: str, db: Session = Depends(get_db)):
     return {"status": "success", "message": "Resource published"}
 
 @router.post("/{id}/archive")
-def admin_archive_resource(id: str, db: Session = Depends(get_db)):
+def admin_archive_resource(
+    id: str,
+    current_admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     resource = db.query(Resource).filter(Resource.id == id).first()
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
@@ -282,6 +301,7 @@ def admin_archive_resource(id: str, db: Session = Depends(get_db)):
 def admin_verify_resource(
     id: str,
     verification_status: str = Query(..., description="UNVERIFIED, VERIFIED, NEEDS_REVIEW"),
+    current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     resource = db.query(Resource).filter(Resource.id == id).first()
@@ -295,7 +315,10 @@ def admin_verify_resource(
     return {"status": "success", "verification_status": verification_status, "is_verified": resource.is_verified}
 
 @router.post("/fetch-metadata", response_model=ResourceMetadataFetchResponse)
-async def admin_fetch_metadata(data: ResourceMetadataFetchRequest):
+async def admin_fetch_metadata(
+    data: ResourceMetadataFetchRequest,
+    current_admin: User = Depends(require_admin),
+):
     """
     Extracts OpenGraph, schema.org, title, author, and autodetects canonical skills from external URL.
     Does NOT auto-publish. Gives structured preview to admin for review.
@@ -316,6 +339,7 @@ async def admin_trigger_ingest(
     source: str = Query("arxiv", description="arxiv, rss"),
     topic: str = Query("cs.AI"),
     limit: int = Query(5, ge=1, le=20),
+    current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """

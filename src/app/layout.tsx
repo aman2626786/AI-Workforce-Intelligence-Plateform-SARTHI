@@ -7,6 +7,11 @@ import { AiAssistantDrawer } from "@/components/features/AiAssistantDrawer";
 export const metadata: Metadata = {
   title: "MatchSkill - AI Workforce & Career Intelligence Platform",
   description: "MatchSkill - Student-focused AI career intelligence platform. Understand industry demands, discover skill gaps, and match verified learning resources.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/logo-mark.png",
+  },
 };
 
 export default function RootLayout({

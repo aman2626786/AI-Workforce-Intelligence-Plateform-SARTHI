@@ -15,12 +15,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
   const { logout } = useApp();
 
-  const navItems = [
+  type NavItem = {
+    label: string;
+    href: string;
+    isNew?: boolean;
+    isUpcoming?: boolean;
+  };
+
+  const navItems: NavItem[] = [
     { label: 'Home', href: '/dashboard' },
     { label: 'Industry Skills', href: '/dashboard/industry-skills' },
     { label: 'Skill Gap', href: '/dashboard/skill-gap' },
     { label: 'Career Roadmap', href: '/dashboard/roadmap' },
-    { label: 'Job Readiness', href: '/dashboard/job-readiness', isUpcoming: true },
+    { label: 'Job Readiness', href: '/dashboard/job-readiness' },
     { label: 'Resource Hub', href: '/dashboard/resources', isNew: true },
     { label: 'Saved Resources', href: '/dashboard/resources/saved' },
   ];

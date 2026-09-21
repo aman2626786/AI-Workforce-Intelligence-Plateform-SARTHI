@@ -166,6 +166,10 @@ export const authService = {
       localStorage.removeItem('skillvantage_auth_user');
       localStorage.removeItem('matchskill_auth_user');
       localStorage.removeItem('skillvantage_user_profile');
+      try {
+        const { careerService } = require('./careerService');
+        careerService.resetProfileForNewUser();
+      } catch {}
     }
   },
 
@@ -176,6 +180,10 @@ export const authService = {
       if (data.access_token) {
         setToken(data.access_token);
       }
+      try {
+        const { careerService } = require('./careerService');
+        careerService.resetProfileForNewUser({ name: data.name, email: data.email, avatar_url: data.avatar_url });
+      } catch {}
     }
   },
 

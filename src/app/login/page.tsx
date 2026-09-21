@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Compass,
   ArrowRight,
   ShieldCheck,
   Loader2,
@@ -16,6 +15,7 @@ import {
 import { authService } from '@/services/authService';
 import { useApp } from '@/context/AppContext';
 import { careerService } from '@/services/careerService';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -95,12 +95,7 @@ export default function LoginPage() {
           href="/"
           className="flex items-center gap-2.5 group cursor-pointer transition-transform hover:scale-105"
         >
-          <div className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-md shadow-sky-600/20 group-hover:bg-slate-900 group-hover:shadow-lg transition-all duration-200">
-            <Compass className="w-5 h-5" />
-          </div>
-          <span className="text-xl font-black tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors">
-            MatchSkill
-          </span>
+          <BrandLogo size="md" />
         </Link>
 
         <div className="flex items-center gap-2.5">

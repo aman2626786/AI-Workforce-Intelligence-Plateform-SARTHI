@@ -18,11 +18,11 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Compass,
   Sparkles,
   LayoutList,
   LayoutGrid,
 } from 'lucide-react';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 const TYPE_TABS = [
   { id: 'ALL', label: 'All Resources' },
@@ -455,13 +455,9 @@ function ResourceHubContent() {
       <footer className="py-10 bg-gradient-to-b from-sky-50/60 via-white to-sky-100/30 mt-auto border-t border-sky-200/90">
         <div className="w-full px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white shadow-sm shadow-sky-600/20">
-              <Compass className="w-4.5 h-4.5" />
-            </div>
-            <div>
-              <span className="font-black text-base tracking-tight text-slate-900">MatchSkill</span>
-              <p className="text-xs text-slate-500 font-medium">Real-Time Labor & Skill Intelligence Platform</p>
-            </div>
+            <BrandLogo size="md" />
+            <span className="h-4 w-px bg-sky-200 hidden sm:block" />
+            <p className="text-xs text-slate-500 font-medium hidden sm:block">Real-Time Labor & Skill Intelligence Platform</p>
           </div>
 
           <div className="flex items-center gap-6">

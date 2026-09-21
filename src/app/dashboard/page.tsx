@@ -48,12 +48,21 @@ export default function DashboardHome() {
           </p>
         </div>
 
-        <Link
-          href="/dashboard/industry-skills"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 hover:bg-sky-50 text-sm font-semibold text-slate-800 shadow-2xs hover:border-sky-300 transition-all cursor-pointer"
-        >
-          Explore Industry Intelligence
-        </Link>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            href="/dashboard/job-readiness"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer"
+          >
+            <span>Explore 6,869+ Jobs & 310+ Companies</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+          <Link
+            href="/dashboard/industry-skills"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-sky-200 hover:bg-sky-50 text-xs sm:text-sm font-semibold text-slate-800 shadow-2xs hover:border-sky-300 transition-all cursor-pointer"
+          >
+            Industry Skills
+          </Link>
+        </div>
       </div>
 
       {/* CAREER GOAL CARD */}
@@ -100,7 +109,7 @@ export default function DashboardHome() {
           <span className="text-xs text-slate-500 font-medium">Live Intelligence Sync</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <ProgressCard
             title="Industry Skills"
             percentage={skills.length > 0 ? Math.round((skills.filter((s) => s.gapSeverity === 'Met').length / skills.length) * 100) : 0}
@@ -119,6 +128,19 @@ export default function DashboardHome() {
             color="blue"
             subtitle={`${roadmap.filter((r) => r.status === 'Completed').length} of ${roadmap.length} milestones complete`}
           />
+          <Link href="/dashboard/job-readiness" className="block group">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-sky-50 to-white border-2 border-sky-200/90 shadow-2xs hover:border-sky-400 hover:shadow-soft-md transition-all h-full flex flex-col justify-between cursor-pointer">
+              <div>
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-700">Hiring Employers</span>
+                <div className="text-2xl font-black text-slate-900 mt-1">310+ Companies</div>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">6,869+ active scraped positions</p>
+              </div>
+              <div className="text-xs font-bold text-sky-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform mt-3">
+                <span>View Matched JDs</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
 

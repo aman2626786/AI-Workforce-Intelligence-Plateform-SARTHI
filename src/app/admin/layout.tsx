@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   ShieldCheck,
-  Compass,
   Lock,
   LogOut,
   RefreshCw,
@@ -15,6 +14,7 @@ import {
   EyeOff,
   Terminal,
 } from 'lucide-react';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -84,9 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="w-full max-w-md bg-white/95 backdrop-blur-md rounded-3xl border-2 border-sky-300 shadow-xl shadow-sky-600/10 p-6 sm:p-9 space-y-6 transition-all hover:border-sky-400 hover:shadow-2xl hover:shadow-sky-600/15 relative z-10">
           {/* Top Brand & Passcode Badge */}
           <div className="text-center space-y-2.5">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white mx-auto shadow-lg shadow-sky-600/25 border border-sky-400/40">
-              <KeyRound className="w-7 h-7" />
-            </div>
+            <BrandLogo size="lg" showText={false} className="justify-center" />
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-extrabold border border-sky-200 shadow-2xs">
               <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />

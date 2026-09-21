@@ -32,6 +32,7 @@ import { api, BasicProfileData, ResumeAnalysisResult, ExtractedSkill } from '@/s
 import { useApp } from '@/context/AppContext';
 import { careerService } from '@/services/careerService';
 import { authService } from '@/services/authService';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 export const CAREER_ROLE_CATEGORIES = [
   {
@@ -415,13 +416,7 @@ export default function OnboardingPage() {
       {/* Top Navbar */}
       <header className="w-full bg-white border-b border-slate-200 py-4 px-6 sm:px-10 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-600/20">
-            <Compass className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="font-black text-slate-900 tracking-tight text-base">MatchSkill</span>
-            <p className="text-[10px] text-slate-500 font-medium">From Skills to Careers</p>
-          </div>
+          <BrandLogo size="md" />
         </Link>
 
         <div className="text-xs font-bold text-slate-500">

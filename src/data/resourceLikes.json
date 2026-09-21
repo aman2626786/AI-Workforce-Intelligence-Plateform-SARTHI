@@ -1,5 +1,21 @@
 [
   {
+    "id": "like_1789970258869_ktzzk",
+    "resource_id": "res_1789962574289_pzj63",
+    "user_id": "demo_user_1",
+    "user_name": "Alex Chen",
+    "email": "alex.chen@student.edu",
+    "created_at": "2026-09-21T05:57:38.869Z"
+  },
+  {
+    "id": "like_1789970234336_icbl1",
+    "resource_id": "res_1789962574289_pzj63",
+    "user_id": "HjykOLWjZ1fGN5yChP4NXvfWn9Q2",
+    "user_name": "aman sharma",
+    "email": "aman2626786@gmail.com",
+    "created_at": "2026-09-21T05:57:14.337Z"
+  },
+  {
     "id": "like_1789967076477_1mdw1",
     "resource_id": "res_1789962574289_pzj63",
     "user_id": "student_aman_101",

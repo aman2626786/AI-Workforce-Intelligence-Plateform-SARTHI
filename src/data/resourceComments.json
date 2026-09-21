@@ -1,43 +1,13 @@
 [
   {
-    "id": "comm_1789969933098_e88u7",
+    "id": "comm_1789970380992_s6yre",
     "resource_id": "res_1789962574289_pzj63",
     "user_id": "current-user",
     "user_name": "aman sharma",
     "content": "good resources.",
     "status": "APPROVED",
-    "created_at": "2026-09-21T05:52:13.098Z",
-    "updated_at": "2026-09-21T05:52:13.098Z"
-  },
-  {
-    "id": "comm_1789969918251_m1crt",
-    "resource_id": "res_1789962574289_pzj63",
-    "user_id": "current-user",
-    "user_name": "aman sharma",
-    "content": "good resources.",
-    "status": "APPROVED",
-    "created_at": "2026-09-21T05:51:58.251Z",
-    "updated_at": "2026-09-21T05:51:58.251Z"
-  },
-  {
-    "id": "comm_1789969912028_s9yxe",
-    "resource_id": "res_1789962574289_pzj63",
-    "user_id": "current-user",
-    "user_name": "aman sharma",
-    "content": "good resources.",
-    "status": "APPROVED",
-    "created_at": "2026-09-21T05:51:52.029Z",
-    "updated_at": "2026-09-21T05:51:52.029Z"
-  },
-  {
-    "id": "comm_1789969695248_nzwox",
-    "resource_id": "res_1789962574289_pzj63",
-    "user_id": "current-user",
-    "user_name": "aman sharma",
-    "content": "good resources.",
-    "status": "APPROVED",
-    "created_at": "2026-09-21T05:48:15.248Z",
-    "updated_at": "2026-09-21T05:48:15.248Z"
+    "created_at": "2026-09-21T05:59:40.992Z",
+    "updated_at": "2026-09-21T05:59:40.992Z"
   },
   {
     "id": "local-1789967054903-vwjio",

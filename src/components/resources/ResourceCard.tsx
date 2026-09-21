@@ -149,50 +149,33 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
       }`}
     >
       <div>
-        {/* Thumbnail / Header Banner */}
-        <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
-          <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-6 text-center">
-            <span className="text-sky-300 font-mono text-xs uppercase tracking-widest">
-              {getTypeLabel(resource.resource_type)}
-            </span>
-          </div>
+        {/* Content Body */}
+        <div className="p-5 sm:p-6 space-y-3">
+          {/* Header Badges & Source Attribution */}
+          <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-slate-500">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                {getTypeLabel(resource.resource_type)}
+              </span>
+              <div className="flex items-center gap-1.5 font-medium text-slate-700 truncate max-w-[160px]">
+                <Globe className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                <span className="truncate">{resource.source_name || resource.source_domain || 'Official Source'}</span>
+              </div>
+            </div>
 
-          {/* Type Badge Floating Overlay */}
-          <div className="absolute top-3 left-3 flex items-center gap-2">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold tracking-wide bg-slate-950/85 text-white border border-slate-700/80 backdrop-blur-md">
-              {getTypeLabel(resource.resource_type)}
-            </span>
-          </div>
-
-          {/* Match Score Badge (if available for student) */}
-          {resource.match_score && resource.match_score > 50 && (
-            <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-white/95 text-sky-800 border border-sky-200 shadow-sm backdrop-blur-md">
+            {resource.match_score && resource.match_score > 50 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
                 {Math.round(resource.match_score)}% Match
               </span>
-            </div>
-          )}
-
-          {/* Skill Gap Bridge Indicator */}
-          {resource.skill_gap_covered && (
-            <div className="absolute bottom-2.5 left-3 right-3">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-950/90 text-sky-100 backdrop-blur-md border border-slate-700 shadow-sm">
-                <span>Bridges skill gap:</span>
-                <span className="text-sky-300 underline">{resource.skill_gap_covered}</span>
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Content Body */}
-        <div className="p-5 space-y-3">
-          {/* Source Attribution */}
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <div className="flex items-center gap-1.5 font-medium text-slate-700 truncate max-w-full">
-              <Globe className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-              <span className="truncate">{resource.source_name || resource.source_domain || 'Official Source'}</span>
-            </div>
+            )}
           </div>
+
+          {resource.skill_gap_covered && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-sky-50 text-sky-900 border border-sky-200">
+              <span className="text-slate-500">Bridges skill gap:</span>
+              <span className="text-sky-700 font-bold underline">{resource.skill_gap_covered}</span>
+            </div>
+          )}
 
           {/* Resource Title - Hover turns fresh sky blue */}
           <h3 className="text-base font-bold text-slate-900 leading-snug group-hover:text-sky-600 transition-colors line-clamp-2">

@@ -130,8 +130,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Client-side hydration sync for saved user profile
+  // Client-side hydration sync for saved user profile & persistent auth listener
   useEffect(() => {
+    let unsubscribeAuth: (() => void) | undefined;
+    import('@/services/authService').then(({ authService }) => {
+      unsubscribeAuth = authService.initAuthListener(() => {
+        refreshData();
+      });
+    });
+
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
       if (path.startsWith('/admin') || path.startsWith('/login') || path.startsWith('/signup')) {
@@ -150,6 +157,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } catch (e) {}
     }
+
+    return () => {
+      if (unsubscribeAuth) unsubscribeAuth();
+    };
   }, []);
 
   useEffect(() => {

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api"
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-only-change-me")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 365 * 10  # 10 years (persistent user session until manual logout)
 
     # MongoDB Atlas Cloud Database
     MONGODB_URI: str = os.getenv("MONGODB_URI", "")

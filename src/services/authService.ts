@@ -1,4 +1,4 @@
-import { auth, googleProvider, signInWithPopup, signOut } from '@/lib/firebase';
+import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, FirebaseUser } from '@/lib/firebase';
 import { API_BASE_URL, setToken, getToken } from './api';
 
 export interface AuthUserData {
@@ -85,8 +85,17 @@ export const authService = {
       authService.saveLocalUserSession(data);
       return data;
     } catch (networkError) {
-      console.error('Firebase backend verification failed:', networkError);
-      throw networkError;
+      console.warn('Backend sync delayed/offline, saving verified Firebase session locally:', networkError);
+      const localData: AuthUserData = {
+        access_token: idToken || `fb_${user.uid}`,
+        user_id: user.uid,
+        email: user.email || '',
+        name: user.displayName || 'Student',
+        avatar_url: user.photoURL || undefined,
+      };
+      setToken(localData.access_token);
+      authService.saveLocalUserSession(localData);
+      return localData;
     }
   },
 
@@ -143,7 +152,7 @@ export const authService = {
     return data;
   },
 
-  // 4. Logout User
+  // 4. Logout User (The ONLY place where user session is cleared)
   logout: async () => {
     try {
       await signOut(auth);
@@ -152,7 +161,10 @@ export const authService = {
     }
     if (typeof window !== 'undefined') {
       localStorage.removeItem('skillvantage_auth_token');
+      localStorage.removeItem('matchskill_auth_token');
       localStorage.removeItem('skillvantage_user_session');
+      localStorage.removeItem('skillvantage_auth_user');
+      localStorage.removeItem('matchskill_auth_user');
       localStorage.removeItem('skillvantage_user_profile');
     }
   },
@@ -161,6 +173,9 @@ export const authService = {
   saveLocalUserSession: (data: AuthUserData) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('skillvantage_user_session', JSON.stringify(data));
+      if (data.access_token) {
+        setToken(data.access_token);
+      }
     }
   },
 
@@ -178,8 +193,37 @@ export const authService = {
     return authService.getLocalUserSession();
   },
 
+  // Permanent persistence: checks token, local session, or Firebase active session
   isAuthenticated: (): boolean => {
-    return !!getToken();
+    return Boolean(getToken() || authService.getLocalUserSession() || (auth && auth.currentUser));
+  },
+
+  // Auto-restore session listener from Firebase Auth (IndexedDB persistent layer)
+  initAuthListener: (onUserChanged?: (user: AuthUserData | null) => void) => {
+    if (typeof window === 'undefined') return () => {};
+    return onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const existingSession = authService.getLocalUserSession();
+        const existingToken = getToken();
+        if (!existingToken || !existingSession) {
+          try {
+            const idToken = await firebaseUser.getIdToken();
+            const sessionData: AuthUserData = {
+              access_token: idToken,
+              user_id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || 'Student',
+              avatar_url: firebaseUser.photoURL || undefined,
+            };
+            setToken(idToken);
+            authService.saveLocalUserSession(sessionData);
+            if (onUserChanged) onUserChanged(sessionData);
+          } catch (e) {
+            console.warn('Auto session restore notice:', e);
+          }
+        }
+      }
+    });
   },
 
   // 6. Quick Demo Login (Instant Dashboard Preview)

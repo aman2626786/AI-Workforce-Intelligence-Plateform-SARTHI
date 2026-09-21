@@ -130,18 +130,9 @@ class CareerService {
       };
       this.saveToStorage();
     } catch (error: any) {
-      const message = error?.message || '';
-      if (/authentication required|invalid or expired token|user not found|not authenticated|could not validate credentials/i.test(message)) {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('skillvantage_auth_token');
-          localStorage.removeItem('skillvantage_auth_user');
-          localStorage.removeItem('skillvantage_user_session');
-          localStorage.removeItem('matchskill_auth_token');
-          localStorage.removeItem('matchskill_auth_user');
-        }
-        return { ...this.profile };
-      }
-      console.warn('Backend profile unavailable; using cached profile:', error);
+      // Graceful fallback to cached local profile.
+      // Never delete auth credentials automatically; the user stays permanently logged in until manual logout.
+      console.warn('Backend profile unavailable; using cached profile:', error?.message || error);
     }
     return { ...this.profile };
   }

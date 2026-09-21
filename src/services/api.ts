@@ -109,10 +109,18 @@ export interface ResumeAnalysisResult {
   confidence_summary: Record<string, number>;
 }
 
-// Token helper
+// Token helper - Persistent across browser restarts and sessions
 export const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('skillvantage_auth_token');
+    const token = localStorage.getItem('skillvantage_auth_token') || localStorage.getItem('matchskill_auth_token');
+    if (token) return token;
+    try {
+      const raw = localStorage.getItem('skillvantage_user_session');
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (session.access_token) return session.access_token;
+      }
+    } catch {}
   }
   return null;
 };
@@ -120,6 +128,7 @@ export const getToken = (): string | null => {
 export const setToken = (token: string) => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('skillvantage_auth_token', token);
+    localStorage.setItem('matchskill_auth_token', token);
   }
 };
 

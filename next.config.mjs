@@ -11,6 +11,7 @@ const nextConfig = {
 
 if (process.env.STATIC_EXPORT === 'true') {
   nextConfig.output = 'export';
+  nextConfig.pageExtensions = ['tsx', 'jsx'];
 }
 
 export default nextConfig;

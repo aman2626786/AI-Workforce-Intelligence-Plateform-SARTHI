@@ -882,7 +882,7 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
       <aside
         className={`${
           isMobileSidebarOpen ? 'block' : 'hidden'
-        } md:flex flex-col w-full md:w-64 bg-white/95 border-r-2 border-sky-200/90 shrink-0 h-screen sticky top-0 z-30 backdrop-blur-xl shadow-xs justify-between overflow-hidden`}
+        } md:flex flex-col w-full md:w-64 bg-white border-r-2 border-sky-200/90 shrink-0 h-screen sticky top-0 z-30 shadow-md justify-between overflow-hidden`}
       >
         {/* Top: Sidebar Brand Header & Nav Items */}
         <div className="flex flex-col">
@@ -3434,9 +3434,13 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
                     onClick={async () => {
                       setIsDeletingResource(true);
                       try {
-                        await api.adminDeleteResource(resourceToDelete.id);
+                        const delId = resourceToDelete.id;
+                        const delSlug = resourceToDelete.slug;
+                        const delTitle = resourceToDelete.title;
+                        setAdminResources((prev) => prev.filter((r: any) => r.id !== delId && r.slug !== delSlug));
+                        await api.adminDeleteResource(delId, delSlug, delTitle);
                         await fetchAdminResources();
-                        addToast(`Permanently deleted "${resourceToDelete.title}"`, 'info');
+                        addToast(`Permanently deleted "${delTitle}"`, 'info');
                       } catch {
                         addToast('Failed to delete resource', 'error');
                       } finally {

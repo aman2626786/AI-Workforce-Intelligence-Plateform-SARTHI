@@ -47,7 +47,7 @@ export const AiAssistantDrawer: React.FC = () => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 animate-fade-in">
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col justify-between">
           {/* Header */}

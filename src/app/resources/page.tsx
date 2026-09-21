@@ -406,7 +406,7 @@ function ResourceHubContent() {
       {isMobileFiltersOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden animate-fade-in">
           <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
+            className="fixed inset-0 bg-slate-900/50"
             onClick={() => setIsMobileFiltersOpen(false)}
           />
           <div className="relative ml-auto w-full max-w-xs h-full bg-white shadow-2xl p-6 overflow-y-auto flex flex-col justify-between">

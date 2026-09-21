@@ -268,12 +268,18 @@ export const getAllResourcesList = (): ResourceItem[] => {
         const rawList = JSON.parse(stored);
         if (Array.isArray(rawList)) {
           const seen = new Set();
+          const cleanList: ResourceItem[] = [];
           for (const item of rawList) {
             const base = (item.title || '').trim().toLowerCase();
+            if (base.includes('voicemem') || base.includes('autosaddler')) continue;
             if (base && !seen.has(base)) {
               seen.add(base);
               custom.push(item);
+              cleanList.push(item);
             }
+          }
+          if (cleanList.length !== rawList.length) {
+            localStorage.setItem('matchskill_custom_resources', JSON.stringify(cleanList));
           }
         }
       }
@@ -818,24 +824,10 @@ export const api = {
       });
       if (res.ok) {
         const data = await res.json();
-        let remoteItems: ResourceItem[] = (data.resources || []).map(normalizeResource);
-        if (typeof window !== 'undefined') {
-          try {
-            const stored = localStorage.getItem('matchskill_custom_resources');
-            if (stored) {
-              const localCustom: ResourceItem[] = JSON.parse(stored);
-              const existingSlugs = new Set(remoteItems.map((r) => r.slug));
-              for (const c of localCustom) {
-                if (!existingSlugs.has(c.slug)) {
-                  remoteItems.unshift(normalizeResource(c));
-                }
-              }
-            }
-          } catch {}
-        }
+        const remoteItems: ResourceItem[] = (data.resources || []).map(normalizeResource);
         return {
           ...data,
-          total: Math.max(data.total || 0, remoteItems.length),
+          total: data.total ?? remoteItems.length,
           resources: remoteItems,
         };
       }
@@ -1164,7 +1156,23 @@ export const api = {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof window !== 'undefined' && data.resources) {
+          try {
+            const stored = localStorage.getItem('matchskill_custom_resources');
+            if (stored) {
+              const localList: ResourceItem[] = JSON.parse(stored);
+              const backendSlugs = new Set((data.resources as any[]).map((r) => r.slug));
+              const valid = localList.filter((item) => backendSlugs.has(item.slug));
+              if (valid.length !== localList.length) {
+                localStorage.setItem('matchskill_custom_resources', JSON.stringify(valid));
+              }
+            }
+          } catch {}
+        }
+        return data;
+      }
     } catch (err) {
       console.warn('Admin list note:', err);
     }
@@ -1324,17 +1332,20 @@ export const api = {
     return { status: 'success', id, ...payload };
   },
 
-  adminDeleteResource: async (id: string) => {
+  adminDeleteResource: async (id: string, slug?: string, title?: string) => {
     const token = getToken();
+    let backendResult = null;
     try {
-      const url = `${getApiBaseUrl()}/admin/resources/${id}`;
+      const url = `${getApiBaseUrl()}/admin/resources/${encodeURIComponent(id)}`;
       const res = await fetch(url, {
         method: 'DELETE',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        backendResult = await res.json();
+      }
     } catch (err) {
       console.warn('Admin delete notice:', err);
     }
@@ -1342,12 +1353,20 @@ export const api = {
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('matchskill_custom_resources');
-        let list: ResourceItem[] = stored ? JSON.parse(stored) : [];
-        list = list.filter((item) => item.id !== id && item.slug !== id);
-        localStorage.setItem('matchskill_custom_resources', JSON.stringify(list));
+        if (stored) {
+          let list: ResourceItem[] = JSON.parse(stored);
+          const targetTitle = (title || '').trim().toLowerCase();
+          list = list.filter((item) => {
+            if (item.id === id) return false;
+            if (item.slug === id || (slug && item.slug === slug)) return false;
+            if (targetTitle && (item.title || '').trim().toLowerCase() === targetTitle) return false;
+            return true;
+          });
+          localStorage.setItem('matchskill_custom_resources', JSON.stringify(list));
+        }
       } catch (e) {}
     }
-    return { status: 'success', id };
+    return backendResult || { status: 'success', id };
   },
 
   adminPublishResource: async (id: string) => {

@@ -88,7 +88,7 @@ export const LandingHeader: React.FC = () => {
 
       {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden px-4 pt-2 pb-4 border-t border-sky-200/60 bg-white/95 backdrop-blur-lg space-y-2 animate-fade-in shadow-lg">
+        <div className="md:hidden px-4 pt-2 pb-4 border-t border-b border-sky-200/60 bg-white space-y-2 animate-fade-in shadow-xl">
           <Link
             href="/"
             onClick={() => setIsMobileMenuOpen(false)}

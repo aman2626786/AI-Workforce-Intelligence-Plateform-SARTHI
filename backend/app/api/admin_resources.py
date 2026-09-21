@@ -319,7 +319,7 @@ def admin_delete_resource(
     current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    resource = db.query(Resource).filter(Resource.id == id).first()
+    resource = db.query(Resource).filter((Resource.id == id) | (Resource.slug == id)).first()
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
     db.delete(resource)

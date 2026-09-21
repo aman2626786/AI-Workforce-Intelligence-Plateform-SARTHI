@@ -51,14 +51,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* Backdrop for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Sleek, Compact Sidebar underneath transparent title bar */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 z-30 h-[calc(100vh-4rem)] w-64 bg-white/80 backdrop-blur-md border-r border-sky-200/50 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-16 left-0 bottom-0 z-50 h-[calc(100vh-4rem)] w-64 bg-white border-r border-sky-200 shadow-xl flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

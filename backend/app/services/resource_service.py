@@ -81,7 +81,7 @@ class ResourceService:
             query = query.filter(Resource.resource_type == resource_type)
 
         if category:
-            query = query.filter(Resource.category == category)
+            query = query.filter(func.lower(Resource.category) == category.strip().lower())
 
         if difficulty and difficulty != "All Levels":
             query = query.filter(Resource.difficulty == difficulty)

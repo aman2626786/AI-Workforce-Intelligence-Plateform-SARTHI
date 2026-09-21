@@ -11,11 +11,16 @@ CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(36) PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    auth_provider VARCHAR(50) DEFAULT 'email',
+    firebase_uid VARCHAR(255),
+    role VARCHAR(20) DEFAULT 'STUDENT',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
 
 -- 2. STUDENT PROFILES TABLE
 CREATE TABLE IF NOT EXISTS student_profiles (
@@ -289,3 +294,114 @@ CREATE TABLE IF NOT EXISTS collection_runs (
 
 CREATE INDEX IF NOT EXISTS idx_collection_runs_source ON collection_runs(source);
 CREATE INDEX IF NOT EXISTS idx_collection_runs_started ON collection_runs(started_at);
+
+-- =============================================================================
+-- 19. RESOURCE HUB TABLES
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS resource_categories (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    parent_id VARCHAR(50) REFERENCES resource_categories(id) ON DELETE SET NULL,
+    icon VARCHAR(50),
+    description TEXT,
+    sort_order INT DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS resources (
+    id VARCHAR(36) PRIMARY KEY,
+    title VARCHAR(500) NOT NULL,
+    slug VARCHAR(500) UNIQUE NOT NULL,
+    resource_type VARCHAR(50) NOT NULL,
+    short_description TEXT NOT NULL,
+    content_summary TEXT,
+    original_url VARCHAR(1000) NOT NULL,
+    source_name VARCHAR(255),
+    source_domain VARCHAR(255),
+    author VARCHAR(255),
+    organization VARCHAR(255),
+    publisher VARCHAR(255),
+    published_at TIMESTAMP WITH TIME ZONE,
+    thumbnail_url VARCHAR(1000),
+    language VARCHAR(50) DEFAULT 'en',
+    difficulty VARCHAR(50) DEFAULT 'All Levels',
+    category VARCHAR(100) NOT NULL,
+    subcategory VARCHAR(100),
+    tags JSONB DEFAULT '[]'::jsonb,
+    hashtags JSONB DEFAULT '[]'::jsonb,
+    keywords JSONB DEFAULT '[]'::jsonb,
+    skills JSONB DEFAULT '[]'::jsonb,
+    target_roles JSONB DEFAULT '[]'::jsonb,
+    location VARCHAR(255),
+    deadline TIMESTAMP WITH TIME ZONE,
+    is_verified BOOLEAN DEFAULT FALSE,
+    verification_status VARCHAR(30) DEFAULT 'UNVERIFIED',
+    verified_at TIMESTAMP WITH TIME ZONE,
+    verified_by VARCHAR(36),
+    status VARCHAR(30) DEFAULT 'PUBLISHED',
+    license VARCHAR(100),
+    license_url VARCHAR(500),
+    created_by VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    view_count INT DEFAULT 0,
+    like_count INT DEFAULT 0,
+    save_count INT DEFAULT 0,
+    share_count INT DEFAULT 0,
+    comment_count INT DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_resources_slug ON resources(slug);
+CREATE INDEX IF NOT EXISTS idx_resources_type ON resources(resource_type);
+CREATE INDEX IF NOT EXISTS idx_resources_category ON resources(category);
+CREATE INDEX IF NOT EXISTS idx_resources_status ON resources(status);
+CREATE INDEX IF NOT EXISTS idx_resources_published ON resources(published_at);
+CREATE INDEX IF NOT EXISTS idx_resources_source ON resources(source_name);
+
+CREATE TABLE IF NOT EXISTS resource_likes (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    resource_id VARCHAR(36) NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_user_resource_like UNIQUE (user_id, resource_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_res_likes_user ON resource_likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_res_likes_resource ON resource_likes(resource_id);
+
+CREATE TABLE IF NOT EXISTS saved_resources (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    resource_id VARCHAR(36) NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_user_saved_resource UNIQUE (user_id, resource_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_saved_res_user ON saved_resources(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_res_resource ON saved_resources(resource_id);
+
+CREATE TABLE IF NOT EXISTS resource_comments (
+    id VARCHAR(36) PRIMARY KEY,
+    resource_id VARCHAR(36) NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    status VARCHAR(30) DEFAULT 'APPROVED',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_res_comments_res ON resource_comments(resource_id);
+CREATE INDEX IF NOT EXISTS idx_res_comments_user ON resource_comments(user_id);
+
+CREATE TABLE IF NOT EXISTS resource_views (
+    id VARCHAR(36) PRIMARY KEY,
+    resource_id VARCHAR(36) NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+    user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+    session_id VARCHAR(100),
+    viewed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_res_views_res ON resource_views(resource_id);
+CREATE INDEX IF NOT EXISTS idx_res_views_session ON resource_views(session_id);
+

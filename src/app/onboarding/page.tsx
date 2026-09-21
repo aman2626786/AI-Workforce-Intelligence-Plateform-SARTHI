@@ -179,7 +179,12 @@ export default function OnboardingPage() {
         setCurrentStep(2);
       }
     } catch (err: any) {
-      addToast(err.message || 'Google sign-up failed', 'error');
+      if (err?.isCancelled || err?.code === 'auth/popup-closed-by-user') {
+        addToast('Google sign-in popup was closed.', 'info');
+      } else {
+        console.warn('Onboarding Google sign-in notice:', err?.message || err);
+        addToast(err?.message || 'Google sign-up could not be completed', 'error');
+      }
     } finally {
       setIsGoogleLoading(false);
     }
@@ -414,13 +419,8 @@ export default function OnboardingPage() {
             <Compass className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-black text-slate-900 tracking-tight text-base">SARTHI</span>
-              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
-                AI
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-500 font-medium">SIH 2026 Problem Statement 26134</p>
+            <span className="font-black text-slate-900 tracking-tight text-base">MatchSkill</span>
+            <p className="text-[10px] text-slate-500 font-medium">From Skills to Careers</p>
           </div>
         </Link>
 

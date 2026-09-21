@@ -1,5 +1,4 @@
 import React from 'react';
-import { Target, MapPin, Building2, Sparkles } from 'lucide-react';
 
 interface CareerReadinessCardProps {
   role: string;
@@ -18,39 +17,32 @@ export const CareerReadinessCard: React.FC<CareerReadinessCardProps> = ({
   const strokeDashoffset = circumference - (readinessScore / 100) * circumference;
 
   return (
-    <div className="p-6 rounded-3xl bg-gradient-to-br from-brand-600 to-brand-700 text-white shadow-soft-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-      {/* Background Subtle Shapes */}
-      <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-
-      <div className="space-y-4 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-bold tracking-wide uppercase flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+    <div className="p-6 sm:p-7 rounded-3xl bg-white border border-sky-200 shadow-soft-sm relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 transition-all">
+      <div className="space-y-3 flex-1">
+        <div>
+          <span className="px-3 py-1 rounded-full bg-sky-50 text-sky-800 text-xs font-semibold tracking-wide uppercase border border-sky-200">
             Target Career Profile
           </span>
         </div>
 
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">{role}</h2>
-          <p className="text-brand-100 text-sm mt-1">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{role}</h2>
+          <p className="text-slate-600 text-sm sm:text-base mt-1 font-normal">
             Optimized against 10,000+ real-time market job postings
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-brand-100 pt-1">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm">
-            <Target className="w-4 h-4 text-brand-200" />
-            <span>Role: <strong className="text-white">{role}</strong></span>
+        <div className="flex flex-wrap items-center gap-2.5 text-sm font-medium pt-1">
+          <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            Role: <span className="text-slate-900 font-semibold ml-1">{role}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm">
-            <MapPin className="w-4 h-4 text-brand-200" />
-            <span>Location: <strong className="text-white">{location}</strong></span>
+          <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            Location: <span className="text-slate-900 font-semibold ml-1">{location}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm">
-            <Building2 className="w-4 h-4 text-brand-200" />
-            <span>Target: <strong className="text-white">{company}</strong></span>
+          <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            Target: <span className="text-slate-900 font-semibold ml-1">{company}</span>
           </div>
         </div>
       </div>
@@ -64,8 +56,8 @@ export const CareerReadinessCard: React.FC<CareerReadinessCardProps> = ({
               cx="56"
               cy="56"
               r="40"
-              stroke="rgba(255, 255, 255, 0.2)"
-              strokeWidth="10"
+              stroke="#f0f9ff"
+              strokeWidth="9"
               fill="transparent"
             />
             {/* Progress ring */}
@@ -73,8 +65,8 @@ export const CareerReadinessCard: React.FC<CareerReadinessCardProps> = ({
               cx="56"
               cy="56"
               r="40"
-              stroke="#ffffff"
-              strokeWidth="10"
+              stroke={readinessScore >= 70 ? '#059669' : '#0284c7'}
+              strokeWidth="9"
               fill="transparent"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
@@ -83,11 +75,11 @@ export const CareerReadinessCard: React.FC<CareerReadinessCardProps> = ({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-2xl font-black text-white">{readinessScore}%</span>
-            <span className="text-[10px] font-bold text-brand-200 uppercase tracking-wider">Ready</span>
+            <span className="text-2xl font-bold text-slate-900">{readinessScore}%</span>
+            <span className="text-xs font-semibold text-sky-700 uppercase tracking-wider">Ready</span>
           </div>
         </div>
-        <span className="text-xs font-semibold text-brand-100 mt-2">Overall Match Score</span>
+        <span className="text-xs font-medium text-slate-500 mt-2">Overall Match Score</span>
       </div>
     </div>
   );

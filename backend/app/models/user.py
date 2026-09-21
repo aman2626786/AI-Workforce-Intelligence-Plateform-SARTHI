@@ -15,10 +15,15 @@ class User(Base):
     password_hash = Column(String(255), nullable=True)
     auth_provider = Column(String(50), default="email", nullable=False)
     firebase_uid = Column(String(255), nullable=True, index=True)
+    role = Column(String(20), default="STUDENT", nullable=False, index=True)  # STUDENT, ADMIN
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     profile = relationship("StudentProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     resumes = relationship("Resume", back_populates="user", cascade="all, delete-orphan")
+    likes = relationship("ResourceLike", back_populates="user", cascade="all, delete-orphan")
+    saved_resources = relationship("SavedResource", back_populates="user", cascade="all, delete-orphan")
+    comments = relationship("ResourceComment", back_populates="user", cascade="all, delete-orphan")
+
 

@@ -1,22 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import {
-  Compass,
-  LayoutDashboard,
-  UserCircle,
-  TrendingUp,
-  Target,
-  Map,
-  Briefcase,
-  Settings,
-  Sparkles,
-  X,
-  LogOut,
-} from 'lucide-react';
+import { Compass, X } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,32 +13,21 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
-  const router = useRouter();
-  const { profile, activeRole, openAiDrawerWithTopic, addToast, logout } = useApp();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { logout } = useApp();
 
   const navItems = [
-    { label: 'Home', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Career Profile', href: '/dashboard/profile', icon: UserCircle },
-    { label: 'Industry Skills', href: '/dashboard/industry-skills', icon: TrendingUp },
-    { label: 'Skill Gap', href: '/dashboard/skill-gap', icon: Target },
-    { label: 'Career Roadmap', href: '/dashboard/roadmap', icon: Map },
-    { label: 'Job Readiness', href: '/dashboard/job-readiness', icon: Briefcase },
+    { label: 'Home', href: '/dashboard' },
+    { label: 'Industry Skills', href: '/dashboard/industry-skills' },
+    { label: 'Skill Gap', href: '/dashboard/skill-gap' },
+    { label: 'Career Roadmap', href: '/dashboard/roadmap' },
+    { label: 'Job Readiness', href: '/dashboard/job-readiness', isUpcoming: true },
+    { label: 'Resource Hub', href: '/dashboard/resources', isNew: true },
+    { label: 'Saved Resources', href: '/dashboard/resources/saved' },
   ];
 
   const handleLogout = async () => {
-    if (confirm('Are you sure you want to log out of SARTHI AI?')) {
-      await logout();
-    }
+    await logout();
   };
-
-
-  const displayName = mounted && profile?.name ? profile.name : 'Student Profile';
-  const displayRole = mounted && profile?.targetRole ? profile.targetRole : 'Target Role Not Set';
 
   const isItemActive = (itemHref: string) => {
     if (!pathname) return false;
@@ -72,122 +49,84 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         />
       )}
 
+      {/* Sleek, Compact Sidebar underneath transparent title bar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-72 bg-white border-r border-slate-200 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-16 left-0 bottom-0 z-30 h-[calc(100vh-4rem)] w-64 bg-white/80 backdrop-blur-md border-r border-sky-200/50 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Top Header */}
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-600/20">
-              <Compass className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-slate-900 tracking-tight text-lg">SARTHI</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-50 text-brand-600 border border-brand-200">AI</span>
-              </div>
-              <p className="text-xs text-slate-500 font-medium">From Skills to Careers</p>
-            </div>
-          </Link>
-
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg lg:hidden"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Main Student Navigation */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-          <div className="space-y-1">
-            <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+        {/* Main Student Navigation - Clean text structure, medium readable font */}
+        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+          <div className="space-y-2">
+            <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
               Student Intelligence
             </div>
             {navItems.map((item) => {
               const isActive = isItemActive(item.href);
-              const Icon = item.icon;
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                  className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-[15px] font-semibold transition-all duration-200 cursor-pointer ${
                     isActive
-                      ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20 hover:bg-sky-700'
+                      : 'text-slate-700 hover:text-sky-700 hover:bg-sky-50'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  {item.label}
+                  <span className="truncate">{item.label}</span>
+                  {item.isNew && (
+                    <span
+                      className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        isActive
+                          ? 'bg-white text-sky-700'
+                          : 'bg-sky-100 text-sky-700 border border-sky-200 shadow-2xs'
+                      }`}
+                    >
+                      NEW
+                    </span>
+                  )}
+                  {item.isUpcoming && (
+                    <span
+                      className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide ${
+                        isActive
+                          ? 'bg-white/20 text-white border border-white/30'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                      }`}
+                    >
+                      Upcoming
+                    </span>
+                  )}
                 </Link>
               );
             })}
           </div>
-
-          {/* AI Intelligence Assistant Trigger Card */}
-          <div className="mt-8 p-4 rounded-2xl bg-gradient-to-br from-brand-50 to-indigo-50 border border-brand-100/80">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-brand-600 animate-pulse" />
-              <span className="text-xs font-bold text-brand-900">AI Assistant</span>
-            </div>
-            <p className="text-xs text-slate-600 mb-3 leading-relaxed">
-              Get contextual industry insights and personalized recommendations.
-            </p>
-            <button
-              onClick={() => openAiDrawerWithTopic('Career Intelligence Strategy')}
-              className="w-full py-2 px-3 bg-white hover:bg-brand-600 hover:text-white text-brand-600 text-xs font-bold rounded-xl border border-brand-200 shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Ask AI Assistant
-            </button>
-          </div>
         </div>
 
-        {/* Bottom Section */}
-        <div className="p-4 border-t border-slate-100 space-y-1">
+        {/* Bottom Section - Settings & Logout */}
+        <div className="p-4 border-t border-slate-100 space-y-2">
           <Link
             href="/dashboard/settings"
             onClick={onClose}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            className={`w-full flex items-center px-4 py-2.5 rounded-xl text-[15px] font-bold transition-all duration-200 cursor-pointer ${
               isItemActive('/dashboard/settings')
-                ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20'
+                : 'text-slate-700 hover:text-sky-700 hover:bg-sky-50 hover:scale-[1.01] active:scale-[0.99]'
             }`}
           >
-            <Settings className={`w-4 h-4 ${isItemActive('/dashboard/settings') ? 'text-white' : 'text-slate-400'}`} />
             Settings
           </Link>
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+            className="w-full flex items-center px-4 py-2.5 rounded-xl text-[15px] font-bold text-rose-600 hover:bg-rose-50 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 cursor-pointer text-left"
           >
-            <LogOut className="w-4 h-4 text-rose-500" />
             Log Out
           </button>
-
-          {/* User Profile Footer */}
-          <div className="pt-3 mt-2 border-t border-slate-100 flex items-center justify-between px-2">
-            <Link href="/dashboard/profile" className="flex items-center gap-3 overflow-hidden group">
-              <img
-                src={profile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                alt="User"
-                className="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-sm"
-              />
-              <div className="overflow-hidden">
-                <p className="text-sm font-bold text-slate-900 truncate group-hover:text-brand-600 transition-colors" suppressHydrationWarning>
-                  {displayName}
-                </p>
-                <p className="text-xs text-slate-500 truncate" suppressHydrationWarning>{displayRole} Candidate</p>
-              </div>
-            </Link>
-          </div>
         </div>
       </aside>
     </>
   );
 };
+

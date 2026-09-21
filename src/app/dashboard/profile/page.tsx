@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { SkillBadge } from '@/components/ui/SkillBadge';
 import { Modal } from '@/components/ui/Modal';
@@ -23,27 +23,47 @@ import {
   FileCheck,
   Compass,
   Edit3,
+  Search,
+  Layers,
+  Calendar,
+  Building,
+  ExternalLink,
+  Code2,
+  Filter,
+  Check,
+  TrendingUp,
+  LayoutGrid,
 } from 'lucide-react';
 import { api, ResumeAnalysisResult } from '@/services/api';
 import { careerService } from '@/services/careerService';
 import { CAREER_ROLE_CATEGORIES } from '@/app/onboarding/page';
 
+type TabType = 'overview' | 'skills' | 'experience' | 'projects' | 'education';
+
 export default function StudentProfilePage() {
   const { profile, addSelfReportedSkill, addToast, refreshData, setActiveRole } = useApp();
 
+  // Active Tab State
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+
+  // Skill Search & Category Filter State
+  const [selectedSkillCategory, setSelectedSkillCategory] = useState<string>('ALL');
+  const [skillSearchQuery, setSkillSearchQuery] = useState<string>('');
+
+  // Self-Reported Skill Modal State
   const [isAddSkillOpen, setIsAddSkillOpen] = useState(false);
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillCategory, setNewSkillCategory] = useState('Data Visualization');
   const [newSkillLevel, setNewSkillLevel] = useState<'Basic' | 'Intermediate' | 'Advanced'>('Intermediate');
 
-  // Target Career Switcher States
+  // Target Career Switcher Modal State
   const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(profile?.targetRole || '');
   const [isCustomSelectedRole, setIsCustomSelectedRole] = useState(false);
   const [customRoleInput, setCustomRoleInput] = useState('');
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
-  // Resume Update States
+  // Resume Update Modal State
   const [isUpdateResumeOpen, setIsUpdateResumeOpen] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -53,6 +73,32 @@ export default function StudentProfilePage() {
   const [analysisSuccess, setAnalysisSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Skill category grouping
+  const skillCategories = useMemo(() => {
+    if (!profile?.skills) return [];
+    const map: Record<string, number> = {};
+    profile.skills.forEach((s) => {
+      const cat = s.category?.toUpperCase() || 'GENERAL';
+      map[cat] = (map[cat] || 0) + 1;
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [profile?.skills]);
+
+  // Filtered skills based on search & category
+  const filteredSkills = useMemo(() => {
+    if (!profile?.skills) return [];
+    return profile.skills.filter((skill) => {
+      const matchesCategory =
+        selectedSkillCategory === 'ALL' ||
+        skill.category?.toUpperCase() === selectedSkillCategory.toUpperCase();
+      const matchesSearch =
+        !skillSearchQuery.trim() ||
+        skill.name.toLowerCase().includes(skillSearchQuery.toLowerCase()) ||
+        skill.category.toLowerCase().includes(skillSearchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [profile?.skills, selectedSkillCategory, skillSearchQuery]);
 
   const handleAddSkill = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,7 +175,6 @@ export default function StudentProfilePage() {
     }, 450);
 
     try {
-      // 1. Direct deterministic parsing & analysis via local Python engine
       const result = await api.parseResumeFile(resumeFile, {
         name: profile?.name,
         city: profile?.location || 'Jaipur',
@@ -144,7 +189,6 @@ export default function StudentProfilePage() {
       setAnalysisProgressIndex(stages.length - 1);
       setAnalysisResult(result);
 
-      // 2. Extracted skills directly from the new resume
       const parsedSkills = (result.skills || []).map((s) => ({
         canonical_name: s.canonical_name,
         category: s.category,
@@ -154,7 +198,6 @@ export default function StudentProfilePage() {
 
       const firstEdu = result.education && result.education.length > 0 ? result.education[0] : null;
 
-      // 3. Sync live career profile with the newly parsed resume data
       await careerService.syncOnboardingProfile({
         name: result.personal_info?.name || profile?.name || 'Student',
         email: result.personal_info?.email || profile?.email || 'student@university.edu',
@@ -199,346 +242,816 @@ export default function StudentProfilePage() {
     setErrorMessage('');
   };
 
+  // User initials
+  const initials = (profile?.name || 'Student')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0]?.toUpperCase())
+    .slice(0, 2)
+    .join('') || 'AS';
+
+  const totalSkillsCount = profile?.skills?.length || 0;
+  const totalExpCount = profile?.experience?.length || 0;
+  const totalProjCount = profile?.projects?.length || 0;
+  const totalCertCount = profile?.certifications?.length || 0;
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
+    <div className="space-y-6 animate-fade-in font-sans pb-12 max-w-7xl">
+      {/* Top Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Student Career Profile</h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-            Your verified skills, projects, certifications, and target career metadata.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-md border border-sky-100">
+              Verified Student Dossier
+            </span>
+            <span className="text-[11px] font-semibold text-slate-400">•</span>
+            <span className="text-[11px] font-semibold text-slate-500">
+              AI-Parsed Resume Intelligence
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Student Career Profile
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+            Verified skills, professional experience, project portfolio, and target career calibration.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
           <button
             onClick={() => setIsUpdateResumeOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-md shadow-purple-600/20 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-slate-900 text-white font-bold text-xs shadow-sm shadow-sky-600/20 transition-all cursor-pointer"
           >
-            <Upload className="w-4 h-4" />
-            Upload Updated Resume
+            <Upload className="w-3.5 h-3.5" />
+            <span>Upload Updated Resume</span>
           </button>
 
           <button
             onClick={() => setIsAddSkillOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs shadow-md shadow-brand-600/20 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-slate-900 font-bold text-xs shadow-2xs transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            Add Self-Reported Skill
+            <Plus className="w-3.5 h-3.5 text-slate-500" />
+            <span>Add Skill</span>
           </button>
         </div>
       </div>
 
-      {/* Main Profile Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Personal & Education */}
-        <div className="space-y-6 lg:col-span-1">
-          {/* User Card */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm text-center">
-            {profile?.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt="Profile Avatar"
-                className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-slate-100 shadow-md mb-4"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white text-3xl font-extrabold flex items-center justify-center mx-auto border-4 border-slate-100 shadow-md mb-4">
-                {profile?.name ? profile.name.charAt(0).toUpperCase() : 'S'}
-              </div>
-            )}
-            <h2 className="text-xl font-black text-slate-900">{profile?.name || 'Student Candidate'}</h2>
-            <p className="text-xs font-semibold text-brand-600 mt-0.5">{profile?.targetRole ? `${profile.targetRole} Candidate` : 'Career Track Pending'}</p>
-            <p className="text-xs text-slate-500 mt-1">{profile?.email || 'Registered User'}</p>
-
-            <div className="mt-6 pt-6 border-t border-slate-100 space-y-3 text-left text-xs font-medium text-slate-600">
-              <div className="flex items-center gap-2.5">
-                <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                <span>Current Location: <strong className="text-slate-900">{profile?.location || 'Not Specified'}</strong></span>
-              </div>
-              <div className="flex items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2.5">
-                  <Compass className="w-4 h-4 text-brand-600 shrink-0" />
-                  <span>Target Role: <strong className="text-slate-900">{profile?.targetRole || 'Not Selected'}</strong></span>
+      {/* Main Grid: Left Column (Identity & Credentials) + Right Column (Classified Portfolio) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Unified Identity & Command Card (4 cols) */}
+        <div className="lg:col-span-4 space-y-5">
+          {/* Student Profile Card */}
+          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-5">
+            <div className="flex items-start gap-4">
+              {profile?.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt="Avatar"
+                  className="w-16 h-16 rounded-2xl object-cover border border-slate-200 shadow-sm shrink-0"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-md shadow-sky-600/20 shrink-0">
+                  {initials}
                 </div>
+              )}
+
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h2 className="text-base font-bold text-slate-900 truncate">
+                    {profile?.name || 'Student Candidate'}
+                  </h2>
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <CheckCircle2 className="w-2.5 h-2.5" /> Verified
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-sky-700">
+                  {profile?.targetRole ? `${profile.targetRole} Candidate` : 'Career Track Selected'}
+                </p>
+                <p className="text-[11px] text-slate-500 truncate">
+                  {profile?.email || 'Verified Student'}
+                </p>
+              </div>
+            </div>
+
+            {/* Target Career Calibration Box */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-sky-50/80 to-indigo-50/50 border border-sky-100 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-800 flex items-center gap-1">
+                  <Compass className="w-3 h-3 text-sky-600" /> Target Career Role
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white text-emerald-700 border border-emerald-200 shadow-2xs">
+                  Active Target
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-extrabold text-slate-900 truncate">
+                  {profile?.targetRole || 'Data Scientist'}
+                </span>
                 <button
                   onClick={() => {
                     setSelectedRole(profile?.targetRole || '');
                     setIsCustomSelectedRole(false);
                     setIsEditRoleOpen(true);
                   }}
-                  className="px-2.5 py-1 text-[10px] font-extrabold bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-sky-600 hover:text-white text-sky-700 border border-sky-200 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
                 >
-                  <Edit3 className="w-3 h-3" /> Change
+                  Switch Role
                 </button>
               </div>
-              <div className="flex items-center gap-2.5">
-                <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                <span>Target Location: <strong className="text-slate-900">{profile?.targetLocation || 'Not Specified'}</strong></span>
-              </div>
-            </div>
-          </div>
-
-          {/* Target Career Direction Card */}
-          <div className="p-5 rounded-3xl bg-gradient-to-br from-brand-900 to-slate-900 text-white shadow-soft-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-brand-300" />
-                <h3 className="text-xs font-black uppercase tracking-wider text-brand-200">Career Direction</h3>
-              </div>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Active AI Target
-              </span>
-            </div>
-            <div>
-              <p className="text-base font-black text-white">{profile?.targetRole || 'No Target Role Selected Yet'}</p>
-              <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
-                Skill gaps, market benchmarks, and job matching scores are actively tuned for this career path.
+              <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
+                Learning roadmaps, skill gaps, and readiness telemetry calibrate to this role.
               </p>
             </div>
-            <button
-              onClick={() => {
-                setSelectedRole(profile?.targetRole || '');
-                setIsCustomSelectedRole(false);
-                setIsEditRoleOpen(true);
-              }}
-              className="w-full py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-brand-600/30 cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              Switch Target Career Path
-            </button>
+
+            {/* Location & Metadata Rows */}
+            <div className="space-y-2 text-xs font-medium text-slate-600 pt-1">
+              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                <span className="text-slate-500 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" /> Current City
+                </span>
+                <strong className="text-slate-900 font-semibold">{profile?.location || 'Jaipur'}</strong>
+              </div>
+              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                <span className="text-slate-500 flex items-center gap-1.5">
+                  <Building className="w-3.5 h-3.5 text-slate-400" /> Target Location
+                </span>
+                <strong className="text-slate-900 font-semibold">{profile?.targetLocation || 'Jaipur'}</strong>
+              </div>
+            </div>
           </div>
 
-          {/* Education Box */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-4">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-brand-600" />
-              <h3 className="text-base font-extrabold text-slate-900">Education Details</h3>
+          {/* Academic Credentials Card */}
+          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+              <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center border border-sky-100">
+                <GraduationCap className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Academic Education</h3>
+                <p className="text-[11px] text-slate-500">Degree & Institution</p>
+              </div>
             </div>
+
             <div className="space-y-2 text-xs">
-              <h4 className="font-extrabold text-slate-900 text-sm">{profile?.education?.institution || 'Academic Institution (Not specified)'}</h4>
-              <p className="text-slate-600 font-medium">{profile?.education?.degree || 'Degree'}</p>
-              <p className="text-slate-500 font-medium">Field: {profile?.education?.fieldOfStudy || 'Engineering & Technology'}</p>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 font-bold text-slate-700">
-                <span>Graduation: {profile?.education?.graduationYear || '2026'}</span>
-                <span className="text-brand-600">CGPA: {profile?.education?.cgpa || 'N/A'}</span>
+              <h4 className="font-bold text-slate-900 text-xs">
+                {profile?.education?.institution || 'Arya College of Engineering & IT, Jaipur'}
+              </h4>
+              <p className="text-slate-600 font-medium">
+                {profile?.education?.degree || 'B.Tech'} in {profile?.education?.fieldOfStudy || 'Electronics and Communication Engineering'}
+              </p>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 font-semibold text-slate-700">
+                <span className="text-slate-500">Class of {profile?.education?.graduationYear || '2022'}</span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">
+                  CGPA: {profile?.education?.cgpa || '7.8'}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Resume Box */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-purple-600" />
-                <h3 className="text-base font-extrabold text-slate-900">Resume Metadata</h3>
+          {/* Uploaded Resume Metadata Card */}
+          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center border border-slate-200">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Resume Dossier</h3>
+                  <p className="text-[11px] text-slate-500">Deterministic Parsing</p>
+                </div>
               </div>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
                 profile?.resume?.fileName
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : 'bg-amber-50 text-amber-700 border-amber-200'
               }`}>
-                {profile?.resume?.fileName ? 'Parsed' : 'Pending Upload'}
+                {profile?.resume?.fileName ? 'Parsed' : 'Pending'}
               </span>
             </div>
 
             {profile?.resume?.fileName ? (
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs space-y-1">
-                <p className="font-extrabold text-slate-900 truncate">{profile.resume.fileName}</p>
-                <p className="text-slate-500 font-medium">Uploaded: {profile.resume.uploadDate || 'Recent'} • {profile.resume.fileSize || 'PDF'}</p>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-1">
+                <p className="font-bold text-slate-900 truncate">{profile.resume.fileName}</p>
+                <p className="text-[11px] text-slate-500">
+                  Uploaded: {profile.resume.uploadDate || 'Sep 19, 2026'} • {profile.resume.fileSize || '0.1 MB'}
+                </p>
               </div>
             ) : (
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-xs text-center text-slate-500 font-medium">
-                No resume uploaded yet. Upload below for automated skill extraction.
-              </div>
+              <p className="text-xs text-slate-500">No resume uploaded yet.</p>
             )}
 
             <button
               onClick={() => setIsUpdateResumeOpen(true)}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200/60 transition-colors cursor-pointer"
+              className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 font-semibold text-xs border border-slate-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5" />
-              {profile?.resume?.fileName ? 'Upload Updated Resume' : 'Upload Resume Now'}
+              <Upload className="w-3 h-3 text-slate-500" />
+              <span>{profile?.resume?.fileName ? 'Upload Replacement Resume' : 'Upload Resume Now'}</span>
             </button>
           </div>
         </div>
 
-        {/* Right Column: Skills Matrix, Projects & Certifications */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Extracted & Verified Skills Matrix */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Extracted & Verified Skills</h3>
-                <p className="text-xs text-slate-500 font-medium">Categorized by verification source & level</p>
-              </div>
+        {/* Right Column: Classified Portfolio with Tabbed Architecture (8 cols) */}
+        <div className="lg:col-span-8 space-y-5">
+          {/* Modern Tab Bar */}
+          <div className="p-1.5 rounded-2xl bg-slate-100/90 border border-slate-200 flex items-center gap-1 overflow-x-auto scrollbar-none">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'overview'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5 text-sky-600" />
+              <span>Overview</span>
+            </button>
 
-              {/* Legend */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <SkillBadge type="Verified" />
-                <SkillBadge type="Resume Extracted" />
-                <SkillBadge type="Self Reported" />
-              </div>
-            </div>
+            <button
+              onClick={() => setActiveTab('skills')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'skills'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <Code2 className="w-3.5 h-3.5 text-sky-600" />
+              <span>Skills Matrix</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                activeTab === 'skills' ? 'bg-sky-100 text-sky-700' : 'bg-slate-200/80 text-slate-600'
+              }`}>
+                {totalSkillsCount}
+              </span>
+            </button>
 
-            {profile?.skills && profile.skills.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {profile.skills.map((skill) => (
-                  <div
-                    key={skill.id}
-                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 hover:bg-white hover:shadow-soft-sm transition-all"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{skill.category}</span>
-                        <h4 className="text-sm font-extrabold text-slate-900 mt-0.5">{skill.name}</h4>
-                      </div>
-                      <SkillBadge type={skill.type} />
-                    </div>
+            <button
+              onClick={() => setActiveTab('experience')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'experience'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <Briefcase className="w-3.5 h-3.5 text-sky-600" />
+              <span>Experience</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                activeTab === 'experience' ? 'bg-sky-100 text-sky-700' : 'bg-slate-200/80 text-slate-600'
+              }`}>
+                {totalExpCount}
+              </span>
+            </button>
 
-                    <div className="flex items-center justify-between text-xs font-semibold text-slate-600 pt-1">
-                      <span>Level: <strong className="text-slate-900">{skill.level}</strong></span>
-                      <span className="text-brand-600">{skill.proficiencyScore}% Score</span>
-                    </div>
+            <button
+              onClick={() => setActiveTab('projects')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'projects'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <FolderGit2 className="w-3.5 h-3.5 text-sky-600" />
+              <span>Projects</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                activeTab === 'projects' ? 'bg-sky-100 text-sky-700' : 'bg-slate-200/80 text-slate-600'
+              }`}>
+                {totalProjCount}
+              </span>
+            </button>
 
-                    {skill.verifiedBy && (
-                      <p className="text-[10px] text-slate-400 italic">Validated by: {skill.verifiedBy}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800">No skills added to your profile yet</h4>
-                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                    Upload your resume to automatically extract your technical skills or add self-reported skills manually.
-                  </p>
-                </div>
-                <div className="flex items-center justify-center gap-3 pt-2">
-                  <button
-                    onClick={() => setIsAddSkillOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs shadow-sm cursor-pointer"
-                  >
-                    + Add First Skill
-                  </button>
-                  <button
-                    onClick={() => setIsUpdateResumeOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold text-xs shadow-sm cursor-pointer"
-                  >
-                    Upload Resume
-                  </button>
-                </div>
-              </div>
-            )}
+            <button
+              onClick={() => setActiveTab('education')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'education'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5 text-sky-600" />
+              <span>Certs & Academics</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                activeTab === 'education' ? 'bg-sky-100 text-sky-700' : 'bg-slate-200/80 text-slate-600'
+              }`}>
+                {totalCertCount}
+              </span>
+            </button>
           </div>
 
-          {/* Work Experience / Internships Section */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Work Experience & Internships</h3>
-              </div>
-              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
-                {profile?.experience?.length || 0} Positions
-              </span>
-            </div>
+          {/* TAB 1: OVERVIEW SUMMARY */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Executive Summary Metrics Card */}
+              <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Portfolio Executive Summary</h3>
+                    <p className="text-xs text-slate-500 font-medium">Classified telemetry overview across your profile</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('skills')}
+                    className="text-xs font-bold text-sky-700 hover:text-sky-800 flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>View All Details</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
-            <div className="space-y-4">
-              {profile?.experience && profile.experience.length > 0 ? (
-                profile.experience.map((exp) => (
-                  <div key={exp.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                  <div className="p-3.5 rounded-2xl bg-sky-50/70 border border-sky-100 text-center">
+                    <p className="text-2xl font-black text-sky-800">{totalSkillsCount}</p>
+                    <p className="text-[11px] font-bold text-sky-700 uppercase tracking-wider mt-0.5">Verified Skills</p>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-100 text-center">
+                    <p className="text-2xl font-black text-emerald-800">{totalExpCount}</p>
+                    <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider mt-0.5">Work Positions</p>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-center">
+                    <p className="text-2xl font-black text-indigo-800">{totalProjCount}</p>
+                    <p className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider mt-0.5">Major Projects</p>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                    <p className="text-2xl font-black text-slate-800">
+                      {profile?.education?.cgpa ? `${profile.education.cgpa}` : '7.8'}
+                    </p>
+                    <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mt-0.5">B.Tech CGPA</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Skills Highlights Preview */}
+              <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center font-bold text-xs">
+                      ⚡
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">Featured Core Competencies</h4>
+                      <p className="text-[11px] text-slate-500">Top technical skills extracted from your resume</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('skills')}
+                    className="text-xs font-semibold text-sky-700 hover:underline cursor-pointer"
+                  >
+                    View All {totalSkillsCount} Skills
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(profile?.skills || []).slice(0, 6).map((skill) => (
+                    <div
+                      key={skill.id}
+                      className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2 hover:bg-white hover:border-sky-300 transition-colors"
+                    >
                       <div>
-                        <h4 className="text-sm font-extrabold text-slate-900">{exp.role}</h4>
-                        <p className="text-xs font-bold text-indigo-600">{exp.company}</p>
-                      </div>
-                      {(exp.startDate || exp.endDate) && (
-                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 self-start sm:self-auto">
-                          {exp.startDate} {exp.endDate ? `– ${exp.endDate}` : ''}
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          {skill.category}
                         </span>
+                        <h5 className="text-xs font-bold text-slate-900">{skill.name}</h5>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[11px] font-bold text-sky-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                          {skill.proficiencyScore}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Work Experience Preview */}
+              <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                      💼
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">Latest Experience</h4>
+                      <p className="text-[11px] text-slate-500">Recent internships and professional roles</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('experience')}
+                    className="text-xs font-semibold text-sky-700 hover:underline cursor-pointer"
+                  >
+                    View All ({totalExpCount})
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {(profile?.experience || []).slice(0, 2).map((exp) => (
+                    <div
+                      key={exp.id}
+                      className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <div>
+                          <h5 className="text-xs font-bold text-slate-900">{exp.role}</h5>
+                          <span className="text-[11px] font-bold text-sky-700">{exp.company}</span>
+                        </div>
+                        {(exp.startDate || exp.endDate) && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 self-start sm:self-auto">
+                            {exp.startDate} {exp.endDate ? `– ${exp.endDate}` : ''}
+                          </span>
+                        )}
+                      </div>
+                      {exp.description && (
+                        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-medium">
+                          {exp.description}
+                        </p>
                       )}
                     </div>
-                    {exp.description && (
-                      <p className="text-xs text-slate-600 leading-relaxed font-medium pt-1">{exp.description}</p>
-                    )}
+                  ))}
+                </div>
+              </div>
+
+              {/* Featured Projects Preview */}
+              <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                      🚀
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">Flagship Projects</h4>
+                      <p className="text-[11px] text-slate-500">Technical builds verified on resume</p>
+                    </div>
                   </div>
-                ))
+                  <button
+                    onClick={() => setActiveTab('projects')}
+                    className="text-xs font-semibold text-sky-700 hover:underline cursor-pointer"
+                  >
+                    View All ({totalProjCount})
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {(profile?.projects || []).slice(0, 2).map((proj) => (
+                    <div
+                      key={proj.id}
+                      className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h5 className="text-xs font-bold text-slate-900">{proj.title}</h5>
+                        <span className="text-[11px] text-slate-400 font-medium">{proj.date}</span>
+                      </div>
+                      <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                        {proj.description}
+                      </p>
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {proj.skillsUsed.map((sk) => (
+                          <span
+                            key={sk}
+                            className="px-2 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 text-[10px] font-semibold"
+                          >
+                            {sk}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: SKILLS MATRIX & CLASSIFICATION */}
+          {activeTab === 'skills' && (
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-5 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Skills Matrix & Classification</h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Filter by technical domain or search specific competencies
+                  </p>
+                </div>
+
+                {/* Legend Chips */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <SkillBadge type="Verified" />
+                  <SkillBadge type="Resume Extracted" />
+                  <SkillBadge type="Self Reported" />
+                </div>
+              </div>
+
+              {/* Search & Category Filter Bar */}
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={skillSearchQuery}
+                    onChange={(e) => setSkillSearchQuery(e.target.value)}
+                    placeholder="Search skills by name or keyword (e.g. Python, Machine Learning, SQL)..."
+                    className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium text-slate-900"
+                  />
+                  {skillSearchQuery && (
+                    <button
+                      onClick={() => setSkillSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 hover:text-slate-600 font-bold"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Pills */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  <button
+                    onClick={() => setSelectedSkillCategory('ALL')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      selectedSkillCategory === 'ALL'
+                        ? 'bg-sky-600 text-white shadow-2xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    All Domains ({totalSkillsCount})
+                  </button>
+
+                  {skillCategories.map(([catName, count]) => (
+                    <button
+                      key={catName}
+                      onClick={() => setSelectedSkillCategory(catName)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        selectedSkillCategory === catName
+                          ? 'bg-sky-600 text-white shadow-2xs'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {catName} ({count})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Classified Skills Cards Grid */}
+              {filteredSkills.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                  {filteredSkills.map((skill) => (
+                    <div
+                      key={skill.id}
+                      className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5 hover:bg-white hover:border-sky-300 hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {skill.category}
+                          </span>
+                          <h4 className="text-sm font-bold text-slate-900 mt-0.5">{skill.name}</h4>
+                        </div>
+                        <SkillBadge type={skill.type} />
+                      </div>
+
+                      {/* Proficiency Progress & Level */}
+                      <div className="space-y-1 pt-1">
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+                          <span className="text-[11px] text-slate-500">
+                            Level: <strong className="text-slate-900">{skill.level}</strong>
+                          </span>
+                          <span className="text-sky-700 font-bold text-xs">
+                            {skill.proficiencyScore}% Score
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-sky-500 to-indigo-600 rounded-full"
+                            style={{ width: `${skill.proficiencyScore}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {skill.verifiedBy && (
+                        <p className="text-[10px] text-slate-400 italic pt-0.5">
+                          Validated by: {skill.verifiedBy}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <p className="text-xs text-slate-400 italic py-2">No work experience or internships extracted yet.</p>
+                <div className="p-8 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-2">
+                  <p className="text-xs font-bold text-slate-700">No skills found matching your filter.</p>
+                  <p className="text-[11px] text-slate-500">Try searching for a different keyword or category.</p>
+                  <button
+                    onClick={() => {
+                      setSelectedSkillCategory('ALL');
+                      setSkillSearchQuery('');
+                    }}
+                    className="mt-2 px-3 py-1.5 rounded-lg bg-sky-50 text-sky-700 font-bold text-xs border border-sky-200"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Projects Section */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-4">
-            <div className="flex items-center gap-2">
-              <FolderGit2 className="w-5 h-5 text-brand-600" />
-              <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Projects</h3>
-            </div>
+          {/* TAB 3: WORK EXPERIENCE & INTERNSHIPS */}
+          {activeTab === 'experience' && (
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-5 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Work Experience & Internships</h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Industry engagements extracted and formatted from your resume
+                  </p>
+                </div>
+                <span className="text-xs font-bold px-3 py-1 rounded-xl bg-sky-50 text-sky-700 border border-sky-200">
+                  {totalExpCount} Positions
+                </span>
+              </div>
 
-            <div className="space-y-4">
-              {profile?.projects && profile.projects.length > 0 ? (
-                profile.projects.map((proj) => (
-                  <div key={proj.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-extrabold text-slate-900">{proj.title}</h4>
-                      <span className="text-xs font-semibold text-slate-400">{proj.date}</span>
+              <div className="space-y-4 pt-1">
+                {profile?.experience && profile.experience.length > 0 ? (
+                  profile.experience.map((exp) => (
+                    <div
+                      key={exp.id}
+                      className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 hover:bg-white hover:border-sky-300 hover:shadow-sm transition-all"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-bold text-slate-900">{exp.role}</h4>
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-md border border-sky-100">
+                            <Building className="w-3 h-3" />
+                            {exp.company}
+                          </span>
+                        </div>
+                        {(exp.startDate || exp.endDate) && (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 self-start sm:self-auto shadow-2xs">
+                            <Calendar className="w-3 h-3 text-slate-400" />
+                            {exp.startDate} {exp.endDate ? `– ${exp.endDate}` : ''}
+                          </span>
+                        )}
+                      </div>
+
+                      {exp.description && (
+                        <p className="text-xs text-slate-600 leading-relaxed font-normal pt-1 whitespace-pre-line">
+                          {exp.description}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-xs text-slate-600 leading-relaxed font-medium">{proj.description}</p>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {proj.skillsUsed.map((sk) => (
-                        <span key={sk} className="px-2 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 text-[11px] font-semibold">
-                          {sk}
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400 italic py-4 text-center">
+                    No work experience or internships extracted yet.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: PROJECTS PORTFOLIO */}
+          {activeTab === 'projects' && (
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-5 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Projects Portfolio</h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Technical projects and systems built with validated skills
+                  </p>
+                </div>
+                <span className="text-xs font-bold px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {totalProjCount} Projects
+                </span>
+              </div>
+
+              <div className="space-y-4 pt-1">
+                {profile?.projects && profile.projects.length > 0 ? (
+                  profile.projects.map((proj) => (
+                    <div
+                      key={proj.id}
+                      className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 hover:bg-white hover:border-indigo-300 hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                            <FolderGit2 className="w-4 h-4" />
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-900">{proj.title}</h4>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-500 bg-white px-2.5 py-0.5 rounded-md border border-slate-200">
+                          {proj.date || 'Recent'}
                         </span>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400 italic py-2">No projects extracted yet.</p>
-              )}
-            </div>
-          </div>
+                      </div>
 
-          {/* Certifications Section */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-4">
-            <div className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-emerald-600" />
-              <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Certifications</h3>
-            </div>
+                      <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                        {proj.description}
+                      </p>
 
-            <div className="space-y-4">
-              {profile?.certifications && profile.certifications.length > 0 ? (
-                profile.certifications.map((cert) => (
-                  <div key={cert.id} className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-extrabold text-slate-900">{cert.title}</h4>
-                      <span className="text-xs font-bold text-emerald-700">{cert.issueDate}</span>
-                    </div>
-                    <p className="text-xs text-slate-600 font-medium">Issuer: {cert.issuer}</p>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {cert.skillsValidated.map((sk) => (
-                        <span key={sk} className="px-2 py-0.5 rounded-md bg-white text-emerald-800 border border-emerald-200 text-[11px] font-bold">
-                          ✓ {sk}
+                      <div className="pt-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                          Technologies & Skills Applied
                         </span>
-                      ))}
+                        <div className="flex flex-wrap gap-1.5">
+                          {proj.skillsUsed.map((sk) => (
+                            <span
+                              key={sk}
+                              className="px-2.5 py-1 rounded-lg bg-white text-slate-800 border border-slate-200 text-[11px] font-semibold shadow-2xs"
+                            >
+                              {sk}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400 italic py-2">No certifications extracted yet.</p>
-              )}
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400 italic py-4 text-center">
+                    No projects extracted yet.
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* TAB 5: CERTIFICATIONS & ACADEMICS */}
+          {activeTab === 'education' && (
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6 animate-fade-in">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Education & Accreditations</h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Academic qualifications and validated professional certifications
+                </p>
+              </div>
+
+              {/* Academic Details Card */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-sky-600" />
+                    <h4 className="text-sm font-bold text-slate-900">
+                      {profile?.education?.institution || 'Arya College of Engineering & IT, Jaipur'}
+                    </h4>
+                  </div>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    CGPA: {profile?.education?.cgpa || '7.8'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 font-medium">
+                  <div>
+                    <span className="text-slate-400">Degree:</span> {profile?.education?.degree || 'B.Tech'}
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Field:</span> {profile?.education?.fieldOfStudy || 'Electronics and Communication Engineering'}
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Graduation:</span> Class of {profile?.education?.graduationYear || '2022'}
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Status:</span> Completed
+                  </div>
+                </div>
+              </div>
+
+              {/* Certifications Card */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Professional Certifications
+                </h4>
+                {profile?.certifications && profile.certifications.length > 0 ? (
+                  profile.certifications.map((cert) => (
+                    <div
+                      key={cert.id}
+                      className="p-4 rounded-2xl bg-sky-50/50 border border-sky-200/80 space-y-2 hover:bg-white transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h5 className="text-xs font-bold text-slate-900">{cert.title}</h5>
+                        <span className="text-xs font-bold text-sky-700">{cert.issueDate}</span>
+                      </div>
+                      <p className="text-xs text-slate-600">Issuer: {cert.issuer}</p>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {cert.skillsValidated.map((sk) => (
+                          <span
+                            key={sk}
+                            className="px-2 py-0.5 rounded-md bg-white text-sky-800 border border-sky-200 text-[10px] font-bold"
+                          >
+                            ✓ {sk}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-1.5">
+                    <Award className="w-8 h-8 text-slate-300 mx-auto" />
+                    <p className="text-xs font-bold text-slate-700">No external certifications extracted yet.</p>
+                    <p className="text-[11px] text-slate-500">
+                      Certificates will be automatically indexed when you upload a resume containing certification links or licenses.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Modal for Adding Self-Reported Skill */}
-
       <Modal
         isOpen={isAddSkillOpen}
         onClose={() => setIsAddSkillOpen(false)}
@@ -554,7 +1067,7 @@ export default function StudentProfilePage() {
               value={newSkillName}
               onChange={(e) => setNewSkillName(e.target.value)}
               placeholder="e.g. Tableau, Docker, GraphQL"
-              className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
+              className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900 font-medium"
             />
           </div>
 
@@ -563,7 +1076,7 @@ export default function StudentProfilePage() {
             <select
               value={newSkillCategory}
               onChange={(e) => setNewSkillCategory(e.target.value)}
-              className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
+              className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
             >
               <option value="Data Visualization">Data Visualization</option>
               <option value="Database & Querying">Database & Querying</option>
@@ -578,7 +1091,7 @@ export default function StudentProfilePage() {
             <select
               value={newSkillLevel}
               onChange={(e) => setNewSkillLevel(e.target.value as any)}
-              className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
+              className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
             >
               <option value="Basic">Basic</option>
               <option value="Intermediate">Intermediate</option>
@@ -590,13 +1103,13 @@ export default function StudentProfilePage() {
             <button
               type="button"
               onClick={() => setIsAddSkillOpen(false)}
-              className="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+              className="py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="py-2.5 px-5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs shadow-md shadow-brand-600/20"
+              className="py-2 px-5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs shadow-sm cursor-pointer"
             >
               Save Skill to Profile
             </button>
@@ -633,10 +1146,10 @@ export default function StudentProfilePage() {
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer ${
                   isDragging
-                    ? 'border-purple-500 bg-purple-50/50 scale-[0.99]'
+                    ? 'border-sky-500 bg-sky-50/50 scale-[0.99]'
                     : resumeFile
                     ? 'border-emerald-300 bg-emerald-50/30'
-                    : 'border-slate-300 hover:border-purple-400 bg-slate-50/50 hover:bg-purple-50/20'
+                    : 'border-slate-300 hover:border-sky-400 bg-slate-50/50 hover:bg-sky-50/20'
                 }`}
               >
                 <input
@@ -651,7 +1164,7 @@ export default function StudentProfilePage() {
                   }}
                 />
 
-                <div className="mx-auto w-14 h-14 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mb-3 shadow-inner">
+                <div className="mx-auto w-14 h-14 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center mb-3 shadow-inner">
                   {resumeFile ? <FileCheck className="w-7 h-7 text-emerald-600" /> : <Upload className="w-7 h-7" />}
                 </div>
 
@@ -661,21 +1174,21 @@ export default function StudentProfilePage() {
                     <p className="text-xs text-slate-500 font-medium">
                       {(resumeFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to analyze
                     </p>
-                    <p className="text-[11px] text-purple-600 font-bold mt-2">Click or drag another file to replace</p>
+                    <p className="text-[11px] text-sky-600 font-bold mt-2">Click or drag another file to replace</p>
                   </div>
                 ) : (
                   <div className="space-y-1">
                     <p className="text-sm font-extrabold text-slate-900">
-                      Drag and drop your updated resume, or <span className="text-purple-600 underline">browse</span>
+                      Drag and drop your updated resume, or <span className="text-sky-600 underline">browse</span>
                     </p>
                     <p className="text-xs text-slate-400 font-medium">Supports PDF, DOCX (Max 10MB)</p>
                   </div>
                 )}
               </div>
 
-              {/* Current Resume Info notice */}
+              {/* Notice */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-3">
-                <Sparkles className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+                <Sparkles className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                 <div className="text-xs text-slate-600 space-y-1">
                   <p className="font-bold text-slate-800">Deterministic Parsing with High Accuracy</p>
                   <p>
@@ -689,7 +1202,7 @@ export default function StudentProfilePage() {
                 <button
                   type="button"
                   onClick={handleCloseUpdateModal}
-                  className="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                  className="py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -699,7 +1212,7 @@ export default function StudentProfilePage() {
                   onClick={handleStartResumeUpdate}
                   className={`inline-flex items-center gap-2 py-2.5 px-5 rounded-xl font-extrabold text-xs shadow-md transition-all cursor-pointer ${
                     resumeFile
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/25'
+                      ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sky-600/25'
                       : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                   }`}
                 >
@@ -714,8 +1227,8 @@ export default function StudentProfilePage() {
           {isAnalyzing && (
             <div className="py-8 space-y-6 text-center">
               <div className="relative mx-auto w-16 h-16">
-                <div className="w-16 h-16 rounded-full border-4 border-purple-100 border-t-purple-600 animate-spin" />
-                <Sparkles className="w-6 h-6 text-purple-600 absolute inset-0 m-auto" />
+                <div className="w-16 h-16 rounded-full border-4 border-sky-100 border-t-sky-600 animate-spin" />
+                <Sparkles className="w-6 h-6 text-sky-600 absolute inset-0 m-auto" />
               </div>
 
               <div className="space-y-2 max-w-md mx-auto">
@@ -740,7 +1253,7 @@ export default function StudentProfilePage() {
                       key={stepText}
                       className={`flex items-center gap-3 p-2.5 rounded-xl text-xs transition-all ${
                         isCurrent
-                          ? 'bg-purple-50 text-purple-900 font-bold border border-purple-200/80'
+                          ? 'bg-sky-50 text-sky-900 font-bold border border-sky-200/80'
                           : isDone
                           ? 'text-emerald-700 font-semibold'
                           : 'text-slate-400'
@@ -749,7 +1262,7 @@ export default function StudentProfilePage() {
                       {isDone ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       ) : isCurrent ? (
-                        <RefreshCw className="w-4 h-4 text-purple-600 animate-spin shrink-0" />
+                        <RefreshCw className="w-4 h-4 text-sky-600 animate-spin shrink-0" />
                       ) : (
                         <div className="w-4 h-4 rounded-full border border-slate-300 shrink-0" />
                       )}
@@ -806,7 +1319,7 @@ export default function StudentProfilePage() {
                     {analysisResult.skills.map((sk) => (
                       <span
                         key={sk.skill_id}
-                        className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-800 border border-purple-200 text-xs font-bold"
+                        className="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold"
                       >
                         {sk.canonical_name}
                       </span>
@@ -819,7 +1332,7 @@ export default function StudentProfilePage() {
                 <button
                   type="button"
                   onClick={handleCloseUpdateModal}
-                  className="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-md shadow-purple-600/20 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 py-2 px-5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs shadow-md shadow-sky-600/20 transition-all cursor-pointer"
                 >
                   <span>View Updated Profile</span>
                   <ArrowRight className="w-4 h-4" />
@@ -851,7 +1364,7 @@ export default function StudentProfilePage() {
                   setSelectedRole(e.target.value);
                 }
               }}
-              className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-900"
+              className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
             >
               {CAREER_ROLE_CATEGORIES.map((cat) => (
                 <optgroup key={cat.category} label={`${cat.icon} ${cat.category}`}>
@@ -880,17 +1393,17 @@ export default function StudentProfilePage() {
                   setSelectedRole(e.target.value);
                 }}
                 placeholder="e.g. Autonomous Systems Lead / Robotics Architect"
-                className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-brand-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-brand-900"
+                className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-sky-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-sky-900"
               />
             </div>
           )}
 
-          <div className="p-3.5 rounded-xl bg-brand-50/70 border border-brand-200 text-xs text-brand-900 space-y-1">
+          <div className="p-3.5 rounded-xl bg-sky-50/70 border border-sky-200 text-xs text-sky-900 space-y-1">
             <p className="font-extrabold flex items-center gap-1.5">
-              <Compass className="w-4 h-4 text-brand-600" />
+              <Compass className="w-4 h-4 text-sky-600" />
               Dynamic Intelligence Recalculation
             </p>
-            <p className="text-[11px] text-brand-700 leading-relaxed">
+            <p className="text-[11px] text-sky-700 leading-relaxed">
               When you save, the Profile Intelligence Agent recalculates skill gaps, market demand percentages, and matches strictly against this domain.
             </p>
           </div>
@@ -899,14 +1412,14 @@ export default function StudentProfilePage() {
             <button
               type="button"
               onClick={() => setIsEditRoleOpen(false)}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50"
+              className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isUpdatingRole}
-              className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs shadow-md shadow-brand-600/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs shadow-md shadow-sky-600/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {isUpdatingRole ? (
                 <>

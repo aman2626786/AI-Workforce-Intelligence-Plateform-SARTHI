@@ -10,63 +10,67 @@ export interface RoleCategoryGroup {
 
 export const DEFAULT_ROLE_GROUPS: RoleCategoryGroup[] = [
   {
-    category: '🤖 Robotics & Embedded Systems',
-    roles: [
-      'Robotics Engineer',
-      'Autonomous Systems Engineer',
-      'Embedded Systems Engineer',
-      'IoT & Firmware Engineer',
-      'Mechatronics Engineer',
-      'Hardware / PCB Design Engineer',
-    ],
-  },
-  {
-    category: '🧠 AI & Machine Learning',
-    roles: [
-      'AI Engineer',
-      'Machine Learning Engineer',
-      'Computer Vision Engineer',
-      'NLP / LLM Engineer',
-      'MLOps Engineer',
-      'Generative AI Specialist',
-    ],
-  },
-  {
-    category: '💻 Software Engineering',
+    category: 'Software Engineering',
     roles: [
       'Full Stack Developer',
-      'Software Engineer',
-      'Backend Developer',
       'Frontend Developer',
-      'Systems Engineer',
+      'Backend Developer',
+      'Software Engineer',
       'Mobile App Developer',
+      'Systems Engineer',
     ],
   },
   {
-    category: '📊 Data & Analytics',
+    category: 'Data Science & Analytics',
     roles: [
       'Data Scientist',
       'Data Analyst',
       'Data Engineer',
-      'BI Analyst',
-      'Business Analytics Specialist',
+      'Business Intelligence Analyst',
+      'Data Analytics Consultant',
     ],
   },
   {
-    category: '🛡️ Cloud, DevOps & Security',
+    category: 'AI & Machine Learning',
     roles: [
-      'Cloud & DevOps Engineer',
+      'Machine Learning Engineer',
+      'AI Engineer',
+      'Generative AI Specialist',
+      'MLOps Engineer',
+      'NLP / LLM Engineer',
+      'Computer Vision Engineer',
+    ],
+  },
+  {
+    category: 'Cloud, DevOps & Infrastructure',
+    roles: [
+      'Cloud Engineer',
+      'DevOps Engineer',
       'Site Reliability Engineer (SRE)',
+      'Solutions Architect',
+    ],
+  },
+  {
+    category: 'Cybersecurity',
+    roles: [
       'Cybersecurity Analyst',
       'Security Engineer',
       'SOC Analyst',
     ],
   },
   {
-    category: '🚀 Product & Quality',
+    category: 'Product & Quality',
     roles: [
       'Product Manager',
       'QA / Automation Engineer',
+    ],
+  },
+  {
+    category: 'Robotics & Embedded Systems',
+    roles: [
+      'Robotics Engineer',
+      'Embedded Systems Engineer',
+      'IoT Engineer',
     ],
   },
 ];
@@ -86,8 +90,9 @@ export const DEFAULT_LOCATIONS = [
 interface FilterBarProps {
   selectedRole: string;
   onRoleChange: (role: string) => void;
-  selectedLocation: string;
-  onLocationChange: (loc: string) => void;
+  selectedLocation?: string;
+  onLocationChange?: (loc: string) => void;
+  hideLocation?: boolean;
   selectedTimeframe?: string;
   onTimeframeChange?: (tf: string) => void;
   rolesList?: string[];
@@ -101,6 +106,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onRoleChange,
   selectedLocation,
   onLocationChange,
+  hideLocation = false,
   selectedTimeframe = 'Last 6 Months',
   onTimeframeChange,
   rolesList,
@@ -113,39 +119,39 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const isCustomSelected = selectedRole && !allKnownRoles.includes(selectedRole);
 
   return (
-    <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-soft-sm flex flex-wrap items-center justify-between gap-4">
+    <div className="p-4 rounded-2xl bg-white border border-sky-100 shadow-soft-sm flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-        <Filter className="w-4 h-4 text-brand-600" />
+        <Filter className="w-4 h-4 text-sky-600" />
         Market Filters
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         {/* Role Select */}
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
-          <Briefcase className="w-3.5 h-3.5 text-brand-600" />
-          <span className="text-slate-400">Role:</span>
+        <div className="flex items-center gap-2 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700">
+          <Briefcase className="w-4 h-4 text-sky-600" />
+          <span className="text-slate-400 font-semibold">Role:</span>
           <select
             value={selectedRole}
             onChange={(e) => onRoleChange(e.target.value)}
-            className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer max-w-[200px] truncate"
+            className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer max-w-[220px] truncate text-sm"
           >
             {isCustomSelected && (
-              <option value={selectedRole}>
-                ✨ {selectedRole} (Your Focus)
+              <option value={selectedRole} className="bg-white text-slate-900 font-bold">
+                {selectedRole} (Active Focus)
               </option>
             )}
 
             {rolesList ? (
               rolesList.map((role) => (
-                <option key={role} value={role}>
+                <option key={role} value={role} className="bg-white text-slate-800 font-medium py-1">
                   {role}
                 </option>
               ))
             ) : (
               roleGroups.map((group) => (
-                <optgroup key={group.category} label={group.category}>
+                <optgroup key={group.category} label={group.category} className="bg-slate-100 text-slate-900 font-bold py-1">
                   {group.roles.map((role) => (
-                    <option key={role} value={role}>
+                    <option key={role} value={role} className="bg-white text-slate-800 font-medium py-1">
                       {role}
                     </option>
                   ))}
@@ -155,35 +161,37 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </select>
         </div>
 
-        {/* Location Select */}
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
-          <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-          <span className="text-slate-400">Location:</span>
-          <select
-            value={selectedLocation}
-            onChange={(e) => onLocationChange(e.target.value)}
-            className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer"
-          >
-            {locationsList.map((loc) => (
-              <option key={loc} value={loc}>
-                {loc}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Location Select (hidden if hideLocation is true) */}
+        {!hideLocation && selectedLocation && onLocationChange && (
+          <div className="flex items-center gap-2 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700">
+            <MapPin className="w-4 h-4 text-emerald-600" />
+            <span className="text-slate-400 font-semibold">Location:</span>
+            <select
+              value={selectedLocation}
+              onChange={(e) => onLocationChange(e.target.value)}
+              className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer text-sm"
+            >
+              {locationsList.map((loc) => (
+                <option key={loc} value={loc} className="bg-white text-slate-800 font-medium py-1">
+                  {loc}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Timeframe Select */}
         {onTimeframeChange && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
-            <Calendar className="w-3.5 h-3.5 text-purple-600" />
-            <span className="text-slate-400">Period:</span>
+          <div className="flex items-center gap-2 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700">
+            <Calendar className="w-4 h-4 text-sky-600" />
+            <span className="text-slate-400 font-semibold">Period:</span>
             <select
               value={selectedTimeframe}
               onChange={(e) => onTimeframeChange(e.target.value)}
-              className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer"
+              className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer text-sm"
             >
               {timeframesList.map((tf) => (
-                <option key={tf} value={tf}>
+                <option key={tf} value={tf} className="bg-white text-slate-800 font-medium py-1">
                   {tf}
                 </option>
               ))}

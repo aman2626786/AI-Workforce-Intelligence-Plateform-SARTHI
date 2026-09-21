@@ -34,6 +34,7 @@ interface AppContextType {
   removeToast: (id: string) => void;
   refreshData: () => Promise<void>;
   updateTargetCareer: (role: string, location: string, company?: string) => Promise<void>;
+  updateProfileInfo: (updates: { name?: string; email?: string; targetRole?: string; targetLocation?: string; targetCompany?: string }) => Promise<void>;
   addSkillToRoadmap: (skill: IndustrySkill) => Promise<void>;
   toggleRoadmapStatus: (id: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -58,13 +59,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState<boolean>(false);
   const [aiDrawerTopic, setAiDrawerTopic] = useState<string>('General Career Intelligence');
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const addToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      removeToast(id);
-    }, 4000);
+    // GUARANTEE: Maximum 1 single toast on screen at any time. Never stack multiple boxes!
+    setToasts([{ id, type, message }]);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToasts([]);
+    }, 2800);
   };
 
   const removeToast = (id: string) => {
@@ -77,11 +83,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const refreshData = async () => {
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const profData = await careerService.getStudentProfile();
-      const currentRole = activeRole || profData.targetRole || 'Robotics Engineer';
-      const currentLocation = activeLocation || profData.targetLocation || 'Bengaluru';
+      const currentRole = profData.targetRole || activeRole || 'Data Scientist';
+      const currentLocation = profData.targetLocation || profData.location || activeLocation || 'India';
+
+      if (profData.targetRole && profData.targetRole !== activeRole) {
+        setActiveRole(profData.targetRole);
+      }
+      if ((profData.targetLocation || profData.location) && (profData.targetLocation || profData.location) !== activeLocation) {
+        setActiveLocation(profData.targetLocation || profData.location);
+      }
 
       const [skillsData, indData, jobsData, roadmapData] = await Promise.all([
         careerService.getIndustrySkills(currentRole, currentLocation),
@@ -89,13 +106,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         careerService.getJobMatches(currentRole),
         careerService.getCareerRoadmap(currentRole),
       ]);
-      setProfile(profData);
+
+      const freshProfile = await careerService.getStudentProfile();
+      setProfile(freshProfile);
       setSkills(skillsData);
       setIndustryOverview(indData);
       setJobs(jobsData);
       setRoadmap(roadmapData);
     } catch (err) {
-      console.error('Failed to load career data:', err);
+      console.warn('Career data loading notice:', err);
     } finally {
       setIsLoading(false);
     }
@@ -104,6 +123,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Client-side hydration sync for saved user profile
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      if (window.location.pathname.startsWith('/admin')) {
+        return;
+      }
       try {
         const saved = localStorage.getItem('skillvantage_user_profile');
         if (saved) {
@@ -139,7 +161,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addToast(`Target career updated to ${role} in ${location}`, 'success');
   };
 
+  const updateProfileInfo = async (updates: {
+    name?: string;
+    email?: string;
+    targetRole?: string;
+    targetLocation?: string;
+    targetCompany?: string;
+  }) => {
+    if (updates.targetRole) setActiveRole(updates.targetRole);
+    if (updates.targetLocation) setActiveLocation(updates.targetLocation);
+    const updated = await careerService.updateProfileInfo(updates);
+    setProfile(updated);
+    await refreshData();
+    addToast('Profile & career preferences updated successfully!', 'success');
+  };
+
   const addSkillToRoadmap = async (skill: IndustrySkill) => {
+    const key = skill.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const alreadyExists = roadmap.some(
+      (r) => r.skillName.toLowerCase().replace(/[^a-z0-9]/g, '') === key
+    );
+    if (alreadyExists) {
+      addToast(`"${skill.name}" is already in your Career Roadmap.`, 'info');
+      return;
+    }
     const updated = await careerService.addSkillToRoadmap(skill);
     setRoadmap(updated);
     addToast(`"${skill.name}" added to your Career Roadmap!`, 'success');
@@ -150,7 +195,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRoadmap(updated);
     const updatedProfile = await careerService.getStudentProfile();
     setProfile(updatedProfile);
-    addToast('Roadmap progress updated & readiness score recalculated!', 'info');
   };
 
   const logout = async () => {
@@ -199,6 +243,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         removeToast,
         refreshData,
         updateTargetCareer,
+        updateProfileInfo,
         addSkillToRoadmap,
         toggleRoadmapStatus,
         logout,

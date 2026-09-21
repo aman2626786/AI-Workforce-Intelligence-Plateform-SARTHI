@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.api.auth import get_current_user
@@ -111,6 +112,25 @@ async def upload_resume(
     db.add(resume_record)
     db.commit()
     db.refresh(resume_record)
+
+    # Keep only the newest few resumes per user to bound disk and extracted-text growth.
+    older_resumes = (
+        db.query(Resume)
+        .filter(Resume.user_id == current_user.id, Resume.id != resume_record.id)
+        .order_by(desc(Resume.uploaded_at))
+        .offset(max(settings.MAX_STORED_RESUMES_PER_USER - 1, 0))
+        .all()
+    )
+    for old_resume in older_resumes:
+        old_path = Path(old_resume.file_path)
+        if old_path.exists():
+            try:
+                old_path.unlink()
+            except OSError:
+                pass
+        db.delete(old_resume)
+    if older_resumes:
+        db.commit()
 
     return ResumeUploadResponse(
         id=resume_record.id,

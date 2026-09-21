@@ -19,10 +19,10 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({
   onClick,
 }) => {
   const colorMap = {
-    blue: { bar: 'bg-brand-600', text: 'text-brand-600', bg: 'bg-brand-50' },
-    emerald: { bar: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50' },
-    amber: { bar: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50' },
-    purple: { bar: 'bg-purple-600', text: 'text-purple-600', bg: 'bg-purple-50' },
+    blue: { bar: 'bg-sky-600', text: 'text-sky-600', bg: 'bg-sky-50' },
+    emerald: { bar: 'bg-emerald-600', text: 'text-emerald-600', bg: 'bg-emerald-50' },
+    amber: { bar: 'bg-sky-600', text: 'text-sky-600', bg: 'bg-sky-50' },
+    purple: { bar: 'bg-sky-600', text: 'text-sky-600', bg: 'bg-sky-50' },
   };
 
   const selected = colorMap[color];
@@ -30,20 +30,13 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`p-5 rounded-2xl bg-white border border-slate-200/90 shadow-soft-sm hover:shadow-soft-md transition-all ${
-        onClick ? 'cursor-pointer hover:border-brand-300' : ''
+      className={`p-5 rounded-3xl bg-white border border-sky-200/80 shadow-soft-sm hover:shadow-soft-md transition-all ${
+        onClick ? 'cursor-pointer hover:border-sky-400' : ''
       }`}
     >
       <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2.5">
-          {Icon && (
-            <div className={`p-2 rounded-xl ${selected.bg} ${selected.text}`}>
-              <Icon className="w-4 h-4" />
-            </div>
-          )}
-          <span className="text-sm font-bold text-slate-800">{title}</span>
-        </div>
-        <span className={`text-base font-extrabold ${selected.text}`}>{percentage}%</span>
+        <span className="text-[15px] font-extrabold text-slate-800">{title}</span>
+        <span className={`text-lg font-black ${selected.text}`}>{percentage}%</span>
       </div>
 
       {/* Progress Bar Container */}
@@ -54,7 +47,7 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({
         />
       </div>
 
-      {subtitle && <p className="text-xs text-slate-500 font-medium">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-slate-500 font-medium">{subtitle}</p>}
     </div>
   );
 };

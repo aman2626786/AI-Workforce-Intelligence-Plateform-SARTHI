@@ -17,11 +17,38 @@ export const authService = {
     try {
       result = await signInWithPopup(auth, googleProvider);
     } catch (popupError: any) {
-      console.error('Google Popup Error:', popupError);
-      if (popupError.code === 'auth/popup-closed-by-user') {
-        throw new Error('Google Sign-In was cancelled. Please try again.');
+      const code = popupError?.code || '';
+      
+      // User closed popup or cancelled: this is expected behavior, not a code crash
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        const cancelErr = new Error('Google sign-in was closed.');
+        (cancelErr as any).code = 'auth/popup-closed-by-user';
+        (cancelErr as any).isCancelled = true;
+        throw cancelErr;
       }
-      throw new Error(popupError.message || 'Google authentication popup failed');
+
+      if (code === 'auth/popup-blocked') {
+        const blockedErr = new Error('Google popup was blocked by your browser. Please allow popups for localhost or continue with Demo Access.');
+        (blockedErr as any).code = 'auth/popup-blocked';
+        throw blockedErr;
+      }
+
+      if (code === 'auth/unauthorized-domain') {
+        const domainErr = new Error('Domain not authorized in Firebase. Please explore using Demo Access.');
+        (domainErr as any).code = 'auth/unauthorized-domain';
+        throw domainErr;
+      }
+
+      if (code === 'auth/network-request-failed') {
+        const netErr = new Error('Network connection error during sign-in. Please check your internet connection.');
+        (netErr as any).code = 'auth/network-request-failed';
+        throw netErr;
+      }
+
+      console.warn('Google Auth notice:', popupError?.message || popupError);
+      const generalErr = new Error(popupError?.message || 'Google authentication could not be completed. Please try again.');
+      (generalErr as any).code = code;
+      throw generalErr;
     }
 
     const user = result.user;
@@ -30,11 +57,15 @@ export const authService = {
       idToken = await user.getIdToken();
     } catch (e) {}
 
-    // Synchronize user with live backend API (resilient against network or cold-start)
+    // Synchronize user with live backend API (resilient with 3.5s timeout against cold-start)
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
       const res = await fetch(`${API_BASE_URL}/auth/firebase-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           email: user.email,
           name: user.displayName || 'Student',
@@ -43,28 +74,20 @@ export const authService = {
           id_token: idToken,
         }),
       });
+      clearTimeout(timeoutId);
 
-      if (res.ok) {
-        const data: AuthUserData = await res.json();
-        setToken(data.access_token);
-        authService.saveLocalUserSession(data);
-        return data;
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.detail || 'Server-side Firebase verification failed.');
       }
+      const data: AuthUserData = await res.json();
+      setToken(data.access_token);
+      authService.saveLocalUserSession(data);
+      return data;
     } catch (networkError) {
-      console.warn('Backend sync delayed or offline, proceeding with authenticated Firebase session:', networkError);
+      console.error('Firebase backend verification failed:', networkError);
+      throw networkError;
     }
-
-    // Since Firebase Google OAuth succeeded, the user is authenticated!
-    const verifiedSession: AuthUserData = {
-      access_token: 'sv_fb_' + user.uid,
-      user_id: user.uid,
-      email: user.email || '',
-      name: user.displayName || 'Student',
-      avatar_url: user.photoURL || undefined,
-    };
-    setToken(verifiedSession.access_token);
-    authService.saveLocalUserSession(verifiedSession);
-    return verifiedSession;
   },
 
   // 2. Email & Password Login
@@ -157,5 +180,19 @@ export const authService = {
 
   isAuthenticated: (): boolean => {
     return !!getToken();
+  },
+
+  // 6. Quick Demo Login (Instant Dashboard Preview)
+  demoLogin: async (name = 'Alex Chen', email = 'alex.chen@student.edu'): Promise<AuthUserData> => {
+    const demoSession: AuthUserData = {
+      access_token: 'sv_demo_' + Date.now(),
+      user_id: 'demo_user_1',
+      email,
+      name,
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    };
+    setToken(demoSession.access_token);
+    authService.saveLocalUserSession(demoSession);
+    return demoSession;
   }
 };

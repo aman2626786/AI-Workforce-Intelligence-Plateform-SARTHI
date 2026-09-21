@@ -4,7 +4,7 @@ from backend.app.core.database import get_db
 from backend.app.api.auth import get_current_user
 from backend.app.models.user import User
 from backend.app.models.profile import StudentProfile
-from backend.app.schemas.profile import BasicProfileUpdateRequest, StudentProfileResponse
+from backend.app.schemas.profile import BasicProfileUpdateRequest, CareerPreferenceUpdateRequest, StudentProfileResponse
 
 router = APIRouter(prefix="/profile", tags=["Student Profile"])
 
@@ -54,4 +54,23 @@ def update_basic_profile(
     except Exception as e:
         print(f"[ProfileTrigger] Profile intelligence update note: {e}")
 
+    return profile
+
+@router.patch("/preferences", response_model=StudentProfileResponse)
+def update_career_preferences(
+    data: CareerPreferenceUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current_user.id).first()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+
+    if data.target_role is not None:
+        profile.target_role = data.target_role.strip() or None
+    if data.preferred_location is not None:
+        profile.preferred_location = data.preferred_location.strip() or None
+
+    db.commit()
+    db.refresh(profile)
     return profile

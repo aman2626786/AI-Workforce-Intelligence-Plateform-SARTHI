@@ -1,12 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   trailingSlash: true,
+  skipTrailingSlashRedirect: true,
   reactStrictMode: true,
+  devIndicators: false,
   images: {
     unoptimized: true,
   },
 };
+
+if (process.env.STATIC_EXPORT === 'true') {
+  nextConfig.output = 'export';
+}
 
 export default nextConfig;
 

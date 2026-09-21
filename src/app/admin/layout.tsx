@@ -8,17 +8,12 @@ import {
   Compass,
   Lock,
   LogOut,
-  Layers,
-  Database,
   RefreshCw,
-  Server,
-  Cloud,
-  CheckCircle2,
   AlertCircle,
   KeyRound,
   Eye,
   EyeOff,
-  Radio,
+  Terminal,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -27,8 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
 
-  // Login form state
-  const [adminId, setAdminId] = useState<string>('');
+  // Single Password Login State
   const [adminPassword, setAdminPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -50,84 +44,74 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setIsLoggingIn(true);
 
     setTimeout(() => {
-      // Secure unique admin credentials
-      const validIds = ['admin', 'admin@sarthi.ai', 'admin@skillvantage.ai', 'superadmin'];
-      const validPasswords = ['Admin@2026', 'admin123', 'Sarthi@2026', 'SkillVantage#2026'];
-
-      if (validIds.includes(adminId.trim().toLowerCase()) && validPasswords.includes(adminPassword)) {
+      // Secure master password: *13579*Admin
+      if (adminPassword.trim() === '*13579*Admin') {
         sessionStorage.setItem('skillvantage_admin_session', 'authenticated_super_admin');
         setIsAuthenticated(true);
       } else {
-        setErrorMsg('Invalid Admin ID or Password. Please verify your credentials.');
+        setErrorMsg('Invalid password. Access denied.');
       }
       setIsLoggingIn(false);
-    }, 400);
+    }, 350);
   };
 
   const handleAdminLogout = () => {
     sessionStorage.removeItem('skillvantage_admin_session');
     setIsAuthenticated(false);
+    setAdminPassword('');
   };
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
-        <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
-          <RefreshCw className="w-4 h-4 animate-spin text-brand-500" />
+      <div className="min-h-screen bg-gradient-to-b from-sky-100/60 via-sky-50/40 to-white flex items-center justify-center text-slate-900 font-sans">
+        <div className="flex items-center gap-2.5 text-xs font-bold text-slate-700 bg-white px-5 py-3 rounded-2xl border-2 border-sky-200 shadow-md">
+          <RefreshCw className="w-4 h-4 animate-spin text-sky-600" />
           <span>Verifying Admin Gateway...</span>
         </div>
       </div>
     );
   }
 
-  // If not authenticated, render standalone Admin Login Gateway
+  // If not authenticated, render Password-Only Login Gateway in White + Sky Blue theme
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans text-white relative overflow-hidden">
-        {/* Background glow accents */}
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl" />
+      <div className="min-h-screen bg-gradient-to-b from-sky-100/70 via-sky-50/40 to-white flex items-center justify-center p-4 font-sans text-slate-900 relative overflow-hidden selection:bg-sky-500 selection:text-white">
+        {/* Soft atmospheric sky glow accents matching homepage */}
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-sky-300/40 via-sky-200/25 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute top-48 -left-32 w-80 h-80 bg-sky-200/30 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute top-48 -right-32 w-80 h-80 bg-sky-200/30 rounded-full blur-3xl pointer-events-none -z-10" />
 
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10 space-y-6">
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-600 to-indigo-700 flex items-center justify-center text-white mx-auto shadow-lg shadow-brand-600/30">
-              <ShieldCheck className="w-8 h-8" />
+        <div className="w-full max-w-md bg-white/95 backdrop-blur-md rounded-3xl border-2 border-sky-300 shadow-xl shadow-sky-600/10 p-6 sm:p-9 space-y-6 transition-all hover:border-sky-400 hover:shadow-2xl hover:shadow-sky-600/15 relative z-10">
+          {/* Top Brand & Passcode Badge */}
+          <div className="text-center space-y-2.5">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white mx-auto shadow-lg shadow-sky-600/25 border border-sky-400/40">
+              <KeyRound className="w-7 h-7" />
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-white mt-3">
-              SARTHI Admin Portal
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-extrabold border border-sky-200 shadow-2xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
+              <span>Admin Command Gateway</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              MatchSkill Admin Portal
             </h1>
-            <p className="text-xs text-slate-400 font-medium">
-              Restricted access for system administrators & crawler telemetry.
+            <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-xs mx-auto">
+              Enter the master security passcode to access system telemetry & governance.
             </p>
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 animate-shake">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                Admin ID / Email
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={adminId}
-                  onChange={(e) => setAdminId(e.target.value)}
-                  placeholder="admin@sarthi.ai or admin"
-                  required
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-slate-600"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                Password
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block">
+                Master Security Passcode
               </label>
               <div className="relative">
                 <input
@@ -136,12 +120,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   onChange={(e) => setAdminPassword(e.target.value)}
                   placeholder="Enter admin password"
                   required
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-slate-600 pr-10"
+                  autoFocus
+                  className="w-full px-4 py-3 bg-white border-2 border-sky-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 pr-11 transition-all shadow-xs"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-600 p-1 cursor-pointer transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -150,90 +136,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <button
               type="submit"
-              disabled={isLoggingIn}
-              className="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-black transition-all shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+              disabled={isLoggingIn || !adminPassword}
+              className="w-full py-3.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold transition-all shadow-md shadow-sky-600/25 hover:shadow-lg hover:shadow-sky-600/35 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {isLoggingIn ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Authenticating...</span>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>Verifying Passcode...</span>
                 </>
               ) : (
                 <>
-                  <Lock className="w-4 h-4" />
+                  <Lock className="w-4 h-4 text-white" />
                   <span>Access Admin Command Center</span>
                 </>
               )}
             </button>
           </form>
 
-          <div className="pt-4 border-t border-slate-800/80 text-center space-y-2">
-            <button
-              type="button"
-              onClick={() => {
-                setAdminId('admin');
-                setAdminPassword('Admin@2026');
-              }}
-              className="text-[11px] font-semibold text-brand-400 hover:text-brand-300 transition-colors cursor-pointer block w-full py-1.5 rounded bg-brand-950/40 border border-brand-800/40"
+          <div className="pt-4 border-t border-sky-100 text-center">
+            <Link
+              href="/dashboard"
+              className="text-xs font-bold text-slate-600 hover:text-sky-600 transition-colors inline-flex items-center gap-1.5"
             >
-              Demo: Click to Fill Admin Credentials (admin / Admin@2026)
-            </button>
-            <div>
-              <Link
-                href="/dashboard"
-                className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
-              >
-                ← Back to Student Dashboard
-              </Link>
-            </div>
+              <span>← Back to Student Dashboard</span>
+            </Link>
           </div>
         </div>
       </div>
     );
   }
 
-  // Authenticated Admin Shell
+  // Authenticated Admin Shell (70% White + 30% Sky Blue Theme)
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col">
-      {/* Top Admin Navigation Header */}
-      <header className="sticky top-0 z-40 w-full h-16 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-600/30">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="font-black text-white text-base tracking-tight">SARTHI</span>
-              <span className="ml-1.5 px-2 py-0.5 rounded bg-brand-500/20 text-brand-400 text-[10px] font-black uppercase border border-brand-500/30">
-                Admin Command Center
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all border border-slate-700 flex items-center gap-1.5"
-          >
-            <Compass className="w-3.5 h-3.5 text-brand-400" />
-            <span>Student Dashboard</span>
-          </Link>
-
-          <button
-            onClick={handleAdminLogout}
-            className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition-all border border-rose-500/30 flex items-center gap-1.5 cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Lock Admin</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Admin Content Area */}
-      <main className="flex-1 p-6 sm:p-8 max-w-7xl mx-auto w-full">
-        {children}
-      </main>
+    <div className="min-h-screen bg-gradient-to-b from-sky-100/60 via-sky-50/40 to-white text-slate-900 font-sans selection:bg-sky-500 selection:text-white">
+      {children}
     </div>
   );
 }

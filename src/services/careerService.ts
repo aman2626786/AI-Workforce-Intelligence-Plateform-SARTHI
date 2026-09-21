@@ -83,9 +83,63 @@ class CareerService {
   // --- Student Profile ---
   async getStudentProfile(): Promise<StudentProfile> {
     this.loadFromStorage();
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ ...this.profile }), 50);
-    });
+    try {
+      const { api, getToken } = await import('./api');
+      if (!getToken()) {
+        return { ...this.profile };
+      }
+      const remote = await api.getStudentProfile();
+      const education = remote.education?.[0];
+      this.profile = {
+        ...this.profile,
+        id: remote.id || this.profile.id,
+        name: remote.name || this.profile.name,
+        location: remote.city || this.profile.location,
+        targetRole: remote.target_role || this.profile.targetRole,
+        targetLocation: remote.preferred_location || remote.city || this.profile.targetLocation,
+        education: {
+          ...this.profile.education,
+          institution: remote.college || education?.institution || this.profile.education.institution,
+          degree: remote.degree || education?.degree || this.profile.education.degree,
+          fieldOfStudy: remote.branch || education?.field || this.profile.education.fieldOfStudy,
+          graduationYear: String(remote.graduation_year || education?.graduation_year || this.profile.education.graduationYear),
+        },
+        projects: (remote.projects || []).map((project: any, index: number) => ({
+          id: project.id || `project_${index}`,
+          title: project.name,
+          description: project.description || '',
+          skillsUsed: project.technologies || [],
+          link: project.url,
+          date: 'Recent',
+        })),
+        experience: (remote.experience || []).map((item: any, index: number) => ({
+          id: item.id || `experience_${index}`,
+          role: item.role || '',
+          company: item.company || '',
+          startDate: item.start_date,
+          endDate: item.end_date,
+          description: item.description,
+        })),
+        certifications: (remote.certifications || []).map((item: any, index: number) => ({
+          id: item.id || `certification_${index}`,
+          title: item.name,
+          issuer: item.issuer || '',
+          issueDate: item.date || '',
+          skillsValidated: [],
+        })),
+      };
+      this.saveToStorage();
+    } catch (error: any) {
+      const message = error?.message || '';
+      if (/authentication required|invalid or expired token/i.test(message)) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('skillvantage_auth_token');
+        }
+        return { ...this.profile };
+      }
+      console.warn('Backend profile unavailable; using cached profile:', error);
+    }
+    return { ...this.profile };
   }
 
   /**
@@ -234,6 +288,35 @@ class CareerService {
       await api.recalculateIntelligence();
     } catch (e) {
       console.warn('Backend updateTargetCareer sync error:', e);
+    }
+    return { ...this.profile };
+  }
+
+  async updateProfileInfo(updates: {
+    name?: string;
+    email?: string;
+    targetRole?: string;
+    targetLocation?: string;
+    targetCompany?: string;
+  }): Promise<StudentProfile> {
+    this.profile = {
+      ...this.profile,
+      ...(updates.name !== undefined ? { name: updates.name } : {}),
+      ...(updates.email !== undefined ? { email: updates.email } : {}),
+      ...(updates.targetRole !== undefined ? { targetRole: updates.targetRole } : {}),
+      ...(updates.targetLocation !== undefined ? { targetLocation: updates.targetLocation } : {}),
+      ...(updates.targetCompany !== undefined ? { targetCompany: updates.targetCompany } : {}),
+    };
+    this.saveToStorage();
+
+    if (updates.targetRole) {
+      try {
+        const { api } = await import('./api');
+        await api.updateTargetCareer(updates.targetRole, updates.targetLocation || this.profile.targetLocation);
+        await api.recalculateIntelligence();
+      } catch (e) {
+        console.warn('Backend updateProfileInfo sync error:', e);
+      }
     }
     return { ...this.profile };
   }
@@ -879,81 +962,36 @@ class CareerService {
     ];
   }
 
-  // --- Career Roadmap ---
-  async getCareerRoadmap(role?: string): Promise<RoadmapItem[]> {
-    const targetRoleLower = (role || this.profile.targetRole || 'Data Scientist').toLowerCase();
+  private deduplicateRoadmap(items: RoadmapItem[]): RoadmapItem[] {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const key = item.skillName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
 
-    if (targetRoleLower.includes('data') || targetRoleLower.includes('analytic') || targetRoleLower.includes('statistic') || targetRoleLower.includes('bi')) {
-      return [
-        {
-          id: 'rm_ds_1',
-          stage: 'FOUNDATION',
-          stageOrder: 1,
-          skillName: 'Business Statistics & Probability Inference',
-          currentLevel: 'Intermediate',
-          targetLevel: 'Advanced',
-          priority: 'High',
-          estimatedHours: 18,
-          status: 'In Progress',
-          learningObjective: 'Master hypothesis testing, regression modeling, and statistical inference for predictive modeling.',
-          recommendedResources: [
-            { title: 'Practical Statistics for Data Scientists', type: 'Course', estTime: '10 hrs' },
-            { title: 'A/B Testing & Statistical Experimentation Lab', type: 'Project', estTime: '8 hrs' }
-          ]
-        },
-        {
-          id: 'rm_ds_2',
-          stage: 'CORE SKILLS',
-          stageOrder: 2,
-          skillName: 'SQL & Query Optimization',
-          currentLevel: 'None',
-          targetLevel: 'Advanced',
-          priority: 'High',
-          estimatedHours: 20,
-          status: 'In Progress',
-          learningObjective: 'Master complex window functions, CTEs, query plan indexing, and large dataset aggregation.',
-          recommendedResources: [
-            { title: 'Advanced SQL for Production Analytics', type: 'Course', estTime: '12 hrs' },
-            { title: 'E-Commerce Million-Row Query Optimization Capstone', type: 'Project', estTime: '8 hrs' }
-          ]
-        },
-        {
-          id: 'rm_ds_3',
-          stage: 'INDUSTRY SKILLS',
-          stageOrder: 3,
-          skillName: 'Machine Learning Pipelines & Scikit-Learn',
-          currentLevel: 'None',
-          targetLevel: 'Advanced',
-          priority: 'High',
-          estimatedHours: 24,
-          status: 'In Progress',
-          learningObjective: 'Implement cross-validation, feature transformation, XGBoost, and ensemble decision architectures.',
-          recommendedResources: [
-            { title: 'Production Machine Learning Engineering', type: 'Course', estTime: '14 hrs' },
-            { title: 'Customer Churn & Recommender Pipeline Lab', type: 'Project', estTime: '10 hrs' }
-          ]
-        },
-        {
-          id: 'rm_ds_4',
-          stage: 'JOB READY',
-          stageOrder: 4,
-          skillName: 'Power BI / Tableau Executive Dashboards',
-          currentLevel: 'None',
-          targetLevel: 'Advanced',
-          priority: 'Medium',
-          estimatedHours: 16,
-          status: 'In Progress',
-          learningObjective: 'Build real-time interactive business intelligence dashboards with DAX measures and automated ETL.',
-          recommendedResources: [
-            { title: 'Enterprise Business Intelligence & DAX Mastery', type: 'Course', estTime: '10 hrs' },
-            { title: 'Executive Operations KPI Dashboard Capstone', type: 'Project', estTime: '6 hrs' }
-          ]
+  private loadRoadmapFromStorage(role?: string) {
+    if (typeof window !== 'undefined') {
+      try {
+        const key = `${this.getStorageKey()}_roadmap`;
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            this.roadmap = this.deduplicateRoadmap(parsed);
+            return;
+          }
         }
-      ];
+      } catch (e) {
+        console.warn('Could not read roadmap from localStorage:', e);
+      }
     }
 
+    const targetRoleLower = (role || this.profile.targetRole || 'Data Scientist').toLowerCase();
     if (targetRoleLower.includes('robot') || targetRoleLower.includes('autonom') || targetRoleLower.includes('mechatron')) {
-      return [
+      this.roadmap = [
         {
           id: 'rm_rob_1',
           stage: 'FOUNDATION',
@@ -1019,7 +1057,30 @@ class CareerService {
           ]
         }
       ];
+    } else {
+      this.roadmap = [...initialRoadmap];
     }
+    this.roadmap = this.deduplicateRoadmap(this.roadmap);
+  }
+
+  private saveRoadmapToStorage() {
+    if (typeof window !== 'undefined') {
+      try {
+        const key = `${this.getStorageKey()}_roadmap`;
+        localStorage.setItem(key, JSON.stringify(this.roadmap));
+      } catch (e) {
+        console.warn('Could not save roadmap to localStorage:', e);
+      }
+    }
+  }
+
+  // --- Career Roadmap ---
+  async getCareerRoadmap(role?: string): Promise<RoadmapItem[]> {
+    if (!this.roadmap || this.roadmap.length === 0) {
+      this.loadRoadmapFromStorage(role);
+    }
+    this.roadmap = this.deduplicateRoadmap(this.roadmap);
+    this.saveRoadmapToStorage();
 
     return new Promise((resolve) => {
       resolve([...this.roadmap]);
@@ -1027,6 +1088,7 @@ class CareerService {
   }
 
   async toggleRoadmapStatus(id: string): Promise<RoadmapItem[]> {
+    this.roadmap = this.deduplicateRoadmap(this.roadmap);
     this.roadmap = this.roadmap.map((item) => {
       if (item.id === id) {
         const nextStatus: RoadmapItem['status'] =
@@ -1042,13 +1104,26 @@ class CareerService {
     const completed = this.roadmap.filter((r) => r.status === 'Completed').length;
     this.profile.readinessScore = Math.min(95, 60 + completed * 8);
     this.saveToStorage();
+    this.saveRoadmapToStorage();
 
     return [...this.roadmap];
   }
 
   async addSkillToRoadmap(skill: IndustrySkill): Promise<RoadmapItem[]> {
+    if (!this.roadmap || this.roadmap.length === 0) {
+      this.loadRoadmapFromStorage();
+    }
+    this.roadmap = this.deduplicateRoadmap(this.roadmap);
+    const key = skill.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const alreadyExists = this.roadmap.some(
+      (item) => item.skillName.toLowerCase().replace(/[^a-z0-9]/g, '') === key
+    );
+    if (alreadyExists) {
+      return [...this.roadmap];
+    }
+
     const newItem: RoadmapItem = {
-      id: `rm_${Date.now()}`,
+      id: `rm_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       stage: 'CORE SKILLS',
       stageOrder: 2,
       skillName: skill.name,
@@ -1064,6 +1139,7 @@ class CareerService {
       ],
     };
     this.roadmap.push(newItem);
+    this.saveRoadmapToStorage();
     return [...this.roadmap];
   }
 }

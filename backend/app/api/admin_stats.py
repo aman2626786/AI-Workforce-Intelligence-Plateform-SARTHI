@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from backend.app.core.database import get_db
+from backend.app.api.auth import require_admin
 from backend.app.models import (
     StudentProfile, StudentSkill, Job, JobSkill, Skill, Role, RoleFamily, RoleSkillDemand
 )
@@ -16,7 +17,7 @@ from backend.app.services.skill_intelligence.pipeline import SkillIntelligencePi
 from backend.app.core.mongodb import mongo_manager, get_jobs_col, get_student_profiles_col
 from backend.app.services.mongodb_sync_service import MarketIntelligenceCacheService, StudentProfileMongoService
 
-router = APIRouter(prefix="/admin", tags=["Admin Command Center"])
+router = APIRouter(prefix="/admin", tags=["Admin Command Center"], dependencies=[Depends(require_admin)])
 
 SERVER_START_TIME = time.time()
 

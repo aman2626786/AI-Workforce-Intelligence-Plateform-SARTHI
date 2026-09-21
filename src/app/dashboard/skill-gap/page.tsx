@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { SkillComparison } from '@/components/features/SkillComparison';
 import { MetricCard } from '@/components/ui/MetricCard';
-import { ResumeUploadModal } from '@/components/features/ResumeUploadModal';
 import {
   Target,
   CheckCircle2,
@@ -17,12 +16,14 @@ import {
   Star,
   Award,
   Zap,
-  Upload,
 } from 'lucide-react';
 
 export default function SkillGapPage() {
-  const { skills, profile, addSkillToRoadmap, activeRole, openAiDrawerWithTopic } = useApp();
-  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+  const { skills, profile, addSkillToRoadmap, activeRole, roadmap } = useApp();
+
+  const roadmapSkillKeys = useMemo(() => {
+    return new Set(roadmap.map((r) => r.skillName.toLowerCase().replace(/[^a-z0-9]/g, '')));
+  }, [roadmap]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState<'ALL' | 'TIER_1' | 'TIER_2' | 'TIER_3'>('ALL');
@@ -73,40 +74,19 @@ export default function SkillGapPage() {
   return (
     <div className="space-y-8 animate-fade-in font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">My Skill Gap Analysis</h1>
-          <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1">
-            Comparing your verified resume skills against <strong className="text-slate-900">{skills.length} market-demanded competencies</strong> for <strong className="text-slate-900">{activeRole}</strong>.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
-          <button
-            onClick={() => setIsResumeModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 transition-all cursor-pointer"
-          >
-            <Upload className="w-4 h-4" />
-            Upload / Update Resume
-          </button>
-
-          <button
-            onClick={() => openAiDrawerWithTopic('Skill Gap Prioritization Strategy')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold border border-brand-200 transition-colors cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4 text-brand-600" />
-            Ask AI Gap Strategy
-          </button>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">My Skill Gap Analysis</h1>
+        <p className="text-sm sm:text-base text-slate-600 font-medium mt-1">
+          Comparing your verified resume skills against {skills.length} market-demanded competencies for {activeRole}.
+        </p>
       </div>
 
       {/* INTUITION GUIDANCE BANNER */}
-      <div className="p-4 rounded-2xl bg-brand-50/80 border border-brand-200 text-xs text-slate-700 flex items-start gap-3 shadow-soft-sm">
-        <Lightbulb className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <strong className="text-brand-900 text-sm font-extrabold block">💡 How Skill Gap Intelligence Works:</strong>
-          <p className="leading-relaxed">
-            Employer Job Descriptions demand <strong>Tier 1 Core Mandates (Top 7)</strong>, <strong>Tier 2 High-Demand Secondary (8-20)</strong>, and <strong>Tier 3 Specialized Tools</strong>. Your score is dynamically calculated by weighting verified proficiencies. Click <em>"Add to Career Roadmap"</em> on any gap to generate target learning milestones.
+      <div className="p-5 sm:p-6 rounded-3xl bg-sky-50/70 border border-sky-200 text-sm text-slate-700 shadow-soft-sm">
+        <div className="space-y-1.5">
+          <h3 className="text-slate-900 text-sm sm:text-base font-semibold">How Skill Gap Intelligence Works</h3>
+          <p className="text-slate-600 leading-relaxed font-normal">
+            Employer job descriptions demand Tier 1 Core Mandates (Top 7), Tier 2 High-Demand Secondary (8-20), and Tier 3 Specialized Tools. Your score is dynamically calculated by weighting verified proficiencies. Click &ldquo;Add to Career Roadmap&rdquo; on any gap to generate target learning milestones.
           </p>
         </div>
       </div>
@@ -117,38 +97,35 @@ export default function SkillGapPage() {
           title="Overall Skill Match Score"
           value={`${calculatedMatchScore}%`}
           subtitle={`Calculated against ${skills.length} target market standards`}
-          icon={Target}
           badgeText={calculatedMatchScore >= 75 ? 'Job Ready' : calculatedMatchScore >= 50 ? 'Moderate Fit' : 'Fresher Baseline'}
-          badgeVariant={calculatedMatchScore >= 75 ? 'emerald' : calculatedMatchScore >= 50 ? 'blue' : 'amber'}
+          badgeVariant={calculatedMatchScore >= 75 ? 'emerald' : 'blue'}
         />
         <MetricCard
           title="Critical Missing Skill Gaps"
           value={criticalGaps.length}
           subtitle="Immediate impact on employer shortlisting"
-          icon={AlertTriangle}
           badgeText={`${criticalGaps.length} High Priority`}
-          badgeVariant="amber"
+          badgeVariant="rose"
         />
         <MetricCard
           title="Skills Meeting Employer Requirement"
           value={metSkills.length}
           subtitle="Verified matching competencies from resume"
-          icon={CheckCircle2}
           badgeText={`${metSkills.length} Met`}
           badgeVariant="emerald"
         />
       </div>
 
       {/* TIER FILTERING & SEARCH CONTROLS */}
-      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-soft-sm space-y-4">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white border border-sky-200 shadow-soft-sm space-y-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           {/* TIER TABS */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl overflow-x-auto text-xs font-bold">
+          <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-xl overflow-x-auto text-sm font-medium">
             <button
               onClick={() => setSelectedTier('ALL')}
-              className={`px-3 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                 selectedTier === 'ALL'
-                  ? 'bg-white text-slate-900 shadow-sm'
+                  ? 'bg-white text-slate-900 font-semibold shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -156,97 +133,94 @@ export default function SkillGapPage() {
             </button>
             <button
               onClick={() => setSelectedTier('TIER_1')}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                 selectedTier === 'TIER_1'
-                  ? 'bg-amber-500 text-white shadow-sm'
-                  : 'text-amber-800 hover:bg-amber-100/50'
+                  ? 'bg-sky-600 text-white font-semibold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Star className="w-3.5 h-3.5 fill-current" />
-              ★ Top 7 Core Mandates ({tier1Count})
+              Top 7 Core Mandates ({tier1Count})
             </button>
             <button
               onClick={() => setSelectedTier('TIER_2')}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                 selectedTier === 'TIER_2'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-blue-800 hover:bg-blue-100/50'
+                  ? 'bg-sky-600 text-white font-semibold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Zap className="w-3.5 h-3.5" />
-              ● Secondary High-Demand ({tier2Count})
+              Secondary High-Demand ({tier2Count})
             </button>
             <button
               onClick={() => setSelectedTier('TIER_3')}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                 selectedTier === 'TIER_3'
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : 'text-purple-800 hover:bg-purple-100/50'
+                  ? 'bg-sky-600 text-white font-semibold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Award className="w-3.5 h-3.5" />
-              ✦ Specialized (21+) ({tier3Count})
+              Specialized ({tier3Count})
             </button>
           </div>
 
-          {/* SEARCH INPUT */}
-          <div className="relative min-w-[220px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          {/* SEARCH BOX */}
+          <div className="relative w-full md:w-64">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search required skill..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+              placeholder="Search gaps or tools..."
+              className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all text-slate-800"
             />
           </div>
         </div>
 
-        {/* STATUS QUICK FILTER CHIPS */}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap text-xs font-bold">
-          <span className="text-slate-400 font-semibold text-[11px] mr-1">Status Filter:</span>
+        {/* SEVERITY FILTER BADGES */}
+        <div className="flex items-center gap-2 pt-3 border-t border-slate-100 flex-wrap text-xs sm:text-sm font-medium text-slate-600">
+          <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold mr-1">Filter Gaps:</span>
           <button
             onClick={() => setSelectedSeverity('ALL')}
-            className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
               selectedSeverity === 'ALL'
-                ? 'bg-slate-900 text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
             }`}
           >
-            All Status ({skills.length})
+            All Competencies ({skills.length})
           </button>
           <button
             onClick={() => setSelectedSeverity('Met')}
-            className={`px-2.5 py-1 rounded-md text-[11px] border transition-all cursor-pointer flex items-center gap-1 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               selectedSeverity === 'Met'
                 ? 'bg-emerald-600 text-white border-emerald-600'
                 : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
             Meets Requirement ({metSkills.length})
           </button>
           <button
             onClick={() => setSelectedSeverity('Partial')}
-            className={`px-2.5 py-1 rounded-md text-[11px] border transition-all cursor-pointer flex items-center gap-1 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               selectedSeverity === 'Partial'
-                ? 'bg-amber-600 text-white border-amber-600'
-                : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                ? 'bg-sky-600 text-white border-sky-600'
+                : 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="w-2 h-2 rounded-full bg-sky-500" />
             Partial Gap ({partialGaps.length})
           </button>
           <button
             onClick={() => setSelectedSeverity('Critical')}
-            className={`px-2.5 py-1 rounded-md text-[11px] border transition-all cursor-pointer flex items-center gap-1 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
               selectedSeverity === 'Critical'
                 ? 'bg-rose-600 text-white border-rose-600'
                 : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            Critical Gap ({criticalGaps.length})
+            <span className="w-2 h-2 rounded-full bg-rose-500" />
+            Critical Missing Gaps ({criticalGaps.length})
           </button>
         </div>
       </div>
@@ -255,8 +229,8 @@ export default function SkillGapPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Your Skill vs Employer Requirement Grid</h3>
-            <p className="text-xs text-slate-500 font-medium">Showing {filteredSkills.length} of {skills.length} industry competency standards</p>
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Your Skill vs Employer Requirement Grid</h3>
+            <p className="text-sm text-slate-600 font-medium">Showing {filteredSkills.length} of {skills.length} industry competency standards</p>
           </div>
         </div>
 
@@ -267,17 +241,16 @@ export default function SkillGapPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredSkills.map((sk) => (
-              <SkillComparison key={sk.id} skill={sk} onAddToRoadmap={addSkillToRoadmap} />
+              <SkillComparison
+                key={sk.id}
+                skill={sk}
+                onAddToRoadmap={addSkillToRoadmap}
+                isInRoadmap={roadmapSkillKeys.has(sk.name.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+              />
             ))}
           </div>
         )}
       </div>
-
-      {/* Reusable Resume Upload Modal */}
-      <ResumeUploadModal
-        isOpen={isResumeModalOpen}
-        onClose={() => setIsResumeModalOpen(false)}
-      />
     </div>
   );
 }

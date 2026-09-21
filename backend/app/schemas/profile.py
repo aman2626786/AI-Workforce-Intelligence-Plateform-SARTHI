@@ -54,6 +54,10 @@ class BasicProfileUpdateRequest(BaseModel):
     target_role: Optional[str] = None
     preferred_location: Optional[str] = None
 
+class CareerPreferenceUpdateRequest(BaseModel):
+    target_role: Optional[str] = None
+    preferred_location: Optional[str] = None
+
 class StudentProfileResponse(BaseModel):
     id: str
     user_id: str

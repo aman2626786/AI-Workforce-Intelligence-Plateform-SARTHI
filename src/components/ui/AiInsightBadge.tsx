@@ -13,8 +13,8 @@ export const AiInsightBadge: React.FC<AiInsightBadgeProps> = ({
   className = '',
 }) => {
   const styles = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
-    purple: 'bg-purple-50 text-purple-700 border-purple-200',
+    blue: 'bg-sky-50 text-sky-700 border-sky-200',
+    purple: 'bg-sky-50 text-sky-700 border-sky-200',
     emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
 

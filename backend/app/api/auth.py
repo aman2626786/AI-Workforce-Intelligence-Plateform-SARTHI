@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -6,6 +7,47 @@ from backend.app.core.security import get_password_hash, verify_password, create
 from backend.app.models.user import User
 from backend.app.models.profile import StudentProfile
 from backend.app.schemas.auth import UserRegisterRequest, UserLoginRequest, FirebaseLoginRequest, TokenResponse, UserResponse
+from backend.app.core.config import settings
+
+_firebase_app = None
+
+def verify_firebase_id_token(id_token: str) -> dict:
+    """Verify Firebase identity server-side and fail closed when unavailable."""
+    global _firebase_app
+    try:
+        import firebase_admin
+        from firebase_admin import auth as firebase_auth
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Firebase authentication is not configured on this server.",
+        ) from exc
+
+    try:
+        if _firebase_app is None:
+            options = {"projectId": settings.FIREBASE_PROJECT_ID} if settings.FIREBASE_PROJECT_ID else None
+            try:
+                _firebase_app = firebase_admin.get_app()
+            except ValueError:
+                # Application Default Credentials are used in production. A
+                # service-account file can be provided through the standard
+                # GOOGLE_APPLICATION_CREDENTIALS environment variable.
+                _firebase_app = firebase_admin.initialize_app(options=options)
+
+        claims = firebase_auth.verify_id_token(id_token, app=_firebase_app, check_revoked=True)
+        uid = str(claims.get("uid") or "").strip()
+        email = str(claims.get("email") or "").strip().lower()
+        if not uid or not email or claims.get("email_verified") is not True:
+            raise ValueError("Firebase token has no verified email identity")
+        return claims
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired Firebase ID token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
@@ -31,6 +73,14 @@ def get_current_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    if getattr(current_user, "role", "STUDENT") != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required.",
+        )
+    return current_user
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(data: UserRegisterRequest, db: Session = Depends(get_db)):
@@ -97,8 +147,19 @@ def firebase_login(data: FirebaseLoginRequest, db: Session = Depends(get_db)):
     Handles Google OAuth and Firebase Authentication for real users.
     Creates user and profile if new, or links and issues JWT token.
     """
-    clean_email = str(data.email).lower().strip()
-    user = db.query(User).filter(User.email == clean_email).first()
+    claims = verify_firebase_id_token(data.id_token)
+    firebase_uid = str(claims["uid"])
+    clean_email = str(claims["email"]).lower().strip()
+    verified_name = str(claims.get("name") or data.name or "Student").strip()
+
+    user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
+    email_user = db.query(User).filter(User.email == clean_email).first()
+    if user and user.email != clean_email:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Firebase identity email does not match the linked account.")
+    if not user:
+        user = email_user
+    if user and user.firebase_uid and user.firebase_uid != firebase_uid:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Firebase identity is already linked to another account.")
 
     if not user:
         # Create user with Google/Firebase auth
@@ -106,14 +167,14 @@ def firebase_login(data: FirebaseLoginRequest, db: Session = Depends(get_db)):
             email=clean_email,
             password_hash="OAUTH_USER_NO_PASSWORD",
             auth_provider="google",
-            firebase_uid=data.firebase_uid
+            firebase_uid=firebase_uid
         )
         db.add(user)
         db.flush()
 
 
         # Create student profile
-        profile_name = (data.name or "Student").strip()
+        profile_name = verified_name
         profile = StudentProfile(
             user_id=user.id,
             name=profile_name
@@ -124,15 +185,18 @@ def firebase_login(data: FirebaseLoginRequest, db: Session = Depends(get_db)):
         db.refresh(profile)
     else:
         # Update firebase UID if provided
-        if data.firebase_uid and not user.firebase_uid:
-            user.firebase_uid = data.firebase_uid
-            db.commit()
+        if not user.firebase_uid:
+            user.firebase_uid = firebase_uid
+        if user.auth_provider != "email":
+            user.auth_provider = "google"
+        user.updated_at = datetime.now(timezone.utc)
+        db.commit()
 
         profile = db.query(StudentProfile).filter(StudentProfile.user_id == user.id).first()
         if not profile:
             profile = StudentProfile(
                 user_id=user.id,
-                name=(data.name or user.email.split("@")[0]).strip()
+                name=verified_name or user.email.split("@")[0]
             )
             db.add(profile)
             db.commit()
@@ -156,6 +220,7 @@ def get_me(
     return {
         "user_id": current_user.id,
         "email": current_user.email,
+        "role": getattr(current_user, "role", "STUDENT"),
         "auth_provider": current_user.auth_provider,
         "profile": {
             "id": profile.id if profile else None,

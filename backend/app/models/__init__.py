@@ -41,6 +41,15 @@ from backend.app.models.recommendation import (
     RecommendationScore,
     RecommendationRun,
 )
+from backend.app.models.resource import (
+    Resource,
+    ResourceLike,
+    SavedResource,
+    ResourceComment,
+    ResourceView,
+    ResourceCategory,
+)
+from backend.app.models.notification import Notification
 
 __all__ = [
     "User",
@@ -75,4 +84,12 @@ __all__ = [
     "ProfileRecommendation",
     "RecommendationScore",
     "RecommendationRun",
+    "Resource",
+    "ResourceLike",
+    "SavedResource",
+    "ResourceComment",
+    "ResourceView",
+    "ResourceCategory",
+    "Notification",
 ]
+

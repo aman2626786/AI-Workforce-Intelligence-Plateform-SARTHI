@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from backend.app.core.database import get_db
-from backend.app.api.auth import get_current_user
+from backend.app.api.auth import get_current_user, require_admin
 from backend.app.models.user import User
 from backend.app.models.profile import StudentProfile
 from backend.app.models.job import Job
@@ -417,7 +417,8 @@ def refresh_profile_intelligence_if_stale(
 @router.post("/admin/profile-intelligence/recalculate/{student_id}")
 def admin_recalculate_student(
     student_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     """
     Admin: Triggers immediate recalculation for a specific student ID.
@@ -434,7 +435,8 @@ def admin_recalculate_student(
 @router.post("/admin/profile-intelligence/recalculate-all")
 def admin_recalculate_all_students(
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     """
     Admin: Triggers asynchronous batch recalculation for all registered students.
@@ -453,7 +455,10 @@ def admin_recalculate_all_students(
 
 
 @router.get("/admin/profile-intelligence/status")
-def get_admin_intelligence_status(db: Session = Depends(get_db)):
+def get_admin_intelligence_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
     """
     Admin: Returns operational health metrics of the Profile Intelligence subsystem.
     """
@@ -476,7 +481,8 @@ def get_admin_intelligence_status(db: Session = Depends(get_db)):
 @router.get("/admin/profile-intelligence/runs")
 def get_admin_recommendation_runs(
     limit: int = 50,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     """
     Admin: Lists audit logs of recent recommendation pipeline runs.

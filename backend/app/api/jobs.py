@@ -5,9 +5,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 
 from backend.app.core.database import get_db
+from backend.app.api.auth import require_admin
 from backend.app.core.config import settings
 from backend.app.models.job import Job, JobSource, JobSkill, JobCollectionError, CollectionRun
 from backend.app.models.skill import Skill
+from backend.app.models.user import User
 from backend.app.services.job_crawler.agent import JobCollectionAgent
 
 logger = logging.getLogger("api.jobs")
@@ -51,11 +53,12 @@ def get_jobs(
     if country:
         query = query.filter(Job.country.ilike(f"%{country}%"))
     if city:
-        query = query.filter(Job.city.ilike(f"%{city}%"))
+        query = query.filter(Job.location.ilike(f"%{city}%"))
     if is_remote is not None:
-        query = query.filter(Job.is_remote == is_remote)
+        query = query.filter(Job.remote == is_remote)
     if experience_level:
-        query = query.filter(Job.experience_level == experience_level.lower())
+        # The normalized job model currently stores job_type, not experience_level.
+        query = query.filter(Job.job_type.ilike(f"%{experience_level}%"))
     if search:
         term = f"%{search.strip()}%"
         query = query.filter((Job.title.ilike(term)) | (Job.description.ilike(term)) | (Job.company_name.ilike(term)))
@@ -132,16 +135,16 @@ def get_job_by_id(job_id: str, db: Session = Depends(get_db)):
         "company_name": job.company_name,
         "canonical_role": job.canonical_role,
         "country": job.country,
-        "city": job.city,
+        "city": job.location,
         "state": job.state,
-        "is_remote": job.is_remote,
-        "employment_type": job.employment_type,
+        "is_remote": job.remote,
+        "employment_type": job.job_type,
         "experience_level": job.experience_level,
         "salary_min": job.salary_min,
         "salary_max": job.salary_max,
-        "salary_currency": job.salary_currency,
+        "salary_currency": job.currency,
         "description": job.description,
-        "requirements": job.requirements,
+        "requirements": None,
         "job_url": job.job_url,
         "posted_at": job.posted_at.isoformat() if job.posted_at else None,
         "status": job.status,
@@ -283,6 +286,7 @@ async def trigger_collection(
     roles: Optional[List[str]] = Query(None, description="Specific roles to search"),
     locations: Optional[List[str]] = Query(None, description="Locations to search"),
     pages: int = Query(1, ge=1, le=5, description="Pages per search"),
+    current_user: User = Depends(require_admin),
 ):
     """
     Triggers an asynchronous job collection crawl in the background.

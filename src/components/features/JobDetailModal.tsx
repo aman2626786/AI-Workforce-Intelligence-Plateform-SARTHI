@@ -92,7 +92,6 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, isOpen, onC
       categoryColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
       description: `Demanded in ${sk.demandProbability}% of ${job.jobTitle} openings at ${job.companyName}.`,
     });
-    addToast(`Added "${sk.name}" to your Career Roadmap!`, 'success');
   };
 
   const handleAddAllMissingSkills = () => {

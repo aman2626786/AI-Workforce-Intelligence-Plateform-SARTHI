@@ -7,16 +7,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 class Settings(BaseSettings):
     PROJECT_NAME: str = "SkillVantage AI Backend"
     API_V1_STR: str = "/api"
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "skillvantage_sih_super_secret_jwt_key_2026_production")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-only-change-me")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
     # MongoDB Atlas Cloud Database
-    MONGODB_URI: str = os.getenv(
-        "MONGODB_URI",
-        "mongodb+srv://aiworkforceintelligence_db_user:0r4gaLZKmb0fggbV@cluster0.kuvum9z.mongodb.net/skillvantage_db?retryWrites=true&w=majority&appName=Cluster0"
-    )
+    MONGODB_URI: str = os.getenv("MONGODB_URI", "")
     MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "skillvantage_db")
+    FIREBASE_PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "")
 
     # Database: SQLite fallback/local layer, PostgreSQL or SQLite
     DATABASE_URL: str = os.getenv(
@@ -27,6 +25,7 @@ class Settings(BaseSettings):
     # Uploads
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
+    MAX_STORED_RESUMES_PER_USER: int = int(os.getenv("MAX_STORED_RESUMES_PER_USER", "3"))
     ALLOWED_EXTENSIONS: set = {".pdf", ".docx", ".doc"}
 
     # Job Collection Agent Credentials & Settings
@@ -48,6 +47,8 @@ class Settings(BaseSettings):
     MAX_CONCURRENT_REQUESTS: int = int(os.getenv("MAX_CONCURRENT_REQUESTS", "3"))
     REQUEST_TIMEOUT_SECONDS: float = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "15.0"))
     DAILY_CACHE_EXPIRY_HOURS: int = int(os.getenv("DAILY_CACHE_EXPIRY_HOURS", "24"))
+    DB_POOL_SIZE: int = int(os.getenv("DB_POOL_SIZE", "5"))
+    DB_MAX_OVERFLOW: int = int(os.getenv("DB_MAX_OVERFLOW", "10"))
 
     class Config:
         case_sensitive = True

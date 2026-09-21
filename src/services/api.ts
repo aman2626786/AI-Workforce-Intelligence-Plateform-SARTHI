@@ -4,7 +4,17 @@
  * Includes graceful mock fallback if the backend server is not running during pure frontend testing.
  */
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ai-workforce-intelligence-plateform.onrender.com/api';
+import fallbackData from '@/data/fallbackResources.json';
+
+export const getApiBaseUrl = (): string => {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}:8000/api`;
+  }
+  return 'http://127.0.0.1:8000/api';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export interface UserRegistrationData {
   name: string;
@@ -113,6 +123,342 @@ export const setToken = (token: string) => {
   }
 };
 
+export const getSessionId = (): string => {
+  if (typeof window === 'undefined') return 'server_session';
+  let sid = localStorage.getItem('sarthi_guest_session_id');
+  if (!sid) {
+    sid = 'gst_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 9);
+    localStorage.setItem('sarthi_guest_session_id', sid);
+  }
+  return sid;
+};
+
+const getLocalActivityIdentity = () => {
+  if (typeof window === 'undefined') return { user_id: 'server', user_name: 'Student', email: 'unknown' };
+  try {
+    const raw = localStorage.getItem('skillvantage_user_session');
+    const session = raw ? JSON.parse(raw) : {};
+    let profileName = session.name || 'Student';
+    const profileKey = `skillvantage_student_profile_${String(session.email || session.user_id || '').toLowerCase().trim()}`;
+    const profileRaw = localStorage.getItem(profileKey);
+    if (profileRaw) {
+      const profile = JSON.parse(profileRaw);
+      profileName = profile.name || profileName;
+    }
+    return { user_id: session.user_id || session.email || 'local-user', user_name: profileName, email: session.email || 'unknown' };
+  } catch {
+    return { user_id: 'local-user', user_name: 'Student', email: 'unknown' };
+  }
+};
+
+const requireAuthenticatedResourceAction = () => {
+  if (!getToken()) {
+    throw new Error('Please sign in to like, save, or comment on resources.');
+  }
+};
+
+export interface ResourceItem {
+  id: string;
+  title: string;
+  slug: string;
+  resource_type: 'INDUSTRY_NEWS' | 'RESEARCH_PAPER' | 'LEARNING_RESOURCE' | 'TECH_UPDATE' | 'OPPORTUNITY';
+  short_description: string;
+  content_summary?: string;
+  content_markdown?: string;
+  original_url: string;
+  source_name?: string;
+  source_domain?: string;
+  author?: string;
+  organization?: string;
+  publisher?: string;
+  published_at?: string;
+  thumbnail_url?: string;
+  language?: string;
+  difficulty?: string;
+  category: string;
+  subcategory?: string;
+  tags: string[];
+  hashtags: string[];
+  keywords: string[];
+  skills: string[];
+  target_roles?: string[];
+  location?: string;
+  deadline?: string;
+  is_verified: boolean;
+  verification_status: 'UNVERIFIED' | 'VERIFIED' | 'NEEDS_REVIEW';
+  verified_at?: string;
+  verified_by?: string;
+  status: 'DRAFT' | 'NEEDS_REVIEW' | 'PUBLISHED' | 'ARCHIVED';
+  license?: string;
+  license_url?: string;
+  read_time_minutes?: number;
+  created_at: string;
+  updated_at: string;
+  view_count: number;
+  like_count: number;
+  save_count: number;
+  share_count: number;
+  comment_count: number;
+  is_liked?: boolean;
+  is_saved?: boolean;
+  match_score?: number;
+  match_reasons?: string[];
+  skill_gap_covered?: string;
+  attached_links?: Array<{
+    id: string;
+    platform: string;
+    title: string;
+    url: string;
+    isVerified?: boolean;
+  }>;
+}
+
+export interface ResourceCommentItem {
+  id: string;
+  resource_id: string;
+  user_id: string;
+  user_name: string;
+  content: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+const normalizeResource = (resource: ResourceItem): ResourceItem => {
+  const contentSummary = (resource.content_summary || '').trim();
+  const contentMarkdown = (resource.content_markdown || '').trim();
+  const tags = [...(resource.tags || []), ...(resource.hashtags || []), ...(resource.keywords || [])]
+    .map((tag) => tag.replace(/^#/, '').trim())
+    .filter(Boolean)
+    .filter((tag, index, list) => list.findIndex((item) => item.toLowerCase() === tag.toLowerCase()) === index);
+
+  return {
+    ...resource,
+    content_summary: contentSummary || contentMarkdown || resource.short_description || '',
+    content_markdown: contentMarkdown || contentSummary || resource.short_description || '',
+    tags,
+    hashtags: (resource.hashtags || []).map((tag) => tag.replace(/^#/, '').trim()).filter(Boolean),
+    keywords: (resource.keywords || []).map((tag) => tag.replace(/^#/, '').trim()).filter(Boolean),
+    attached_links: Array.isArray(resource.attached_links) ? resource.attached_links : [],
+  };
+};
+
+let remoteResourcesDisabled = false;
+
+export const shouldUseRemoteResources = (): boolean => {
+  if (remoteResourcesDisabled) return false;
+  if (typeof window !== 'undefined' && (window as any).__FORCE_REMOTE_RESOURCES__) return true;
+  if (process.env.NEXT_PUBLIC_FORCE_REMOTE_RESOURCES === 'true') return true;
+  const base = getApiBaseUrl();
+  // Remote Render server does not have /resources routes deployed yet.
+  // Avoid network 404 console errors by serving directly from verified local store.
+  if (base.includes('onrender.com')) return false;
+  return true;
+};
+
+export const getAllResourcesList = (): ResourceItem[] => {
+  let custom: ResourceItem[] = [];
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('matchskill_custom_resources');
+      if (stored) {
+        custom = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn('Error loading custom resources from localStorage:', e);
+    }
+  }
+  const fallback = (((fallbackData as any).resources || []) as ResourceItem[]);
+  return [...custom, ...fallback].map(normalizeResource);
+};
+
+const filterAndSortLocalResources = (params: {
+  type?: string;
+  category?: string;
+  skill?: string;
+  tag?: string;
+  difficulty?: string;
+  source?: string;
+  q?: string;
+  sort_by?: string;
+  verified_only?: boolean;
+  page?: number;
+  page_size?: number;
+}): { total: number; page: number; page_size: number; total_pages: number; resources: ResourceItem[] } => {
+  let list = getAllResourcesList();
+
+  if (typeof window !== 'undefined') {
+    list = list.map((r) => {
+      const isLiked = localStorage.getItem(`matchskill_likes_${r.id}`) === 'true';
+      const isSaved = localStorage.getItem(`matchskill_saved_${r.id}`) === 'true';
+      return {
+        ...r,
+        is_liked: isLiked || r.is_liked,
+        like_count: isLiked ? r.like_count + 1 : r.like_count,
+        is_saved: isSaved || r.is_saved,
+        save_count: isSaved ? r.save_count + 1 : r.save_count,
+      };
+    });
+  }
+
+  if (params.type && params.type !== 'ALL') {
+    list = list.filter((r) => r.resource_type === params.type);
+  }
+  if (params.category && params.category !== 'All') {
+    const catLower = params.category.toLowerCase();
+    list = list.filter((r) => r.category?.toLowerCase() === catLower);
+  }
+  if (params.difficulty && params.difficulty !== 'All Levels') {
+    list = list.filter((r) => r.difficulty === params.difficulty);
+  }
+  if (params.skill) {
+    const sLower = params.skill.toLowerCase();
+    list = list.filter((r) => r.skills?.some((s) => s.toLowerCase() === sLower));
+  }
+  if (params.tag) {
+    const tClean = params.tag.replace(/^#/, '').toLowerCase().trim();
+    list = list.filter((r) =>
+      r.tags?.some((t) => t.replace(/^#/, '').toLowerCase().trim() === tClean) ||
+      r.hashtags?.some((h) => h.replace(/^#/, '').toLowerCase().trim() === tClean) ||
+      r.keywords?.some((k) => k.replace(/^#/, '').toLowerCase().trim() === tClean)
+    );
+  }
+  if (params.source) {
+    const srcLower = params.source.toLowerCase();
+    list = list.filter((r) => r.source_name?.toLowerCase().includes(srcLower) || r.source_domain?.toLowerCase().includes(srcLower));
+  }
+  if (params.verified_only) {
+    list = list.filter((r) => r.is_verified);
+  }
+  if (params.q) {
+    const qLower = params.q.toLowerCase().trim().replace(/^#/, '');
+    list = list.filter(
+      (r) =>
+        r.title?.toLowerCase().includes(qLower) ||
+        r.short_description?.toLowerCase().includes(qLower) ||
+        r.source_name?.toLowerCase().includes(qLower) ||
+        r.skills?.some((s) => s.toLowerCase().includes(qLower)) ||
+        r.tags?.some((t) => t.toLowerCase().includes(qLower)) ||
+        r.hashtags?.some((h) => h.toLowerCase().includes(qLower)) ||
+        r.keywords?.some((k) => k.toLowerCase().includes(qLower))
+    );
+  }
+
+  if (params.sort_by === 'most_viewed') {
+    list.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+  } else if (params.sort_by === 'most_liked') {
+    list.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
+  } else if (params.sort_by === 'highest_rated') {
+    list.sort((a, b) => ((b.like_count || 0) + (b.save_count || 0)) - ((a.like_count || 0) + (a.save_count || 0)));
+  } else if (params.sort_by === 'newest') {
+    list.sort((a, b) => new Date(b.published_at || b.created_at || 0).getTime() - new Date(a.published_at || a.created_at || 0).getTime());
+  }
+
+  const page = params.page && params.page > 0 ? params.page : 1;
+  const pageSize = params.page_size && params.page_size > 0 ? params.page_size : 12;
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const paged = list.slice((page - 1) * pageSize, page * pageSize);
+
+  return { total, page, page_size: pageSize, total_pages: totalPages, resources: paged };
+};
+
+const getLocalTrendingResources = (limit: number = 6): ResourceItem[] => {
+  const list = getAllResourcesList();
+  list.sort((a, b) => ((b.view_count || 0) + (b.like_count || 0) * 2) - ((a.view_count || 0) + (a.like_count || 0) * 2));
+  return list.slice(0, limit);
+};
+
+const getLocalRecommendedResources = (limit: number = 8): ResourceItem[] => {
+  const list = getAllResourcesList();
+  list.sort((a, b) => ((b.is_verified ? 500 : 0) + (b.like_count || 0)) - ((a.is_verified ? 500 : 0) + (a.like_count || 0)));
+  return list.slice(0, limit);
+};
+
+const getLocalResourceBySlug = (slug: string): ResourceItem => {
+  const list = getAllResourcesList();
+  const found = list.find((r) => r.slug === slug || r.id === slug);
+  if (!found) {
+    throw new Error('Resource not found');
+  }
+
+  if (typeof window !== 'undefined' && !getToken()) {
+    const viewedKey = 'matchskill_guest_viewed_slugs';
+    let viewedSlugs: string[] = [];
+    try {
+      const raw = localStorage.getItem(viewedKey);
+      if (raw) viewedSlugs = JSON.parse(raw);
+    } catch (e) {}
+
+    if (!viewedSlugs.includes(slug)) {
+      viewedSlugs.push(slug);
+      try {
+        localStorage.setItem(viewedKey, JSON.stringify(viewedSlugs));
+      } catch (e) {}
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    const isLiked = localStorage.getItem(`matchskill_likes_${found.id}`) === 'true';
+    const isSaved = localStorage.getItem(`matchskill_saved_${found.id}`) === 'true';
+    return {
+      ...found,
+      is_liked: isLiked || found.is_liked,
+      is_saved: isSaved || found.is_saved,
+    };
+  }
+
+  return found;
+};
+
+const getLocalGuestStatus = (): { views_count: number; views_limit: number; has_reached_limit: boolean } => {
+  if (typeof window === 'undefined') {
+    return { views_count: 0, views_limit: 3, has_reached_limit: false };
+  }
+  const token = getToken();
+  if (token) {
+    return { views_count: 0, views_limit: 999, has_reached_limit: false };
+  }
+  let count = 0;
+  try {
+    const raw = localStorage.getItem('matchskill_guest_viewed_slugs');
+    if (raw) count = JSON.parse(raw).length;
+  } catch (e) {}
+  return { views_count: count, views_limit: 3, has_reached_limit: count >= 3 };
+};
+
+const getLocalUserSavedResources = (page: number = 1, pageSize: number = 20): { total: number; resources: ResourceItem[] } => {
+  const all = getAllResourcesList();
+  let savedIds: string[] = [];
+  if (typeof window !== 'undefined') {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('matchskill_saved_') && localStorage.getItem(k) === 'true') {
+        savedIds.push(k.replace('matchskill_saved_', ''));
+      }
+    }
+  }
+  const saved = all.filter((r) => savedIds.includes(r.id) || r.is_saved);
+  const total = saved.length;
+  const paged = saved.slice((page - 1) * pageSize, page * pageSize);
+  return { total, resources: paged };
+};
+
+const getLocalResourceCategories = () => {
+  const all = getAllResourcesList();
+  const counts: Record<string, number> = {};
+  all.forEach((r) => {
+    const c = r.category || 'General';
+    counts[c] = (counts[c] || 0) + 1;
+  });
+  return Object.entries(counts).map(([name, count], index) => ({
+    id: `cat-${index + 1}`,
+    name,
+    slug: name.toLowerCase().replace(/\s+/g, '-'),
+    count,
+  }));
+};
+
 export const api = {
   // 1. Register User
   register: async (data: UserRegistrationData) => {
@@ -140,6 +486,7 @@ export const api = {
   // 2. Save Basic Profile
   saveBasicProfile: async (data: BasicProfileData) => {
     const token = getToken();
+    if (!token) throw new Error('Please sign in before saving your profile.');
     try {
       const res = await fetch(`${API_BASE_URL}/profile`, {
         method: 'PUT',
@@ -150,103 +497,74 @@ export const api = {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        throw new Error('Failed to update profile');
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.detail || 'Failed to update profile');
       }
       return await res.json();
     } catch (err: any) {
-      console.warn('API saveBasicProfile fallback:', err.message);
-      return { status: 'success', data };
+      console.error('API saveBasicProfile failed:', err);
+      throw err;
     }
+  },
+
+  updateCareerPreferences: async (targetRole: string, preferredLocation?: string) => {
+    const token = getToken();
+    if (!token) throw new Error('Please sign in before updating career preferences.');
+    const res = await fetch(`${API_BASE_URL}/profile/preferences`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ target_role: targetRole, preferred_location: preferredLocation }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to update career preferences.');
+    }
+    return await res.json();
   },
 
   // 3. Upload Resume File (caches real file object for subsequent analysis)
   uploadResume: async (file: File): Promise<{ id: string; file_name: string; file_type: string }> => {
-    const resumeId = 'resume_' + Date.now() + '_' + Math.random().toString(36).substring(7);
-    if (typeof window !== 'undefined') {
-      (window as any).__skillvantage_uploaded_files = (window as any).__skillvantage_uploaded_files || new Map<string, File>();
-      (window as any).__skillvantage_uploaded_files.set(resumeId, file);
+    const token = getToken();
+    if (!token) throw new Error('Please sign in before uploading a resume.');
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE_URL}/resume/upload`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.detail || 'Resume upload failed.');
     }
-
-    return {
-      id: resumeId,
-      file_name: file.name,
-      file_type: file.name.endsWith('.docx') ? 'DOCX' : 'PDF',
-    };
+    return await res.json();
   },
 
   // 4. Direct Parse Resume File using Python Engine via Backend API
   parseResumeFile: async (file: File, userProfileData?: BasicProfileData): Promise<ResumeAnalysisResult> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const res = await fetch(`${API_BASE_URL}/resume/analyze-direct`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({ error: 'Resume analysis failed' }));
-      throw new Error(errData.detail || errData.error || 'Resume analysis failed');
-    }
-
-    const data = await res.json();
-
-
-    // Check for conflict: User city vs Resume city
-    const conflicts: ConflictItem[] = [];
-    if (userProfileData && data.personal_info?.city && userProfileData.city.toLowerCase() !== data.personal_info.city.toLowerCase()) {
-      conflicts.push({
-        field_name: 'Current City',
-        user_value: userProfileData.city,
-        resume_value: data.personal_info.city,
-        resolution: 'preserved_user_input',
-        explanation: `Profile specified '${userProfileData.city}' while resume states '${data.personal_info.city}'. Your profile input is preserved.`
-      });
-    }
-
-    return {
-      resume_id: 'res_' + Date.now(),
-      file_name: file.name,
-      parser_version: data.parser_version || '1.0.0',
-      raw_text_length: data.raw_text_length || 0,
-      sections_detected: data.sections_detected || [],
-      personal_info: {
-        name: data.personal_info?.name || userProfileData?.name,
-        email: data.personal_info?.email,
-        phone: data.personal_info?.phone,
-        city: data.personal_info?.city || userProfileData?.city,
-        linkedin: data.personal_info?.linkedin || userProfileData?.linkedin,
-        github: data.personal_info?.github || userProfileData?.github,
-        portfolio: data.personal_info?.portfolio || userProfileData?.portfolio,
-        confidence: data.personal_info?.confidence || {}
-      },
-      education: data.education || [],
-      experience: data.experience || [],
-      projects: data.projects || [],
-      certifications: data.certifications || [],
-      skills: (data.skills || []).map((s: any) => ({
-        ...s,
-        confirmed: true,
-      })),
-      inferred_domain: data.inferred_domain,
-      inferred_target_role: data.inferred_target_role,
-      inferred_role_confidence: data.inferred_role_confidence,
-      conflicts: conflicts,
-      confidence_summary: data.confidence_summary || { overall: 0.92 },
-    };
+    const uploaded = await api.uploadResume(file);
+    return await api.analyzeResume(uploaded.id, userProfileData);
   },
 
   // Update Target Career Role
   updateTargetCareer: async (targetRole: string, preferredLocation?: string) => {
-    return await api.saveBasicProfile({
-      city: preferredLocation || 'Bengaluru',
-      education_level: 'Undergraduate',
-      degree: 'B.Tech',
-      college: 'University',
-      graduation_year: 2026,
-      target_role: targetRole,
-      preferred_location: preferredLocation || 'Bengaluru',
+    return await api.updateCareerPreferences(targetRole, preferredLocation);
+  },
+
+  getStudentProfile: async () => {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required.');
+    const res = await fetch(`${API_BASE_URL}/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.detail || 'Failed to load student profile.');
+    }
+    return await res.json();
   },
 
   // 5. Analyze Resume (retrieves real cached file or sends request)
@@ -280,23 +598,20 @@ export const api = {
   // 5. Confirm Extracted Profile & Persist to DB
   confirmProfile: async (resumeId: string, payload: any) => {
     const token = getToken();
-    try {
-      const res = await fetch(`${API_BASE_URL}/resume/${resumeId}/confirm`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        throw new Error('Confirmation failed');
-      }
-      return await res.json();
-    } catch (err: any) {
-      console.warn('API confirmProfile fallback:', err.message);
-      return { status: 'success', message: 'Profile confirmed' };
+    if (!token) throw new Error('Please sign in before confirming your profile.');
+    const res = await fetch(`${API_BASE_URL}/resume/${resumeId}/confirm`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.detail || 'Profile confirmation failed.');
     }
+    return await res.json();
   },
 
   // 6. Profile Intelligence Summary & Career Fit
@@ -359,5 +674,627 @@ export const api = {
       throw new Error('Recalculation failed');
     }
     return await res.json();
-  }
+  },
+
+  // ==================== RESOURCE INTELLIGENCE HUB ====================
+  // List Resources
+  listResources: async (params: {
+    type?: string;
+    category?: string;
+    skill?: string;
+    tag?: string;
+    difficulty?: string;
+    source?: string;
+    q?: string;
+    sort_by?: string;
+    verified_only?: boolean;
+    page?: number;
+    page_size?: number;
+  }): Promise<{ total: number; page: number; page_size: number; total_pages: number; resources: ResourceItem[] }> => {
+    const query = new URLSearchParams();
+    if (params.type && params.type !== 'ALL') query.append('type', params.type);
+    if (params.category && params.category !== 'All') query.append('category', params.category);
+    if (params.skill) query.append('skill', params.skill);
+    if (params.tag) query.append('tag', params.tag);
+    if (params.difficulty && params.difficulty !== 'All Levels') query.append('difficulty', params.difficulty);
+    if (params.source) query.append('source', params.source);
+    if (params.q) query.append('q', params.q);
+    if (params.sort_by) query.append('sort_by', params.sort_by);
+    if (params.verified_only) query.append('verified_only', 'true');
+    if (params.page) query.append('page', params.page.toString());
+    if (params.page_size) query.append('page_size', params.page_size.toString());
+
+    try {
+      const url = typeof window !== 'undefined'
+        ? `/api/resources/?${query.toString()}`
+        : `http://localhost:3000/api/resources/?${query.toString()}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          ...data,
+          resources: (data.resources || []).map(normalizeResource),
+        };
+      }
+    } catch (err) {
+      console.warn('API listResources fetch error, using local store:', err);
+    }
+    return filterAndSortLocalResources(params);
+  },
+
+  // Get Trending Resources
+  getTrendingResources: async (limit: number = 6): Promise<ResourceItem[]> => {
+    try {
+      const url = typeof window !== 'undefined'
+        ? `/api/resources/?sort_by=most_viewed&page_size=${limit}`
+        : `http://localhost:3000/api/resources/?sort_by=most_viewed&page_size=${limit}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        return (data.resources || []).map(normalizeResource);
+      }
+    } catch {}
+    return getLocalTrendingResources(limit);
+  },
+
+  // Get Personalized Recommended Resources
+  getRecommendedResources: async (limit: number = 8): Promise<ResourceItem[]> => {
+    try {
+      const url = typeof window !== 'undefined'
+        ? `/api/resources/?sort_by=highest_rated&page_size=${limit}`
+        : `http://localhost:3000/api/resources/?sort_by=highest_rated&page_size=${limit}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        return (data.resources || []).map(normalizeResource);
+      }
+    } catch {}
+    return getLocalRecommendedResources(limit);
+  },
+
+  // Get Resource Detail by Slug
+  getResourceBySlug: async (slug: string): Promise<ResourceItem> => {
+    try {
+      const url = typeof window !== 'undefined'
+        ? `/api/resources/${slug}/`
+        : `http://localhost:3000/api/resources/${slug}/`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        return normalizeResource(data);
+      }
+    } catch {}
+    return getLocalResourceBySlug(slug);
+  },
+
+  // Check Guest View Status
+  getGuestStatus: async (): Promise<{ views_count: number; views_limit: number; has_reached_limit: boolean }> => {
+    if (!shouldUseRemoteResources()) {
+      return getLocalGuestStatus();
+    }
+
+    const sessionId = getSessionId();
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/resources/guest-status`, {
+        headers: { 'X-Anonymous-Session-Id': sessionId },
+      });
+      if (res.status === 404) {
+        remoteResourcesDisabled = true;
+        return getLocalGuestStatus();
+      }
+      if (!res.ok) return getLocalGuestStatus();
+      return await res.json();
+    } catch {
+      return getLocalGuestStatus();
+    }
+  },
+
+  // Toggle Like
+  toggleLikeResource: async (id: string, currentlyLiked: boolean): Promise<{ liked: boolean; like_count: number }> => {
+    const token = getToken();
+    requireAuthenticatedResourceAction();
+    if (shouldUseRemoteResources() && token) {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/resources/${id}/like`, {
+          method: currentlyLiked ? 'DELETE' : 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const result = await res.json();
+          return {
+            liked: Boolean(result.liked),
+            like_count: Math.max(Number(result.like_count) || 0, result.liked ? 1 : 0),
+          };
+        }
+      } catch {}
+    }
+
+    // Call persistent server API
+    const identity = getLocalActivityIdentity();
+    try {
+      const url = typeof window !== 'undefined'
+        ? `/api/resources/${id}/like/`
+        : `http://localhost:3000/api/resources/${id}/like/`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(identity),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        const key = `matchskill_likes_${id}`;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(key, String(result.liked));
+        }
+        return {
+          liked: Boolean(result.liked),
+          like_count: Number(result.like_count) || 0,
+        };
+      }
+    } catch (err) {
+      console.warn('Like API notice:', err);
+    }
+
+    // Local state toggle with localStorage persistence fallback
+    const key = `matchskill_likes_${id}`;
+    const newLiked = !currentlyLiked;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, String(newLiked));
+    }
+    const all = getAllResourcesList();
+    const found = all.find((r) => r.id === id);
+    const baseCount = found ? (found.like_count || 0) : 0;
+    return { liked: newLiked, like_count: newLiked ? Math.max(1, baseCount + 1) : Math.max(0, baseCount - 1) };
+  },
+
+  // Toggle Save / Bookmark
+  toggleSaveResource: async (id: string, currentlySaved: boolean): Promise<{ saved: boolean; save_count: number }> => {
+    const token = getToken();
+    requireAuthenticatedResourceAction();
+    if (shouldUseRemoteResources() && token) {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/resources/${id}/save`, {
+          method: currentlySaved ? 'DELETE' : 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) return await res.json();
+      } catch {}
+    }
+
+    // Local state toggle with localStorage persistence
+    const key = `matchskill_saved_${id}`;
+    const newSaved = !currentlySaved;
+    if (typeof window !== 'undefined') {
+      fetch('/api/resources/activity/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resource_id: id, type: 'save', ...getLocalActivityIdentity() }) }).catch(() => {});
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, String(newSaved));
+    }
+    const all = getAllResourcesList();
+    const found = all.find((r) => r.id === id);
+    const baseCount = found ? (found.save_count || 0) : 0;
+    return { saved: newSaved, save_count: newSaved ? baseCount + 1 : Math.max(0, baseCount - 1) };
+  },
+
+  // Share Resource
+  shareResource: async (id: string): Promise<number> => {
+    if (shouldUseRemoteResources()) {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/resources/${id}/share`, { method: 'POST' });
+        if (res.ok) {
+          const json = await res.json();
+          return json.share_count;
+        }
+      } catch {}
+    }
+    const all = getAllResourcesList();
+    const found = all.find((r) => r.id === id);
+    return found ? (found.share_count || 0) + 1 : 1;
+  },
+
+  // Comments (Public - visible to all users, guest and authenticated)
+  getResourceComments: async (id: string): Promise<ResourceCommentItem[]> => {
+    let serverComments: ResourceCommentItem[] = [];
+    try {
+      const url = typeof window !== 'undefined'
+        ? `/api/resources/${id}/comments/`
+        : `http://localhost:3000/api/resources/${id}/comments/`;
+      const res = await fetch(url);
+      if (res.ok) {
+        serverComments = await res.json();
+      }
+    } catch (err) {
+      console.warn('Failed to fetch comments from server API:', err);
+    }
+
+    let localComments: ResourceCommentItem[] = [];
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(`matchskill_comments_${id}`);
+        if (stored) localComments = JSON.parse(stored);
+      } catch {}
+    }
+    const merged = [...serverComments, ...localComments];
+    return merged
+      .filter((comment, index, list) => list.findIndex((item) => item.id === comment.id || (item.content === comment.content && item.user_name === comment.user_name)) === index)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  },
+
+  addResourceComment: async (id: string, content: string): Promise<ResourceCommentItem> => {
+    requireAuthenticatedResourceAction();
+    const identity = getLocalActivityIdentity();
+
+    let createdComment: ResourceCommentItem | null = null;
+    try {
+      const url = typeof window !== 'undefined'
+        ? `/api/resources/${id}/comments/`
+        : `http://localhost:3000/api/resources/${id}/comments/`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, ...identity }),
+      });
+      if (res.ok) {
+        createdComment = await res.json();
+      }
+    } catch (err) {
+      console.warn('Comment API notice:', err);
+    }
+
+    const newComment: ResourceCommentItem = createdComment || {
+      id: `local-${Date.now()}`,
+      resource_id: id,
+      user_id: identity.user_id || 'current-user',
+      user_name: identity.user_name || 'Student Contributor',
+      content,
+      status: 'APPROVED',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (typeof window !== 'undefined') {
+      try {
+        const key = `matchskill_comments_${id}`;
+        const stored = localStorage.getItem(key);
+        const list: ResourceCommentItem[] = stored ? JSON.parse(stored) : [];
+        if (!list.some((item) => item.id === newComment.id)) {
+          list.unshift(newComment);
+          localStorage.setItem(key, JSON.stringify(list));
+        }
+      } catch {}
+    }
+    return newComment;
+  },
+
+  deleteOwnResourceComment: async (commentId: string, resourceId: string) => {
+    requireAuthenticatedResourceAction();
+    try {
+      const url = typeof window !== 'undefined'
+        ? `/api/resources/${resourceId}/comments/?comment_id=${commentId}`
+        : `http://localhost:3000/api/resources/${resourceId}/comments/?comment_id=${commentId}`;
+      await fetch(url, { method: 'DELETE' });
+    } catch {}
+
+    if (typeof window !== 'undefined') {
+      try {
+        const key = `matchskill_comments_${resourceId}`;
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const list = JSON.parse(stored);
+          const filtered = list.filter((item: any) => item.id !== commentId);
+          localStorage.setItem(key, JSON.stringify(filtered));
+        }
+      } catch {}
+    }
+    return { success: true };
+  },
+
+  // User Saved Resources Library
+  getUserSavedResources: async (page: number = 1, pageSize: number = 20): Promise<{ total: number; resources: ResourceItem[] }> => {
+    const token = getToken();
+    if (shouldUseRemoteResources() && token) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/resources/user/saved?page=${page}&page_size=${pageSize}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) return await res.json();
+      } catch {}
+    }
+    return getLocalUserSavedResources(page, pageSize);
+  },
+
+  // Categories Taxonomy
+  getResourceCategories: async (): Promise<Array<{ id: string; name: string; slug: string; icon?: string; count: number }>> => {
+    if (shouldUseRemoteResources()) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/resources/categories`);
+        if (res.ok) return await res.json();
+      } catch {}
+    }
+    return getLocalResourceCategories();
+  },
+
+  // Admin Resource Operations
+  adminListResources: async (params: { status?: string; type?: string; q?: string; page?: number; page_size?: number }) => {
+    try {
+      const query = new URLSearchParams();
+      if (params.status) query.append('status', params.status);
+      if (params.type) query.append('type', params.type);
+      if (params.q) query.append('q', params.q);
+      if (params.page) query.append('page', params.page.toString());
+      if (params.page_size) query.append('page_size', params.page_size.toString());
+
+      const url = typeof window !== 'undefined'
+        ? `/api/admin/resources?${query.toString()}`
+        : `http://localhost:3000/api/admin/resources?${query.toString()}`;
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+    } catch {}
+    return filterAndSortLocalResources(params);
+  },
+
+  adminGetResourceActivity: async (params: { limit?: number; type?: string; dateFrom?: string; dateTo?: string } = {}) => {
+    const query = new URLSearchParams();
+    query.set('limit', String(params.limit || 100));
+    if (params.type && params.type !== 'ALL') query.set('type', params.type);
+    if (params.dateFrom) query.set('date_from', params.dateFrom);
+    if (params.dateTo) query.set('date_to', params.dateTo);
+    const res = await fetch(`/api/admin/resources/activity?${query.toString()}`);
+    if (!res.ok) throw new Error('Failed to load resource activity');
+    return await res.json();
+  },
+
+  adminDeleteResourceComment: async (commentId: string) => {
+    const res = await fetch(`/api/admin/resources/comments/${commentId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete comment');
+    return await res.json();
+  },
+
+  getNotifications: async (limit: number = 30) => {
+    const token = getToken();
+    if (!token) return [];
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/notifications?limit=${limit}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    return [];
+  },
+
+  markNotificationsRead: async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      await fetch(`${getApiBaseUrl()}/notifications/read-all`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {}
+  },
+
+  adminCreateResource: async (payload: any) => {
+    let createdResource: any = null;
+    try {
+      const url = typeof window !== 'undefined' ? '/api/admin/resources' : 'http://localhost:3000/api/admin/resources';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        createdResource = await res.json();
+      }
+    } catch (err) {
+      console.warn('Backend admin create notice:', err);
+    }
+
+    const title = payload.title || 'Untitled Resource';
+    const slug = createdResource?.slug || payload.slug || title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') + '-' + Date.now().toString(36);
+
+    const newResource: ResourceItem = createdResource || {
+      id: `custom-${Date.now()}`,
+      slug,
+      title,
+      resource_type: payload.resource_type || 'LEARNING_RESOURCE',
+      category: payload.category || 'Technology',
+      source_name: payload.source_name || 'MatchSkill Editorial',
+      source_domain: payload.source_domain || 'matchskill.ai',
+      original_url: payload.original_url || '',
+      short_description: payload.short_description || '',
+      content_summary: payload.content_summary || '',
+      content_markdown: payload.content_markdown || payload.content_summary || '',
+      difficulty: payload.difficulty || 'All Levels',
+      skills: payload.skills || [],
+      tags: payload.tags || [],
+      hashtags: payload.hashtags || [],
+      keywords: payload.keywords || [],
+      is_verified: true,
+      verification_status: payload.verification_status || 'VERIFIED',
+      view_count: 0,
+      like_count: 0,
+      save_count: 0,
+      share_count: 0,
+      comment_count: 0,
+      attached_links: payload.attached_links || [],
+      status: payload.status || 'PUBLISHED',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      published_at: new Date().toISOString(),
+    };
+
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('matchskill_custom_resources');
+        const list: ResourceItem[] = stored ? JSON.parse(stored) : [];
+        const filtered = list.filter((item) => item.id !== newResource.id && item.slug !== newResource.slug);
+        filtered.unshift(newResource);
+        localStorage.setItem('matchskill_custom_resources', JSON.stringify(filtered));
+      } catch (e) {
+        console.warn('Failed to save custom resource to localStorage:', e);
+      }
+    }
+    return newResource;
+  },
+
+  adminUpdateResource: async (id: string, payload: any) => {
+    try {
+      const url = typeof window !== 'undefined' ? `/api/admin/resources/${id}` : `http://localhost:3000/api/admin/resources/${id}`;
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('Admin update notice:', err);
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('matchskill_custom_resources');
+        let list: ResourceItem[] = stored ? JSON.parse(stored) : [];
+        list = list.map((item) => (item.id === id || item.slug === id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item));
+        localStorage.setItem('matchskill_custom_resources', JSON.stringify(list));
+      } catch (e) {}
+    }
+    return { status: 'success', id, ...payload };
+  },
+
+  adminDeleteResource: async (id: string) => {
+    try {
+      const url = typeof window !== 'undefined' ? `/api/admin/resources/${id}` : `http://localhost:3000/api/admin/resources/${id}`;
+      const res = await fetch(url, { method: 'DELETE' });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('Admin delete notice:', err);
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('matchskill_custom_resources');
+        let list: ResourceItem[] = stored ? JSON.parse(stored) : [];
+        list = list.filter((item) => item.id !== id && item.slug !== id);
+        localStorage.setItem('matchskill_custom_resources', JSON.stringify(list));
+      } catch (e) {}
+    }
+    return { status: 'success', id };
+  },
+
+  adminPublishResource: async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/resources/${id}/publish`, { method: 'POST' });
+      if (res.ok) return await res.json();
+    } catch {}
+    return api.adminUpdateResource(id, { status: 'PUBLISHED' });
+  },
+
+  adminArchiveResource: async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/resources/${id}/archive`, { method: 'POST' });
+      if (res.ok) return await res.json();
+    } catch {}
+    return api.adminUpdateResource(id, { status: 'ARCHIVED' });
+  },
+
+  adminVerifyResource: async (id: string, status: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/resources/${id}/verify?verification_status=${status}`, { method: 'POST' });
+      if (res.ok) return await res.json();
+    } catch {}
+    return api.adminUpdateResource(id, { verification_status: status, is_verified: status === 'VERIFIED' });
+  },
+
+  adminFetchMetadata: async (url: string) => {
+    const res = await fetch(`${API_BASE_URL}/admin/resources/fetch-metadata`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to fetch metadata');
+    }
+    return await res.json();
+  },
+
+  adminGetAnalytics: async () => {
+    if (shouldUseRemoteResources()) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/admin/resources/analytics`);
+        if (res.ok) return await res.json();
+      } catch {}
+    }
+    const all = getAllResourcesList();
+    return {
+      total_resources: all.length,
+      published_count: all.length,
+      verified_count: all.filter((r) => r.is_verified).length,
+      total_views: all.reduce((acc, r) => acc + (r.view_count || 0), 0),
+      total_likes: all.reduce((acc, r) => acc + (r.like_count || 0), 0),
+      total_bookmarks: all.reduce((acc, r) => acc + (r.save_count || 0), 0),
+    };
+  },
+
+  adminTriggerIngest: async (source: string, topic: string) => {
+    const res = await fetch(`${API_BASE_URL}/admin/resources/ingest?source=${source}&topic=${encodeURIComponent(topic)}`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Failed to trigger ingestion');
+    return await res.json();
+  },
 };
+
+// Automatic background sync: ensures any locally created resources & comments in browser are persisted to server
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    try {
+      // 1. Sync custom resources
+      const stored = localStorage.getItem('matchskill_custom_resources');
+      if (stored) {
+        const list = JSON.parse(stored);
+        if (Array.isArray(list) && list.length > 0) {
+          list.forEach((r) => {
+            fetch('/api/resources', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(r),
+            }).catch(() => {});
+          });
+        }
+      }
+
+      // 2. Sync comments from localStorage to server
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('matchskill_comments_')) {
+          const resId = key.replace('matchskill_comments_', '');
+          const commsRaw = localStorage.getItem(key);
+          if (commsRaw) {
+            const comms = JSON.parse(commsRaw);
+            if (Array.isArray(comms)) {
+              comms.forEach((c) => {
+                if (c && c.content) {
+                  fetch(`/api/resources/${resId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      content: c.content,
+                      user_name: c.user_name || 'Student Contributor',
+                      user_id: c.user_id || 'student',
+                      email: c.email,
+                    }),
+                  }).catch(() => {});
+                }
+              });
+            }
+          }
+        }
+      }
+    } catch {}
+  }, 1200);
+}
+

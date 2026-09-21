@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/validate-json.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/validate-json.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

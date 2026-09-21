@@ -11,7 +11,7 @@ export const AiAssistantDrawer: React.FC = () => {
   const [messages, setMessages] = useState<Array<{ role: 'ai' | 'user'; text: string; time: string }>>([
     {
       role: 'ai',
-      text: `Hello ${profile?.name || 'Student'}! I am your SARTHI AI Career Intelligence Assistant. Based on your current profile and target role as a ${activeRole}, let's focus on bridging your critical skill gaps with real market data.`,
+      text: `Hello ${profile?.name || 'Student'}! I am your MatchSkill AI Career Intelligence Assistant. Based on your current profile and target role as a ${activeRole}, let's focus on bridging your critical skill gaps with real market data.`,
       time: 'Just now',
     },
   ]);
@@ -58,7 +58,7 @@ export const AiAssistantDrawer: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-extrabold text-base tracking-tight text-white">SARTHI AI Assistant</h3>
+                  <h3 className="font-extrabold text-base tracking-tight text-white">MatchSkill AI Assistant</h3>
                 </div>
                 <p className="text-xs text-slate-400 font-medium">Context: {aiDrawerTopic}</p>
               </div>
@@ -97,7 +97,7 @@ export const AiAssistantDrawer: React.FC = () => {
                 >
                   {msg.role === 'ai' && (
                     <div className="mb-1">
-                      <AiInsightBadge label="SARTHI AI" variant="purple" />
+                      <AiInsightBadge label="MatchSkill AI" variant="purple" />
                     </div>
                   )}
                   {msg.text}

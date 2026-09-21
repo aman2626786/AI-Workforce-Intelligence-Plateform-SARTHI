@@ -13,11 +13,13 @@ class UserLoginRequest(BaseModel):
     password: str
 
 class FirebaseLoginRequest(BaseModel):
-    email: EmailStr
+    # Identity fields are retained for client compatibility, but the server
+    # derives the authoritative values from the verified Firebase token.
+    email: Optional[EmailStr] = None
     name: Optional[str] = "Student"
     firebase_uid: Optional[str] = None
     photo_url: Optional[str] = None
-    id_token: Optional[str] = None
+    id_token: str = Field(..., min_length=20)
 
 class TokenResponse(BaseModel):
     access_token: str

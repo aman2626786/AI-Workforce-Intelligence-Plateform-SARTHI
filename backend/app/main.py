@@ -15,6 +15,10 @@ from backend.app.api.jobs import router as jobs_router
 from backend.app.api.skill_intelligence import router as skill_intelligence_router
 from backend.app.api.profile_intelligence import router as profile_intelligence_router
 from backend.app.services.job_crawler.scheduler import scheduler
+from backend.app.api.resources import router as resources_router
+from backend.app.api.admin_resources import router as admin_resources_router
+from backend.app.api.notifications import router as notifications_router
+from backend.app.data.seed_resources import seed_resources_if_empty
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 
@@ -64,8 +68,15 @@ def run_migrations():
                 if "firebase_uid" not in columns and len(columns) > 0:
                     conn.execute(text("ALTER TABLE users ADD COLUMN firebase_uid VARCHAR(255)"))
                     conn.commit()
+                if "role" not in columns and len(columns) > 0:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'STUDENT'"))
+                    conn.commit()
+            elif engine.dialect.name == "postgresql":
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'STUDENT'"))
+                conn.commit()
         except Exception as e:
             print(f"[Migration] Auto-migration note: {e}")
+
 
 # Ensure DB tables exist & run migrations
 Base.metadata.create_all(bind=engine)
@@ -76,8 +87,9 @@ run_migrations()
 async def lifespan(app: FastAPI):
     # 1. Create DB tables
     Base.metadata.create_all(bind=engine)
-    # 2. Seed master skills
+    # 2. Seed master skills & verified resources
     seed_skills_if_empty()
+    seed_resources_if_empty()
     # 3. Start background job crawler scheduler
     try:
         scheduler.start()
@@ -113,7 +125,7 @@ if frontend_url and frontend_url not in allowed_origins:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if os.getenv("ALLOW_ALL_CORS", "true").lower() == "true" else allowed_origins,
+    allow_origins=["*"] if os.getenv("ALLOW_ALL_CORS", "false").lower() == "true" else allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -131,6 +143,10 @@ app.include_router(jobs_router, prefix=settings.API_V1_STR)
 app.include_router(skill_intelligence_router, prefix=settings.API_V1_STR)
 app.include_router(profile_intelligence_router, prefix=settings.API_V1_STR)
 app.include_router(admin_router, prefix=settings.API_V1_STR)
+app.include_router(resources_router, prefix=settings.API_V1_STR)
+app.include_router(admin_resources_router, prefix=settings.API_V1_STR)
+app.include_router(notifications_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/")
 def root():
@@ -145,9 +161,18 @@ def root():
 
 @app.get("/health")
 def health_check():
+    database_status = "healthy"
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception:
+        database_status = "unhealthy"
+
+    overall_status = "healthy" if database_status == "healthy" else "degraded"
     return {
-        "status": "healthy",
+        "status": overall_status,
         "service": settings.PROJECT_NAME,
         "version": "1.0.0",
-        "parser": "Deterministic / Local (PyMuPDF & python-docx)"
+        "parser": "Deterministic / Local (PyMuPDF & python-docx)",
+        "checks": {"database": database_status},
     }

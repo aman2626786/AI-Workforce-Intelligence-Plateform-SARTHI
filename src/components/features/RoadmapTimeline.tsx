@@ -32,22 +32,22 @@ export const RoadmapTimeline: React.FC<RoadmapTimelineProps> = ({ items, onToggl
         const totalInStage = stageItems.length;
 
         return (
-          <div key={stageName} className="relative pl-6 md:pl-8 border-l-2 border-brand-200 last:border-l-0 pb-6">
+          <div key={stageName} className="relative pl-6 md:pl-8 border-l-2 border-sky-200 last:border-l-0 pb-8">
             {/* Stage Indicator Node */}
-            <div className="absolute -left-3.5 top-0 w-7 h-7 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold ring-4 ring-white shadow-md">
+            <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-sky-600 text-white flex items-center justify-center text-sm font-bold ring-4 ring-white shadow-xs">
               {stageIdx + 1}
             </div>
 
             {/* Stage Header */}
             <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight">{stageName}</h3>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{stageName}</h3>
+                  <span className="text-xs sm:text-sm font-medium px-3 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                     {completedInStage}/{totalInStage} Completed
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">{stageDescriptions[stageName]}</p>
+                <p className="text-sm text-slate-500 font-normal mt-0.5">{stageDescriptions[stageName]}</p>
               </div>
             </div>
 
@@ -60,30 +60,32 @@ export const RoadmapTimeline: React.FC<RoadmapTimelineProps> = ({ items, onToggl
                 return (
                   <div
                     key={item.id}
-                    className={`p-5 rounded-2xl border transition-all ${
+                    className={`p-5 sm:p-6 rounded-3xl border transition-all ${
                       isCompleted
-                        ? 'bg-emerald-50/50 border-emerald-200 shadow-soft-sm'
+                        ? 'bg-emerald-50/40 border-emerald-200 shadow-soft-sm'
                         : isInProgress
-                        ? 'bg-white border-brand-300 shadow-soft-md ring-2 ring-brand-500/10'
-                        : 'bg-white border-slate-200 shadow-soft-sm'
+                        ? 'bg-white border-sky-300 shadow-soft-sm ring-1 ring-sky-400/20'
+                        : 'bg-white border-sky-200 shadow-soft-sm hover:border-sky-300 hover:shadow-soft-md'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <div>
-                        <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded ${
-                          item.priority === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-brand-100 text-brand-700'
+                        <span className={`text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
+                          item.priority === 'Critical'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-sky-50 text-sky-700 border border-sky-200'
                         }`}>
                           {item.priority} Priority
                         </span>
-                        <h4 className="text-base font-extrabold text-slate-900 mt-1">{item.skillName}</h4>
+                        <h4 className="text-base sm:text-lg font-bold text-slate-900 mt-1.5">{item.skillName}</h4>
                       </div>
 
                       <button
                         onClick={() => onToggleStatus(item.id)}
-                        className={`p-1.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+                        className={`py-1.5 px-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                           isCompleted
-                            ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
-                            : 'bg-white text-slate-700 border-slate-300 hover:border-emerald-600 hover:text-emerald-600'
+                            ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-600 hover:text-emerald-600 hover:bg-emerald-50/50'
                         }`}
                       >
                         <CheckCircle2 className="w-4 h-4" />
@@ -91,33 +93,33 @@ export const RoadmapTimeline: React.FC<RoadmapTimelineProps> = ({ items, onToggl
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-slate-500 mb-3 font-medium">
-                      <span className="flex items-center gap-1">
-                        Level: <strong className="text-slate-800">{item.currentLevel}</strong>
-                        <ArrowRight className="w-3 h-3 text-slate-400" />
-                        <strong className="text-brand-600">{item.targetLevel}</strong>
+                    <div className="flex items-center gap-3 text-sm text-slate-600 mb-3 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        Level: <span className="text-slate-900 font-semibold">{item.currentLevel}</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="text-sky-600 font-semibold">{item.targetLevel}</span>
                       </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-slate-300">•</span>
+                      <span className="flex items-center gap-1.5 text-slate-500">
+                        <Clock className="w-4 h-4 text-slate-400" />
                         ~{item.estimatedHours} hrs
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-600 mb-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <p className="text-sm text-slate-600 leading-relaxed mb-3 bg-slate-50/80 p-3 rounded-2xl border border-slate-100 font-normal">
                       {item.learningObjective}
                     </p>
 
                     {/* Resources */}
                     {item.recommendedResources.length > 0 && (
-                      <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <BookOpen className="w-3 h-3 text-brand-600" /> Recommended Resource
+                      <div className="pt-3 border-t border-slate-100 space-y-2">
+                        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-sky-600" /> Recommended Resource
                         </div>
                         {item.recommendedResources.map((res, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs text-slate-700 font-medium">
-                            <span className="truncate hover:text-brand-600 cursor-pointer">{res.title}</span>
-                            <span className="text-[10px] text-slate-400 shrink-0 bg-slate-100 px-1.5 py-0.5 rounded">{res.estTime}</span>
+                          <div key={idx} className="flex items-center justify-between text-xs sm:text-sm text-slate-700 font-medium">
+                            <span className="truncate hover:text-sky-600 transition-colors cursor-pointer">{res.title}</span>
+                            <span className="text-xs text-slate-500 shrink-0 bg-slate-100 px-2 py-0.5 rounded-md font-medium border border-slate-200/60">{res.estTime}</span>
                           </div>
                         ))}
                       </div>

@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { SkillBadge } from '@/components/ui/SkillBadge';
-import { TrendChart } from '@/components/features/TrendChart';
 import { AiInsightBadge } from '@/components/ui/AiInsightBadge';
 import { CompanyProfileModal } from '@/components/features/CompanyProfileModal';
 import { ResumeUploadModal } from '@/components/features/ResumeUploadModal';
@@ -42,9 +41,8 @@ export default function IndustrySkillsPage() {
     openAiDrawerWithTopic,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'trends' | 'companyCriteria' | 'skillMapping'>('trends');
+  const [activeTab, setActiveTab] = useState<'trends' | 'skillMapping'>('trends');
   const [selectedTimeframe, setSelectedTimeframe] = useState('Last 6 Months');
-  const [companySearch, setCompanySearch] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<CompanySkillCriteria | null>(null);
 
   const [skillSearch, setSkillSearch] = useState('');
@@ -57,12 +55,6 @@ export default function IndustrySkillsPage() {
   const [mappingSearch, setMappingSearch] = useState('');
   const [mappingCategoryFilter, setMappingCategoryFilter] = useState('ALL');
   const [mappingReqFilter, setMappingReqFilter] = useState<'ALL' | 'MANDATORY' | 'PREFERRED'>('ALL');
-
-  // Filtered company criteria
-  const filteredCompanies = (industryOverview?.companyCriteria || []).filter((c) =>
-    c.companyName.toLowerCase().includes(companySearch.toLowerCase()) ||
-    c.activeRole.toLowerCase().includes(companySearch.toLowerCase())
-  );
 
   // Available unique categories
   const categoriesList = ['ALL', ...Array.from(new Set(skills.map((s) => s.category)))];
@@ -125,389 +117,347 @@ export default function IndustrySkillsPage() {
 
   return (
     <div className="space-y-8 animate-fade-in font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Industry Skill Intelligence
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-            Understand what employers are looking for in your target career ({activeRole}).
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
-          <button
-            onClick={() => setIsResumeModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 transition-all cursor-pointer"
-          >
-            <Upload className="w-4 h-4" />
-            Upload / Update Resume
-          </button>
-
-          <button
-            onClick={() => openAiDrawerWithTopic('Company Hiring Skill Requirements')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold border border-brand-200 transition-colors cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4 text-brand-600" />
-            AI Market Interpretation
-          </button>
-        </div>
+      {/* HEADER SECTION */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          Industry Skill Intelligence
+        </h1>
+        <p className="text-sm sm:text-base text-slate-600 font-medium mt-1">
+          Understand what employers are looking for in your target career ({activeRole}).
+        </p>
       </div>
 
-      {/* TOP FILTERS BAR */}
+      {/* TOP FILTERS BAR - LOCATION REMOVED AS REQUESTED */}
       <FilterBar
         selectedRole={activeRole}
         onRoleChange={setActiveRole}
-        selectedLocation={activeLocation}
-        onLocationChange={setActiveLocation}
+        hideLocation={true}
         selectedTimeframe={selectedTimeframe}
         onTimeframeChange={setSelectedTimeframe}
       />
 
       {/* RESUME SKILL MATCHING & LIVE ALIGNMENT STATUS CARD */}
-      <div className="p-6 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white shadow-soft-md border border-slate-700/60 relative overflow-hidden">
+      <div className="p-6 rounded-3xl bg-white border border-sky-200 shadow-soft-sm relative overflow-hidden">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-extrabold flex items-center gap-1.5">
-                <FileCheck className="w-3.5 h-3.5" />
+              <span className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-semibold">
                 Live Resume Intelligence Active
               </span>
-              <span className="text-slate-400 text-xs">•</span>
-              <span className="text-xs font-semibold text-slate-300 flex items-center gap-1">
-                <FileText className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-slate-300 text-sm">•</span>
+              <span className="text-sm font-medium text-slate-600">
                 {profile?.resume?.fileName || 'Extracted Resume File'}
               </span>
             </div>
 
-            <h3 className="text-lg sm:text-xl font-black text-white">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900">
               Resume Skills Matched Against {activeRole} Standards
             </h3>
-            <p className="text-xs text-slate-300 leading-relaxed font-medium">
-              We cross-referenced your <strong>{totalResumeSkillsCount} verified resume skills</strong> against all <strong>{skills.length} industry competencies</strong>. Skills are categorized into fully matched, partial proficiencies, and missing employer gaps.
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
+              We cross-referenced your {totalResumeSkillsCount} verified resume skills against all {skills.length} industry competencies. Skills are categorized into fully matched, partial proficiencies, and missing employer gaps.
             </p>
           </div>
 
           {/* Quick Metrics Pills */}
           <div className="grid grid-cols-3 gap-3 w-full lg:w-auto shrink-0">
-            <div className="p-3.5 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-center">
-              <p className="text-2xl font-black text-emerald-400">{metSkillsCount}</p>
-              <p className="text-[10px] font-bold text-emerald-200 uppercase tracking-wider mt-0.5">✓ Matched</p>
+            <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-center">
+              <p className="text-2xl font-bold text-emerald-700">{metSkillsCount}</p>
+              <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider mt-0.5">Matched</p>
             </div>
-            <div className="p-3.5 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-center">
-              <p className="text-2xl font-black text-amber-400">{partialSkillsCount}</p>
-              <p className="text-[10px] font-bold text-amber-200 uppercase tracking-wider mt-0.5">⚡ Partial</p>
+            <div className="p-4 rounded-2xl bg-sky-50/80 border border-sky-200 text-center">
+              <p className="text-2xl font-bold text-sky-700">{partialSkillsCount}</p>
+              <p className="text-xs font-semibold text-sky-800 uppercase tracking-wider mt-0.5">Partial</p>
             </div>
-            <div className="p-3.5 rounded-2xl bg-rose-950/60 border border-rose-500/40 text-center">
-              <p className="text-2xl font-black text-rose-400">{gapSkillsCount}</p>
-              <p className="text-[10px] font-bold text-rose-200 uppercase tracking-wider mt-0.5">✗ Missing Gaps</p>
+            <div className="p-4 rounded-2xl bg-rose-50/80 border border-rose-200 text-center">
+              <p className="text-2xl font-bold text-rose-700">{gapSkillsCount}</p>
+              <p className="text-xs font-semibold text-rose-800 uppercase tracking-wider mt-0.5">Missing Gaps</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* INTERACTIVE NAVIGATION TABS */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-soft-sm overflow-x-auto">
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white border border-sky-200/90 shadow-soft-sm overflow-x-auto">
         <button
           onClick={() => setActiveTab('trends')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+          className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'trends'
-              ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-              : 'text-slate-600 hover:bg-slate-50 hover:text-brand-600'
+              ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20'
+              : 'text-slate-600 hover:bg-slate-50 hover:text-sky-700'
           }`}
         >
-          <TrendingUp className="w-4 h-4" />
           Skill Demand & Trends ({skills.length})
         </button>
 
         <button
-          onClick={() => setActiveTab('companyCriteria')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-            activeTab === 'companyCriteria'
-              ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-              : 'text-slate-600 hover:bg-slate-50 hover:text-brand-600'
-          }`}
-        >
-          <Building2 className="w-4 h-4" />
-          Company-Wise Skill Criteria ({industryOverview?.companyCriteria.length || 0})
-        </button>
-
-        <button
           onClick={() => setActiveTab('skillMapping')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+          className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'skillMapping'
-              ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-              : 'text-slate-600 hover:bg-slate-50 hover:text-brand-600'
+              ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20'
+              : 'text-slate-600 hover:bg-slate-50 hover:text-sky-700'
           }`}
         >
-          <Layers className="w-4 h-4" />
           Skill-to-Company Mapping List
         </button>
       </div>
 
       {/* TAB 1: SKILL DEMAND & TRENDS */}
       {activeTab === 'trends' && (
-        <div className="space-y-8 animate-fade-in">
-          {/* SKILL DEMAND TREND CHART */}
-          {industryOverview && (
-            <TrendChart
-              data={industryOverview.trendData}
-              title={`Skill Demand Trajectory for ${activeRole}`}
-              subtitle={`Market Trend over ${selectedTimeframe} across 10,000+ job listings`}
-            />
-          )}
+        <div className="space-y-6 animate-fade-in">
 
           {/* SKILL DEMAND TABLE */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-5">
+          <div className="p-6 rounded-3xl bg-white border border-sky-100 shadow-soft-sm space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
                   Skill Demand Index (Ranked Spectrum)
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">
+                <p className="text-sm text-slate-500 font-normal mt-0.5">
                   Ranked by actual probability across active employer job postings & matched to your resume
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                   {skills.length} Total Competencies
                 </span>
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                   {metSkillsCount} Matched ({Math.round((metSkillsCount / Math.max(1, skills.length)) * 100)}%)
                 </span>
               </div>
             </div>
 
-            {/* RESUME MATCH STATUS FILTER TABS */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl overflow-x-auto text-xs font-bold">
-              <span className="text-slate-400 font-semibold text-[11px] px-2 shrink-0">Resume Alignment:</span>
-              <button
-                onClick={() => setSkillMatchFilter('ALL')}
-                className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-                  skillMatchFilter === 'ALL'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                All Skills ({skills.length})
-              </button>
-              <button
-                onClick={() => setSkillMatchFilter('MATCHED')}
-                className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-                  skillMatchFilter === 'MATCHED'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-emerald-800 hover:bg-emerald-100/60'
-                }`}
-              >
-                ✓ Matched in Resume ({metSkillsCount})
-              </button>
-              <button
-                onClick={() => setSkillMatchFilter('PARTIAL')}
-                className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-                  skillMatchFilter === 'PARTIAL'
-                    ? 'bg-amber-500 text-white shadow-sm'
-                    : 'text-amber-900 hover:bg-amber-100/60'
-                }`}
-              >
-                ⚡ Partial Matches ({partialSkillsCount})
-              </button>
-              <button
-                onClick={() => setSkillMatchFilter('GAP')}
-                className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-                  skillMatchFilter === 'GAP'
-                    ? 'bg-rose-600 text-white shadow-sm'
-                    : 'text-rose-800 hover:bg-rose-100/60'
-                }`}
-              >
-                ✗ Missing Employer Gaps ({gapSkillsCount})
-              </button>
-            </div>
+            {/* SEARCH & FILTER CONTROLS PANEL */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              {/* ROW 1: PROMINENT SEARCH BAR + CATEGORY DROPDOWN */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search any skill across 40+ index (e.g. Python, SQL, Machine Learning)..."
+                    value={skillSearch}
+                    onChange={(e) => setSkillSearch(e.target.value)}
+                    className="w-full pl-10 pr-10 py-2.5 text-sm font-medium rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all shadow-2xs"
+                  />
+                  {skillSearch && (
+                    <button
+                      onClick={() => setSkillSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md transition-all cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
 
-            {/* TIER TABS & SEARCH */}
-            <div className="flex flex-col gap-3 pt-1">
-              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl overflow-x-auto text-xs font-bold">
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">Category:</span>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="px-3.5 py-2.5 text-sm font-semibold rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer shadow-2xs"
+                  >
+                    {categoriesList.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat === 'ALL' ? `All Categories (${skills.length})` : cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* ROW 2: RESUME STATUS & TIER FILTERS (HIGH VISIBILITY & CONTRAST) */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-slate-200">
+                {/* RESUME ALIGNMENT */}
+                <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 mr-1">Resume Status:</span>
                   <button
-                    onClick={() => setSkillTierFilter('ALL')}
-                    className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
-                      skillTierFilter === 'ALL'
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
+                    onClick={() => setSkillMatchFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                      skillMatchFilter === 'ALL'
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    All Tiers ({skills.length})
+                    All ({skills.length})
+                  </button>
+                  <button
+                    onClick={() => setSkillMatchFilter('MATCHED')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      skillMatchFilter === 'MATCHED'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Matched ({metSkillsCount})
+                  </button>
+                  <button
+                    onClick={() => setSkillMatchFilter('PARTIAL')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      skillMatchFilter === 'PARTIAL'
+                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                        : 'bg-white text-sky-700 border-sky-200 hover:bg-sky-50'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-sky-500" />
+                    Partial Match ({partialSkillsCount})
+                  </button>
+                  <button
+                    onClick={() => setSkillMatchFilter('GAP')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      skillMatchFilter === 'GAP'
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                        : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                    Missing Gaps ({gapSkillsCount})
+                  </button>
+                </div>
+
+                {/* TIER FILTER PILLS */}
+                <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 mr-1">Tier:</span>
+                  <button
+                    onClick={() => setSkillTierFilter('ALL')}
+                    className={`px-2.5 py-1.5 rounded-lg font-semibold border transition-all cursor-pointer ${
+                      skillTierFilter === 'ALL'
+                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    All Tiers
                   </button>
                   <button
                     onClick={() => setSkillTierFilter('TIER_1')}
-                    className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-lg font-semibold border transition-all cursor-pointer ${
                       skillTierFilter === 'TIER_1'
-                        ? 'bg-amber-500 text-white shadow-sm'
-                        : 'text-amber-800 hover:bg-amber-100/50'
+                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    ★ Top 10 Core Mandates ({tier1Count})
+                    Core (Top 10)
                   </button>
                   <button
                     onClick={() => setSkillTierFilter('TIER_2')}
-                    className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-lg font-semibold border transition-all cursor-pointer ${
                       skillTierFilter === 'TIER_2'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-blue-800 hover:bg-blue-100/50'
+                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    ● Secondary Stack (11-25) ({tier2Count})
+                    Secondary (11-25)
                   </button>
                   <button
                     onClick={() => setSkillTierFilter('TIER_3')}
-                    className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-lg font-semibold border transition-all cursor-pointer ${
                       skillTierFilter === 'TIER_3'
-                        ? 'bg-purple-600 text-white shadow-sm'
-                        : 'text-purple-800 hover:bg-purple-100/50'
+                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    ✦ Specialized Tools (26-38) ({tier3Count})
+                    Emerging (26-38)
                   </button>
                   <button
                     onClick={() => setSkillTierFilter('TIER_4')}
-                    className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-lg font-semibold border transition-all cursor-pointer ${
                       skillTierFilter === 'TIER_4'
-                        ? 'bg-slate-800 text-white shadow-sm'
-                        : 'text-slate-700 hover:bg-slate-200'
+                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    🛡️ Best Practices & Professional ({tier4Count})
+                    Specialized (39+)
                   </button>
                 </div>
-
-                <div className="relative min-w-[220px]">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search any skill across 40+ index..."
-                    value={skillSearch}
-                    onChange={(e) => setSkillSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* CATEGORY FILTER CHIPS */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold">
-                <span className="text-slate-400 font-semibold text-[11px] mr-1 shrink-0">Filter by Category:</span>
-                {categoriesList.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-2.5 py-1 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
-                      selectedCategory === cat
-                        ? 'bg-brand-600 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
               </div>
             </div>
 
+            {/* TABLE */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider">
-                    <th className="py-3 px-3">Rank</th>
-                    <th className="py-3 px-4">Skill Name & Industry Scope</th>
-                    <th className="py-3 px-4">Market Category</th>
-                    <th className="py-3 px-4">Demand %</th>
-                    <th className="py-3 px-4">Trajectory</th>
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-700 font-semibold uppercase tracking-wider text-xs border-y border-slate-200">
+                  <tr>
+                    <th className="py-3 px-3.5">Rank</th>
+                    <th className="py-3 px-4">Skill & Focus</th>
+                    <th className="py-3 px-4">Category</th>
+                    <th className="py-3 px-4">Market Demand</th>
+                    <th className="py-3 px-4">Trend</th>
                     <th className="py-3 px-4">Priority</th>
-                    <th className="py-3 px-4">Your Resume Status</th>
-                    <th className="py-3 px-4 text-right">Market Trend</th>
+                    <th className="py-3 px-4">Resume Status</th>
+                    <th className="py-3 px-4 text-right">Verification</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                <tbody className="divide-y divide-slate-100 font-normal text-slate-700">
                   {filteredSkills.map((sk) => (
                     <tr
                       key={sk.id}
                       className={`transition-colors ${
                         sk.gapSeverity === 'Met'
-                          ? 'bg-emerald-50/40 hover:bg-emerald-50/70'
+                          ? 'bg-emerald-50/30 hover:bg-emerald-50/60'
                           : sk.gapSeverity === 'Partial'
-                          ? 'bg-amber-50/30 hover:bg-amber-50/60'
-                          : 'hover:bg-slate-50/80'
+                          ? 'bg-sky-50/20 hover:bg-sky-50/50'
+                          : 'hover:bg-slate-50/70'
                       }`}
                     >
-                      <td className="py-4 px-3 font-extrabold text-slate-400">
-                        <span
-                          className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-extrabold ${
-                            (sk.tierRank || 0) <= 10
-                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                              : (sk.tierRank || 0) <= 25
-                              ? 'bg-blue-100 text-blue-900 border border-blue-200'
-                              : (sk.tierRank || 0) <= 38
-                              ? 'bg-purple-100 text-purple-900 border border-purple-200'
-                              : 'bg-slate-200 text-slate-800 border border-slate-300'
-                          }`}
-                        >
+                      <td className="py-3.5 px-3.5">
+                        <span className="inline-block px-2.5 py-0.5 rounded text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200">
                           #{(sk.tierRank || 0)}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
-                        <div className="font-extrabold text-slate-900 text-sm">{sk.name}</div>
-                        <div className="text-[11px] text-slate-500 line-clamp-1 max-w-xs">{sk.description}</div>
+                      <td className="py-3.5 px-4">
+                        <div className="font-semibold text-slate-900 text-sm">{sk.name}</div>
+                        <div className="text-xs text-slate-500 line-clamp-1 max-w-xs mt-0.5 font-normal">{sk.description}</div>
                       </td>
-                      <td className="py-4 px-4 text-slate-500">{sk.category}</td>
-                      <td className="py-4 px-4">
+                      <td className="py-3.5 px-4 text-slate-600 text-sm font-normal">{sk.category}</td>
+                      <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-brand-600 rounded-full"
+                              className="h-full bg-sky-600 rounded-full"
                               style={{ width: `${sk.demandPercentage}%` }}
                             />
                           </div>
-                          <span className="font-extrabold text-brand-700">{sk.demandPercentage}%</span>
+                          <span className="font-semibold text-slate-900 text-sm">{sk.demandPercentage}%</span>
                         </div>
                       </td>
-                      <td className="py-4 px-4">
-                        <span className="inline-flex items-center gap-1 font-bold text-slate-700">
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center gap-1 font-medium text-slate-700 text-sm">
                           {sk.trend === 'up' && <span className="text-emerald-600">↑ Growing</span>}
-                          {sk.trend === 'rapid' && <span className="text-purple-600">↑↑ Rapid</span>}
-                          {sk.trend === 'stable' && <span className="text-blue-600">→ Stable</span>}
+                          {sk.trend === 'rapid' && <span className="text-sky-600">↑↑ Rapid</span>}
+                          {sk.trend === 'stable' && <span className="text-slate-600">→ Stable</span>}
                           {sk.trend === 'down' && <span className="text-rose-600">↓ Declining</span>}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="py-3.5 px-4">
                         <span
-                          className={`px-2.5 py-0.5 rounded text-[11px] font-extrabold ${
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             sk.priority === 'Critical'
-                              ? 'bg-rose-100 text-rose-700'
-                              : sk.priority === 'High'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-blue-100 text-blue-800'
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                              : 'bg-sky-50 text-sky-700 border border-sky-200'
                           }`}
                         >
                           {sk.priority}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="py-3.5 px-4">
                         {sk.gapSeverity === 'Met' ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-lg border border-emerald-300 shadow-xs">
-                            <Check className="w-3.5 h-3.5 text-emerald-700 stroke-[3]" />
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
                             Matched in Resume ({sk.studentLevel})
                           </span>
                         ) : sk.gapSeverity === 'Partial' ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300">
-                            <Zap className="w-3.5 h-3.5 text-amber-700" />
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-800 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200">
+                            <Zap className="w-3.5 h-3.5 text-sky-600" />
                             Partial Match ({sk.studentLevel})
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                             Missing Gap (Not in Resume)
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right">
                         <SkillBadge type={sk.status} />
                       </td>
                     </tr>
@@ -521,31 +471,31 @@ export default function IndustrySkillsPage() {
           <div>
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Emerging Skill Intelligence</h3>
-                <p className="text-xs text-slate-500 font-medium">Fast-growing capabilities shifting employer expectations</p>
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight">Emerging Skill Intelligence</h3>
+                <p className="text-sm text-slate-500 font-normal mt-0.5">Fast-growing capabilities shifting employer expectations</p>
               </div>
-              <AiInsightBadge label="Industry Signal" variant="purple" />
+              <AiInsightBadge label="Industry Signal" variant="blue" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {industryOverview?.emergingSkills.map((item) => (
                 <div
                   key={item.id}
-                  className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-3 hover:shadow-soft-md transition-all flex flex-col justify-between"
+                  className="p-5 rounded-2xl bg-white border border-sky-100 shadow-soft-sm space-y-3 hover:shadow-soft-md transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
                         {item.status}
                       </span>
-                      <span className="text-xs font-black text-emerald-600 flex items-center gap-0.5">
+                      <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                         <Zap className="w-3 h-3" />
                         {item.growthRate}
                       </span>
                     </div>
 
-                    <h4 className="text-base font-extrabold text-slate-900 leading-snug">{item.name}</h4>
-                    <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <h4 className="text-base font-bold text-slate-900 leading-snug">{item.name}</h4>
+                    <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-normal">
                       {item.whyItMatters}
                     </p>
                   </div>
@@ -556,145 +506,20 @@ export default function IndustrySkillsPage() {
         </div>
       )}
 
-      {/* TAB 2: COMPANY-WISE SKILL CRITERIA */}
-      {activeTab === 'companyCriteria' && (
-        <div className="space-y-6 animate-fade-in">
-          <div className="p-6 rounded-3xl bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-soft-md flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="space-y-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider">
-                Employer Hiring Criteria
-              </span>
-              <h3 className="text-xl font-extrabold">Which Companies Are Hiring for {activeRole}?</h3>
-              <p className="text-xs text-brand-100 font-medium">
-                See exact skill requirements (entry-level mandatory vs preferred skills) company-by-company.
-              </p>
-            </div>
-
-            {/* Search Company Filter */}
-            <div className="relative w-full md:w-72">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={companySearch}
-                onChange={(e) => setCompanySearch(e.target.value)}
-                placeholder="Search company or role..."
-                className="w-full pl-10 pr-4 py-2 text-xs bg-white text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-300 font-semibold"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredCompanies.map((comp) => (
-              <div
-                key={comp.id}
-                onClick={() => setSelectedCompany(comp)}
-                className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm hover:shadow-soft-md hover:border-brand-300 transition-all flex flex-col justify-between gap-5 cursor-pointer group"
-              >
-                <div>
-                  {/* Company Top Bar */}
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={comp.companyLogo}
-                        alt={comp.companyName}
-                        className="w-12 h-12 rounded-2xl object-cover border border-slate-100 shadow-sm group-hover:scale-105 transition-transform"
-                      />
-                      <div>
-                        <h4 className="text-base font-extrabold text-slate-900 group-hover:text-brand-600 transition-colors">
-                          {comp.companyName}
-                        </h4>
-                        <p className="text-xs font-semibold text-brand-600 flex items-center gap-1.5 mt-0.5">
-                          <Briefcase className="w-3.5 h-3.5" />
-                          {comp.activeRole}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end">
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-extrabold">
-                        {comp.hiringStatus}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-400 mt-1">
-                        {comp.openPositionsCount} Open Roles
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Tier & Expected Level */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-bold">
-                      {comp.industryTier}
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-xs text-slate-500 font-medium">
-                      Min Level: <strong className="text-slate-900">{comp.minProficiencyExpected}</strong>
-                    </span>
-                  </div>
-
-                  {/* Entry Mandatory Skills List */}
-                  <div className="space-y-2 mb-4">
-                    <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      Mandatory Skills for Entry
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {comp.entryMandatorySkills.map((sk) => (
-                        <span
-                          key={sk}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-extrabold flex items-center gap-1"
-                        >
-                          <Check className="w-3 h-3 text-emerald-600" />
-                          {sk}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Preferred Advanced Skills */}
-                  <div className="space-y-2">
-                    <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-                      Preferred Advanced Skills
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {comp.preferredAdvancedSkills.map((sk) => (
-                        <span
-                          key={sk}
-                          className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold"
-                        >
-                          + {sk}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-500">
-                  <span suppressHydrationWarning>Candidate Profile: {activeRole}</span>
-                  <span className="text-brand-600 font-bold hover:underline flex items-center gap-0.5">
-                    View Company Profile <ChevronRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: SKILL-TO-COMPANY MAPPING LIST */}
+      {/* TAB 2: SKILL-TO-COMPANY MAPPING LIST */}
       {activeTab === 'skillMapping' && (
         <div className="space-y-6 animate-fade-in">
           {/* Top Banner Header */}
-          <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-brand-950 to-indigo-950 text-white shadow-soft-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="p-6 rounded-3xl bg-sky-50/70 border border-sky-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="space-y-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 text-xs font-bold uppercase tracking-wider">
+              <span className="px-3 py-1 rounded-full bg-white text-xs font-semibold uppercase tracking-wider text-sky-800 border border-sky-200">
                 Full Spectrum Hiring Intelligence
               </span>
-              <h3 className="text-xl font-extrabold">
+              <h3 className="text-xl font-bold text-slate-900">
                 Which Companies Ask for Each {activeRole} Skill?
               </h3>
-              <p className="text-xs text-slate-300 font-medium max-w-2xl">
-                Explore all {industryOverview?.skillCompanyMappings.length || 0} industry competencies mapped to real hiring companies (FAANG, Top Tech, High-Growth Unicorns, GCCs, and Startups).
+              <p className="text-sm text-slate-600 font-normal max-w-2xl">
+                Explore all {industryOverview?.skillCompanyMappings.length || 0} industry competencies mapped to real hiring companies.
               </p>
             </div>
 
@@ -706,16 +531,16 @@ export default function IndustrySkillsPage() {
                 value={mappingSearch}
                 onChange={(e) => setMappingSearch(e.target.value)}
                 placeholder="Search by skill or company name..."
-                className="w-full pl-10 pr-4 py-2.5 text-xs bg-white text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 font-semibold shadow-inner"
+                className="w-full pl-10 pr-4 py-2.5 text-sm bg-white text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium border border-sky-200"
               />
             </div>
           </div>
 
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-soft-sm space-y-6">
+          <div className="p-6 rounded-3xl bg-white border border-sky-100 shadow-soft-sm space-y-6">
             {/* Filter Bar Controls */}
             <div className="flex flex-col gap-3 pb-2 border-b border-slate-100">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl overflow-x-auto text-xs font-bold">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl overflow-x-auto text-xs font-semibold">
                   <button
                     onClick={() => setMappingReqFilter('ALL')}
                     className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
@@ -740,30 +565,30 @@ export default function IndustrySkillsPage() {
                     onClick={() => setMappingReqFilter('PREFERRED')}
                     className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                       mappingReqFilter === 'PREFERRED'
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'text-indigo-800 hover:bg-indigo-100/60'
+                        ? 'bg-sky-600 text-white shadow-sm'
+                        : 'text-sky-800 hover:bg-sky-100/60'
                     }`}
                   >
                     + Preferred / Advanced
                   </button>
                 </div>
 
-                <span className="text-xs font-bold text-slate-500 self-center">
-                  Showing <strong className="text-slate-900">{filteredSkillMappings.length}</strong> of{' '}
-                  <strong className="text-slate-900">{industryOverview?.skillCompanyMappings.length || 0}</strong> Mappings
+                <span className="text-xs font-medium text-slate-500 self-center">
+                  Showing <strong className="text-slate-900 font-semibold">{filteredSkillMappings.length}</strong> of{' '}
+                  <strong className="text-slate-900 font-semibold">{industryOverview?.skillCompanyMappings.length || 0}</strong> Mappings
                 </span>
               </div>
 
               {/* Category Filter Chips */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 text-[11px] font-bold">
-                <span className="text-slate-400 font-semibold text-[11px] mr-1 shrink-0">Filter Category:</span>
+              <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 text-xs font-medium">
+                <span className="text-slate-400 font-medium text-xs mr-1 shrink-0">Filter Category:</span>
                 {mappingCategories.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setMappingCategoryFilter(cat)}
                     className={`px-2.5 py-1 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                       mappingCategoryFilter === cat
-                        ? 'bg-brand-600 text-white shadow-sm'
+                        ? 'bg-sky-600 text-white shadow-sm'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -789,29 +614,29 @@ export default function IndustrySkillsPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                             {mapItem.category}
                           </span>
-                          <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200">
+                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
                             {mapItem.percentageOfMarket}% Employer Demand Coverage
                           </span>
                         </div>
-                        <h4 className="text-xl font-black text-slate-900 mt-1 group-hover:text-brand-600 transition-colors">
+                        <h4 className="text-lg font-bold text-slate-900 mt-1 group-hover:text-sky-600 transition-colors">
                           {mapItem.skillName}
                         </h4>
                       </div>
 
                       <div className="text-left sm:text-right">
-                        <span className="text-xs font-extrabold text-slate-800 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-xs inline-flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5 text-brand-600" />
-                          Demanded across <strong className="text-brand-600">{mapItem.companiesCount}+</strong> Active Company JDs
+                        <span className="text-xs font-semibold text-slate-700 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-xs inline-flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-sky-600" />
+                          Demanded across <strong className="text-slate-900 font-bold">{mapItem.companiesCount}+</strong> Active Company JDs
                         </span>
                       </div>
                     </div>
 
                     {/* Companies Requiring This Skill */}
                     <div className="space-y-2">
-                      <div className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                         Key Hiring Companies & Role Level
                       </div>
 
@@ -819,10 +644,10 @@ export default function IndustrySkillsPage() {
                         {mapItem.sampleCompanies.map((c, cIdx) => (
                           <div
                             key={`${c.name}-${cIdx}`}
-                            className={`px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center gap-2.5 shadow-xs transition-all ${
+                            className={`px-3.5 py-2 rounded-xl border text-xs font-medium flex items-center gap-2.5 shadow-xs transition-all ${
                               c.isMandatory
                                 ? 'bg-emerald-50/90 text-emerald-950 border-emerald-300 hover:border-emerald-400 hover:bg-emerald-100/80'
-                                : 'bg-white text-slate-800 border-slate-200 hover:border-brand-300 hover:shadow-sm'
+                                : 'bg-white text-slate-800 border-slate-200 hover:border-sky-300 hover:shadow-sm'
                             }`}
                           >
                             <img
@@ -831,11 +656,11 @@ export default function IndustrySkillsPage() {
                               className="w-5 h-5 rounded-full object-cover border border-slate-200/80 shrink-0"
                             />
                             <div className="flex flex-col">
-                              <span className="font-extrabold text-slate-900 leading-tight">{c.name}</span>
+                              <span className="font-bold text-slate-900 leading-tight">{c.name}</span>
                               <span className="text-[10px] text-slate-500 font-medium">{c.roleLevel}</span>
                             </div>
                             <span
-                              className={`text-[10px] px-2 py-0.5 rounded-md font-extrabold ml-1 ${
+                              className={`text-[10px] px-2 py-0.5 rounded-md font-semibold ml-1 ${
                                 c.isMandatory
                                   ? 'bg-emerald-200/80 text-emerald-900 border border-emerald-300'
                                   : 'bg-slate-100 text-slate-600 border border-slate-200'
@@ -850,10 +675,10 @@ export default function IndustrySkillsPage() {
 
                     {/* Interview Focus Rationale */}
                     <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 text-xs text-slate-700 flex items-start gap-2.5 shadow-xs">
-                      <BookOpen className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
+                      <BookOpen className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                       <div className="leading-relaxed">
-                        <strong className="text-slate-900 font-extrabold">Interview Focus at these Companies:</strong>{' '}
-                        <span className="font-medium text-slate-600">{mapItem.keyInterviewFocus}</span>
+                        <span className="text-slate-900 font-semibold">Interview Focus at these Companies:</span>{' '}
+                        <span className="font-normal text-slate-600">{mapItem.keyInterviewFocus}</span>
                       </div>
                     </div>
                   </div>

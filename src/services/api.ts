@@ -256,12 +256,6 @@ let remoteResourcesDisabled = false;
 
 export const shouldUseRemoteResources = (): boolean => {
   if (remoteResourcesDisabled) return false;
-  if (typeof window !== 'undefined' && (window as any).__FORCE_REMOTE_RESOURCES__) return true;
-  if (process.env.NEXT_PUBLIC_FORCE_REMOTE_RESOURCES === 'true') return true;
-  const base = getApiBaseUrl();
-  // Remote Render server does not have /resources routes deployed yet.
-  // Avoid network 404 console errors by serving directly from verified local store.
-  if (base.includes('onrender.com')) return false;
   return true;
 };
 
@@ -799,20 +793,39 @@ export const api = {
     if (params.page) query.append('page', params.page.toString());
     if (params.page_size) query.append('page_size', params.page_size.toString());
 
+    const token = getToken();
     try {
-      const url = typeof window !== 'undefined'
-        ? `/api/resources/?${query.toString()}`
-        : `http://localhost:3000/api/resources/?${query.toString()}`;
-      const res = await fetch(url);
+      const url = `${getApiBaseUrl()}/resources?${query.toString()}`;
+      const res = await fetch(url, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (res.ok) {
         const data = await res.json();
+        let remoteItems: ResourceItem[] = (data.resources || []).map(normalizeResource);
+        if (typeof window !== 'undefined') {
+          try {
+            const stored = localStorage.getItem('matchskill_custom_resources');
+            if (stored) {
+              const localCustom: ResourceItem[] = JSON.parse(stored);
+              const existingSlugs = new Set(remoteItems.map((r) => r.slug));
+              for (const c of localCustom) {
+                if (!existingSlugs.has(c.slug)) {
+                  remoteItems.unshift(normalizeResource(c));
+                }
+              }
+            }
+          } catch {}
+        }
         return {
           ...data,
-          resources: (data.resources || []).map(normalizeResource),
+          total: Math.max(data.total || 0, remoteItems.length),
+          resources: remoteItems,
         };
       }
     } catch (err) {
-      console.warn('API listResources fetch error, using local store:', err);
+      console.warn('API listResources fetch note, using local store fallback:', err);
     }
     return filterAndSortLocalResources(params);
   },
@@ -820,13 +833,12 @@ export const api = {
   // Get Trending Resources
   getTrendingResources: async (limit: number = 6): Promise<ResourceItem[]> => {
     try {
-      const url = typeof window !== 'undefined'
-        ? `/api/resources/?sort_by=most_viewed&page_size=${limit}`
-        : `http://localhost:3000/api/resources/?sort_by=most_viewed&page_size=${limit}`;
+      const url = `${getApiBaseUrl()}/resources/trending?limit=${limit}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        return (data.resources || []).map(normalizeResource);
+        const items = Array.isArray(data) ? data : (data.resources || []);
+        return items.map(normalizeResource);
       }
     } catch {}
     return getLocalTrendingResources(limit);
@@ -834,14 +846,18 @@ export const api = {
 
   // Get Personalized Recommended Resources
   getRecommendedResources: async (limit: number = 8): Promise<ResourceItem[]> => {
+    const token = getToken();
     try {
-      const url = typeof window !== 'undefined'
-        ? `/api/resources/?sort_by=highest_rated&page_size=${limit}`
-        : `http://localhost:3000/api/resources/?sort_by=highest_rated&page_size=${limit}`;
-      const res = await fetch(url);
+      const url = `${getApiBaseUrl()}/resources/recommended?limit=${limit}`;
+      const res = await fetch(url, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (res.ok) {
         const data = await res.json();
-        return (data.resources || []).map(normalizeResource);
+        const items = Array.isArray(data) ? data : (data.resources || []);
+        return items.map(normalizeResource);
       }
     } catch {}
     return getLocalRecommendedResources(limit);
@@ -849,11 +865,17 @@ export const api = {
 
   // Get Resource Detail by Slug
   getResourceBySlug: async (slug: string): Promise<ResourceItem> => {
+    const token = getToken();
+    const sessionId = getSessionId();
     try {
-      const url = typeof window !== 'undefined'
-        ? `/api/resources/${slug}/`
-        : `http://localhost:3000/api/resources/${slug}/`;
-      const res = await fetch(url);
+      const cleanSlug = encodeURIComponent(slug.trim());
+      const url = `${getApiBaseUrl()}/resources/${cleanSlug}`;
+      const res = await fetch(url, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(sessionId ? { 'X-Anonymous-Session-Id': sessionId } : {}),
+        },
+      });
       if (res.ok) {
         const data = await res.json();
         return normalizeResource(data);
@@ -888,7 +910,7 @@ export const api = {
   toggleLikeResource: async (id: string, currentlyLiked: boolean): Promise<{ liked: boolean; like_count: number }> => {
     const token = getToken();
     requireAuthenticatedResourceAction();
-    if (shouldUseRemoteResources() && token) {
+    if (token) {
       try {
         const res = await fetch(`${getApiBaseUrl()}/resources/${id}/like`, {
           method: currentlyLiked ? 'DELETE' : 'POST',
@@ -896,38 +918,18 @@ export const api = {
         });
         if (res.ok) {
           const result = await res.json();
+          const key = `matchskill_likes_${id}`;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(key, String(result.liked));
+          }
           return {
             liked: Boolean(result.liked),
             like_count: Math.max(Number(result.like_count) || 0, result.liked ? 1 : 0),
           };
         }
-      } catch {}
-    }
-
-    // Call persistent server API
-    const identity = getLocalActivityIdentity();
-    try {
-      const url = typeof window !== 'undefined'
-        ? `/api/resources/${id}/like/`
-        : `http://localhost:3000/api/resources/${id}/like/`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(identity),
-      });
-      if (res.ok) {
-        const result = await res.json();
-        const key = `matchskill_likes_${id}`;
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(key, String(result.liked));
-        }
-        return {
-          liked: Boolean(result.liked),
-          like_count: Number(result.like_count) || 0,
-        };
+      } catch (e) {
+        console.warn('Backend like note:', e);
       }
-    } catch (err) {
-      console.warn('Like API notice:', err);
     }
 
     // Local state toggle with localStorage persistence fallback
@@ -946,22 +948,31 @@ export const api = {
   toggleSaveResource: async (id: string, currentlySaved: boolean): Promise<{ saved: boolean; save_count: number }> => {
     const token = getToken();
     requireAuthenticatedResourceAction();
-    if (shouldUseRemoteResources() && token) {
+    if (token) {
       try {
         const res = await fetch(`${getApiBaseUrl()}/resources/${id}/save`, {
           method: currentlySaved ? 'DELETE' : 'POST',
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) return await res.json();
-      } catch {}
+        if (res.ok) {
+          const result = await res.json();
+          const key = `matchskill_saved_${id}`;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(key, String(result.saved));
+          }
+          return {
+            saved: Boolean(result.saved),
+            save_count: Math.max(Number(result.save_count) || 0, result.saved ? 1 : 0),
+          };
+        }
+      } catch (e) {
+        console.warn('Backend save note:', e);
+      }
     }
 
     // Local state toggle with localStorage persistence
     const key = `matchskill_saved_${id}`;
     const newSaved = !currentlySaved;
-    if (typeof window !== 'undefined') {
-      fetch('/api/resources/activity/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resource_id: id, type: 'save', ...getLocalActivityIdentity() }) }).catch(() => {});
-    }
     if (typeof window !== 'undefined') {
       localStorage.setItem(key, String(newSaved));
     }
@@ -973,15 +984,13 @@ export const api = {
 
   // Share Resource
   shareResource: async (id: string): Promise<number> => {
-    if (shouldUseRemoteResources()) {
-      try {
-        const res = await fetch(`${getApiBaseUrl()}/resources/${id}/share`, { method: 'POST' });
-        if (res.ok) {
-          const json = await res.json();
-          return json.share_count;
-        }
-      } catch {}
-    }
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/resources/${id}/share`, { method: 'POST' });
+      if (res.ok) {
+        const json = await res.json();
+        return json.share_count;
+      }
+    } catch {}
     const all = getAllResourcesList();
     const found = all.find((r) => r.id === id);
     return found ? (found.share_count || 0) + 1 : 1;
@@ -991,9 +1000,7 @@ export const api = {
   getResourceComments: async (id: string): Promise<ResourceCommentItem[]> => {
     let serverComments: ResourceCommentItem[] = [];
     try {
-      const url = typeof window !== 'undefined'
-        ? `/api/resources/${id}/comments/`
-        : `http://localhost:3000/api/resources/${id}/comments/`;
+      const url = `${getApiBaseUrl()}/resources/${id}/comments`;
       const res = await fetch(url);
       if (res.ok) {
         serverComments = await res.json();
@@ -1017,17 +1024,19 @@ export const api = {
 
   addResourceComment: async (id: string, content: string): Promise<ResourceCommentItem> => {
     requireAuthenticatedResourceAction();
+    const token = getToken();
     const identity = getLocalActivityIdentity();
 
     let createdComment: ResourceCommentItem | null = null;
     try {
-      const url = typeof window !== 'undefined'
-        ? `/api/resources/${id}/comments/`
-        : `http://localhost:3000/api/resources/${id}/comments/`;
+      const url = `${getApiBaseUrl()}/resources/${id}/comments`;
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, ...identity }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ content }),
       });
       if (res.ok) {
         createdComment = await res.json();
@@ -1063,11 +1072,15 @@ export const api = {
 
   deleteOwnResourceComment: async (commentId: string, resourceId: string) => {
     requireAuthenticatedResourceAction();
+    const token = getToken();
     try {
-      const url = typeof window !== 'undefined'
-        ? `/api/resources/${resourceId}/comments/?comment_id=${commentId}`
-        : `http://localhost:3000/api/resources/${resourceId}/comments/?comment_id=${commentId}`;
-      await fetch(url, { method: 'DELETE' });
+      const url = `${getApiBaseUrl()}/resources/comments/${commentId}`;
+      await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
     } catch {}
 
     if (typeof window !== 'undefined') {
@@ -1081,15 +1094,15 @@ export const api = {
         }
       } catch {}
     }
-    return { success: true };
+    return { status: 'success' };
   },
 
-  // User Saved Resources Library
+  // Saved / Bookmarked Library
   getUserSavedResources: async (page: number = 1, pageSize: number = 20): Promise<{ total: number; resources: ResourceItem[] }> => {
     const token = getToken();
-    if (shouldUseRemoteResources() && token) {
+    if (token) {
       try {
-        const res = await fetch(`${API_BASE_URL}/resources/user/saved?page=${page}&page_size=${pageSize}`, {
+        const res = await fetch(`${getApiBaseUrl()}/resources/user/saved?page=${page}&page_size=${pageSize}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) return await res.json();
@@ -1100,47 +1113,61 @@ export const api = {
 
   // Categories Taxonomy
   getResourceCategories: async (): Promise<Array<{ id: string; name: string; slug: string; icon?: string; count: number }>> => {
-    if (shouldUseRemoteResources()) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/resources/categories`);
-        if (res.ok) return await res.json();
-      } catch {}
-    }
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/resources/categories`);
+      if (res.ok) return await res.json();
+    } catch {}
     return getLocalResourceCategories();
   },
 
   // Admin Resource Operations
   adminListResources: async (params: { status?: string; type?: string; q?: string; page?: number; page_size?: number }) => {
+    const token = getToken();
     try {
       const query = new URLSearchParams();
-      if (params.status) query.append('status', params.status);
-      if (params.type) query.append('type', params.type);
+      if (params.status && params.status !== 'ALL') query.append('status', params.status);
+      if (params.type && params.type !== 'ALL') query.append('type', params.type);
       if (params.q) query.append('q', params.q);
       if (params.page) query.append('page', params.page.toString());
       if (params.page_size) query.append('page_size', params.page_size.toString());
 
-      const url = typeof window !== 'undefined'
-        ? `/api/admin/resources?${query.toString()}`
-        : `http://localhost:3000/api/admin/resources?${query.toString()}`;
-      const res = await fetch(url);
+      const url = `${getApiBaseUrl()}/admin/resources?${query.toString()}`;
+      const res = await fetch(url, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (res.ok) return await res.json();
-    } catch {}
+    } catch (err) {
+      console.warn('Admin list note:', err);
+    }
     return filterAndSortLocalResources(params);
   },
 
   adminGetResourceActivity: async (params: { limit?: number; type?: string; dateFrom?: string; dateTo?: string } = {}) => {
+    const token = getToken();
     const query = new URLSearchParams();
     query.set('limit', String(params.limit || 100));
     if (params.type && params.type !== 'ALL') query.set('type', params.type);
     if (params.dateFrom) query.set('date_from', params.dateFrom);
     if (params.dateTo) query.set('date_to', params.dateTo);
-    const res = await fetch(`/api/admin/resources/activity?${query.toString()}`);
-    if (!res.ok) throw new Error('Failed to load resource activity');
+    const res = await fetch(`${getApiBaseUrl()}/admin/resources/activity?${query.toString()}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) return { activity: [] };
     return await res.json();
   },
 
   adminDeleteResourceComment: async (commentId: string) => {
-    const res = await fetch(`/api/admin/resources/comments/${commentId}`, { method: 'DELETE' });
+    const token = getToken();
+    const res = await fetch(`${getApiBaseUrl()}/admin/resources/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
     if (!res.ok) throw new Error('Failed to delete comment');
     return await res.json();
   },
@@ -1169,16 +1196,23 @@ export const api = {
   },
 
   adminCreateResource: async (payload: any) => {
+    const token = getToken();
     let createdResource: any = null;
     try {
-      const url = typeof window !== 'undefined' ? '/api/admin/resources' : 'http://localhost:3000/api/admin/resources';
+      const url = `${getApiBaseUrl()}/admin/resources`;
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
       if (res.ok) {
         createdResource = await res.json();
+      } else {
+        const errDetail = await res.json().catch(() => ({}));
+        console.warn('Backend admin create error response:', errDetail);
       }
     } catch (err) {
       console.warn('Backend admin create notice:', err);
@@ -1236,11 +1270,15 @@ export const api = {
   },
 
   adminUpdateResource: async (id: string, payload: any) => {
+    const token = getToken();
     try {
-      const url = typeof window !== 'undefined' ? `/api/admin/resources/${id}` : `http://localhost:3000/api/admin/resources/${id}`;
+      const url = `${getApiBaseUrl()}/admin/resources/${id}`;
       const res = await fetch(url, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
       if (res.ok) return await res.json();
@@ -1260,9 +1298,15 @@ export const api = {
   },
 
   adminDeleteResource: async (id: string) => {
+    const token = getToken();
     try {
-      const url = typeof window !== 'undefined' ? `/api/admin/resources/${id}` : `http://localhost:3000/api/admin/resources/${id}`;
-      const res = await fetch(url, { method: 'DELETE' });
+      const url = `${getApiBaseUrl()}/admin/resources/${id}`;
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (res.ok) return await res.json();
     } catch (err) {
       console.warn('Admin delete notice:', err);
@@ -1353,9 +1397,13 @@ if (typeof window !== 'undefined') {
         const list = JSON.parse(stored);
         if (Array.isArray(list) && list.length > 0) {
           list.forEach((r) => {
-            fetch('/api/resources', {
+            const token = getToken();
+            fetch(`${getApiBaseUrl()}/admin/resources`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
               body: JSON.stringify(r),
             }).catch(() => {});
           });

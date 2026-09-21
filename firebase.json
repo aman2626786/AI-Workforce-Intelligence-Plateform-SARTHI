@@ -12,6 +12,10 @@
       ],
       "rewrites": [
         {
+          "source": "/resources/**",
+          "destination": "/resources/explore/index.html"
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -28,6 +32,10 @@
         "**/node_modules/**"
       ],
       "rewrites": [
+        {
+          "source": "/resources/**",
+          "destination": "/resources/explore/index.html"
+        },
         {
           "source": "**",
           "destination": "/index.html"

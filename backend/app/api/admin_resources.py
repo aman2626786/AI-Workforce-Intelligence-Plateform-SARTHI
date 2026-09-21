@@ -194,25 +194,31 @@ def admin_create_resource(
         slug = f"{base_slug}-{counter}"
         counter += 1
 
+    orig_url = str(data.original_url or "https://matchskills.ai/resources").strip()
+    if not orig_url:
+        orig_url = "https://matchskills.ai/resources"
+
+    desc = (data.short_description or data.title or "Learning Resource").strip()
+
     resource = Resource(
         title=data.title.strip(),
         slug=slug,
-        resource_type=data.resource_type,
-        short_description=data.short_description.strip(),
-        content_summary=data.content_summary,
-        content_markdown=data.content_markdown,
+        resource_type=data.resource_type or "LEARNING_RESOURCE",
+        short_description=desc,
+        content_summary=data.content_summary or desc,
+        content_markdown=data.content_markdown or data.content_summary or desc,
         attached_links=data.attached_links or [],
-        original_url=str(data.original_url).strip(),
-        source_name=data.source_name,
-        source_domain=data.source_domain,
-        author=data.author,
-        organization=data.organization,
-        publisher=data.publisher,
+        original_url=orig_url,
+        source_name=data.source_name or "MatchSkill Editorial",
+        source_domain=data.source_domain or "matchskills.ai",
+        author=data.author or "Admin",
+        organization=data.organization or "MatchSkill",
+        publisher=data.publisher or "MatchSkill AI",
         published_at=data.published_at or datetime.now(timezone.utc),
         thumbnail_url=data.thumbnail_url,
         language=data.language or "en",
         difficulty=data.difficulty or "All Levels",
-        category=data.category,
+        category=data.category or "Technology",
         subcategory=data.subcategory,
         tags=data.tags or [],
         hashtags=data.hashtags or [],
@@ -221,9 +227,9 @@ def admin_create_resource(
         target_roles=data.target_roles or [],
         location=data.location,
         deadline=data.deadline,
-        is_verified=data.verification_status == "VERIFIED",
-        verification_status=data.verification_status,
-        verified_at=datetime.now(timezone.utc) if data.verification_status == "VERIFIED" else None,
+        is_verified=True,
+        verification_status="VERIFIED",
+        verified_at=datetime.now(timezone.utc),
         status=data.status or "PUBLISHED",
         license=data.license,
         license_url=data.license_url,

@@ -4,14 +4,14 @@ from pydantic import BaseModel, HttpUrl, Field
 
 class ResourceBase(BaseModel):
     title: str = Field(..., max_length=500)
-    resource_type: str = Field(..., max_length=50)  # INDUSTRY_NEWS, RESEARCH_PAPER, LEARNING_RESOURCE, TECH_UPDATE, OPPORTUNITY
-    short_description: str
+    resource_type: str = Field(default="LEARNING_RESOURCE", max_length=50)  # INDUSTRY_NEWS, RESEARCH_PAPER, LEARNING_RESOURCE, TECH_UPDATE, OPPORTUNITY
+    short_description: Optional[str] = ""
     content_summary: Optional[str] = None
     content_markdown: Optional[str] = None
     attached_links: Optional[List[Dict[str, Any]]] = []
-    original_url: str = Field(..., max_length=1000)
-    source_name: Optional[str] = None
-    source_domain: Optional[str] = None
+    original_url: Optional[str] = "https://matchskills.ai/resources"
+    source_name: Optional[str] = "MatchSkill Editorial"
+    source_domain: Optional[str] = "matchskills.ai"
     author: Optional[str] = None
     organization: Optional[str] = None
     publisher: Optional[str] = None
@@ -19,7 +19,7 @@ class ResourceBase(BaseModel):
     thumbnail_url: Optional[str] = None
     language: str = "en"
     difficulty: str = "All Levels"
-    category: str
+    category: Optional[str] = "Technology"
     subcategory: Optional[str] = None
     tags: List[str] = []
     hashtags: List[str] = []
@@ -28,8 +28,8 @@ class ResourceBase(BaseModel):
     target_roles: List[str] = []
     location: Optional[str] = None
     deadline: Optional[datetime] = None
-    is_verified: bool = False
-    verification_status: str = "UNVERIFIED"  # UNVERIFIED, VERIFIED, NEEDS_REVIEW
+    is_verified: bool = True
+    verification_status: str = "VERIFIED"  # UNVERIFIED, VERIFIED, NEEDS_REVIEW
     license: Optional[str] = None
     license_url: Optional[str] = None
     status: str = "PUBLISHED"  # DRAFT, NEEDS_REVIEW, PUBLISHED, ARCHIVED

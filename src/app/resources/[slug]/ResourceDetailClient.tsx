@@ -91,6 +91,20 @@ export default function ResourceDetailClient({ slug }: ResourceDetailClientProps
     badge: 'Member Access Required',
   });
 
+  const effectiveSlug = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      const querySlug = sp.get('slug');
+      if (querySlug) return querySlug;
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const lastPart = pathParts[pathParts.length - 1];
+      if (lastPart && lastPart !== 'resources' && lastPart !== 'explore') {
+        return decodeURIComponent(lastPart);
+      }
+    }
+    return slug;
+  }, [slug]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = getToken();
@@ -104,9 +118,9 @@ export default function ResourceDetailClient({ slug }: ResourceDetailClientProps
 
         if (!existingFreeSlug) {
           // This is the user's first article: grant complete free reading access without lock card
-          localStorage.setItem(freeSlugKey, slug);
+          localStorage.setItem(freeSlugKey, effectiveSlug);
           setIsFirstFreeArticle(true);
-        } else if (existingFreeSlug === slug) {
+        } else if (existingFreeSlug === effectiveSlug) {
           // Returning to the same 1st article: still free
           setIsFirstFreeArticle(true);
         } else {
@@ -157,7 +171,7 @@ export default function ResourceDetailClient({ slug }: ResourceDetailClientProps
       setIsLoading(true);
       setErrorMsg('');
       try {
-        const item = await api.getResourceBySlug(slug);
+        const item = await api.getResourceBySlug(effectiveSlug);
         setResource(item);
         const storedLike = typeof window !== 'undefined'
           ? localStorage.getItem(`matchskill_likes_${item.id}`) === 'true'
@@ -189,7 +203,7 @@ export default function ResourceDetailClient({ slug }: ResourceDetailClientProps
       }
     }
     loadData();
-  }, [slug]);
+  }, [effectiveSlug]);
 
   // Track user-marked read articles history
   const [readSlugs, setReadSlugs] = useState<string[]>([]);

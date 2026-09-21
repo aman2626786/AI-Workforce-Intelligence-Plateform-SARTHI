@@ -1276,33 +1276,8 @@ if (typeof window !== 'undefined') {
         }
       }
 
-      // 2. Sync comments from localStorage to server
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('matchskill_comments_')) {
-          const resId = key.replace('matchskill_comments_', '');
-          const commsRaw = localStorage.getItem(key);
-          if (commsRaw) {
-            const comms = JSON.parse(commsRaw);
-            if (Array.isArray(comms)) {
-              comms.forEach((c) => {
-                if (c && c.content) {
-                  fetch(`/api/resources/${resId}/comments`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      content: c.content,
-                      user_name: c.user_name || 'Student Contributor',
-                      user_id: c.user_id || 'student',
-                      email: c.email,
-                    }),
-                  }).catch(() => {});
-                }
-              });
-            }
-          }
-        }
-      }
+      // Comments are already directly submitted via api.addResourceComment and persisted on server.
+      // Do not re-POST comments on every page load to prevent duplicate entries and activity events.
     } catch {}
   }, 1200);
 }

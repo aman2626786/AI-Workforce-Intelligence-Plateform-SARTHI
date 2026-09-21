@@ -99,6 +99,28 @@ export function addCommentToResource(payload: {
   content: string;
 }): CommentRecord {
   const all = readCommentsFromDisk();
+  const trimmedContent = payload.content.trim();
+  const normUser = (payload.user_name || payload.user_id || '').trim().toLowerCase();
+  const resTarget = payload.resource_id.toLowerCase();
+  const resSlugTarget = (payload.resource_slug || '').toLowerCase();
+
+  // Deduplication check: return existing comment if exact same user commented identical content on this resource
+  const existing = all.find((c) => {
+    const matchesRes =
+      c.resource_id.toLowerCase() === resTarget ||
+      (resSlugTarget && c.resource_id.toLowerCase() === resSlugTarget);
+    const matchesUser =
+      (c.user_name && c.user_name.trim().toLowerCase() === normUser) ||
+      (c.user_id && c.user_id === payload.user_id) ||
+      (payload.email && c.email && c.email.toLowerCase() === payload.email.toLowerCase());
+    const matchesContent = c.content.trim().toLowerCase() === trimmedContent.toLowerCase();
+    return matchesRes && matchesUser && matchesContent;
+  });
+
+  if (existing) {
+    return existing;
+  }
+
   const id = `comm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
@@ -108,7 +130,7 @@ export function addCommentToResource(payload: {
     user_id: payload.user_id || 'student',
     user_name: payload.user_name || 'Student Contributor',
     email: payload.email,
-    content: payload.content,
+    content: trimmedContent,
     status: 'APPROVED',
     created_at: now,
     updated_at: now,
@@ -128,7 +150,7 @@ export function addCommentToResource(payload: {
       resource_id: payload.resource_id,
       resource_title: payload.resource_title || 'Resource',
       resource_slug: payload.resource_slug || payload.resource_id,
-      content: payload.content,
+      content: trimmedContent,
     });
   } catch (err) {
     console.warn('Failed to add to resourceActivityStore:', err);
@@ -139,16 +161,19 @@ export function addCommentToResource(payload: {
 
 export function deleteCommentFromResource(commentId: string, resourceId?: string): boolean {
   const all = readCommentsFromDisk();
-  const found = all.find((c) => c.id === commentId);
+  const found = all.find((c) => c.id === commentId || (c.content && c.content === commentId));
   if (!found) return false;
 
   const targetResourceId = resourceId || found.resource_id;
-  const filtered = all.filter((c) => c.id !== commentId);
+  const filtered = all.filter((c) => c.id !== found.id);
   writeCommentsToDisk(filtered);
   updateResourceCommentCount(targetResourceId, -1);
 
   try {
-    removeResourceActivity(commentId);
+    removeResourceActivity(found.id);
+    if (found.content) {
+      removeResourceActivity(found.content);
+    }
   } catch {}
 
   return true;

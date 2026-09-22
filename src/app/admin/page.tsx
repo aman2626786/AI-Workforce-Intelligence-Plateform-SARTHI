@@ -711,10 +711,27 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
     addToast('ChatGPT table & formatted content imported seamlessly!', 'success');
   };
 
+  const handleResetToNewBlankDocument = () => {
+    setEditingResourceId(null);
+    setEditorTitle('');
+    setEditorShortDesc('');
+    setEditorContent('');
+    setAttachedLinks([]);
+    setEditorTags(['Artificial Intelligence', 'System Design', 'Deep Learning', 'Transformers']);
+    setTagInputText('');
+    setEditorPreviewMode('edit');
+    addToast('Canvas reset: Ready to write new document in Write & Edit mode.', 'info');
+    setTimeout(() => {
+      const el = document.getElementById('admin_rich_editor_textarea');
+      if (el) el.focus();
+    }, 100);
+  };
+
   const handlePublishResourceOrNews = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editorContent.trim()) {
       addToast('Please write your document content in the editor.', 'warning');
+      setEditorPreviewMode('edit');
       return;
     }
     setIsPublishing(true);
@@ -766,14 +783,19 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
       }
       await fetchAdminResources();
 
-      // Reset form
+      // Reset form and ensure we return to Write & Edit mode ready for next document
       setEditingResourceId(null);
       setEditorTitle('');
       setEditorShortDesc('');
       setEditorContent('');
       setAttachedLinks([]);
-      setEditorTags([]);
+      setEditorTags(['Artificial Intelligence', 'System Design', 'Deep Learning', 'Transformers']);
       setTagInputText('');
+      setEditorPreviewMode('edit');
+      setTimeout(() => {
+        const el = document.getElementById('admin_rich_editor_textarea');
+        if (el) el.focus();
+      }, 100);
     } catch (err: any) {
       addToast('Published successfully to catalog cache.', 'success');
     } finally {
@@ -2406,7 +2428,7 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
           </div>
         )}
 
-        {/* ===================================================        {/* ===================================================================== */}
+        {/* ===================================================================== */}
         {/* SECTION 3: RESOURCE & NEWS PUBLISHER (WHITE + SKY BLUE THEME) */}
         {/* ===================================================================== */}
         {activeSection === 'resource_editor' && (
@@ -2458,6 +2480,33 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
                 </button>
               </div>
             </div>
+
+            {/* Active Editing Indicator Banner */}
+            {editingResourceId && (
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-fade-in">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 block">
+                      Currently Editing Existing Resource (ID: {editingResourceId})
+                    </span>
+                    <p className="text-xs sm:text-sm font-black text-slate-900 line-clamp-1">
+                      {editorTitle || 'Untitled Document'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResetToNewBlankDocument}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-amber-100 text-amber-900 text-xs font-bold border border-amber-300 cursor-pointer shadow-2xs transition-all"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Cancel &amp; Create New</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Section & Category Multi-Selector Controls */}
             <div className="space-y-3">
@@ -2569,22 +2618,31 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
                     </p>
                   </div>
 
-                  {/* Reset / New Document button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditorContent('');
-                      setEditorTitle('');
-                      setEditorShortDesc('');
-                      setEditorTags([]);
-                      setTagInputText('');
-                      addToast('Cleared writing canvas for new document', 'info');
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-slate-700 hover:text-sky-800 text-xs font-bold border border-sky-200 cursor-pointer shadow-2xs transition-all"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-sky-600" />
-                    <span>New Blank Document</span>
-                  </button>
+                  {/* Reset / New Document button & Sample loader */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditorContent(DEFAULT_DOCUMENT_TEMPLATE);
+                        setEditorPreviewMode('edit');
+                        addToast('Loaded sample handbook template into editor.', 'info');
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-sky-50 text-slate-700 hover:text-sky-800 text-xs font-bold border border-sky-200 cursor-pointer shadow-2xs transition-all"
+                      title="Load sample technical document template"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+                      <span className="hidden sm:inline">Load Sample</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetToNewBlankDocument}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-slate-700 hover:text-sky-800 text-xs font-bold border border-sky-200 cursor-pointer shadow-2xs transition-all"
+                      title="Clear canvas and switch directly to Write & Edit mode"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-sky-600" />
+                      <span>New Blank Document</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Word-Style Writing Toolbar with Clear Text Size Options */}
@@ -2800,28 +2858,57 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
                   </div>
                 ) : (
                   /* LIVE STUDENT PREVIEW MODE */
-                  <div className="p-6 sm:p-8 rounded-2xl bg-white border-2 border-sky-200 shadow-2xs space-y-5">
-                    <div className="border-b border-sky-100 pb-4">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-800 bg-sky-100 px-2.5 py-0.5 rounded-md border border-sky-200">
-                        {editorContentType.replace('_', ' ')}
-                      </span>
-                      <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2 tracking-tight">
-                        {docMeta.title}
-                      </h2>
-                      {docMeta.subtitle && docMeta.subtitle.toLowerCase() !== 'summary' && (
-                        <p className="text-xs sm:text-sm text-slate-600 mt-1.5 font-medium leading-relaxed">
-                          {docMeta.subtitle}
+                  !editorContent.trim() ? (
+                    <div className="p-8 sm:p-12 rounded-2xl bg-sky-50/50 border-2 border-dashed border-sky-300 text-center space-y-4">
+                      <div className="w-14 h-14 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center mx-auto text-2xl font-bold shadow-2xs">
+                        <Edit3 className="w-7 h-7 text-sky-600" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="text-base font-black text-slate-900">
+                          Document Canvas is Blank
+                        </h3>
+                        <p className="text-xs text-slate-600 max-w-md mx-auto">
+                          You are currently viewing <strong>Student Live Preview</strong>, but haven&apos;t written any content yet. Switch to <strong>Write &amp; Edit</strong> to start drafting your document.
                         </p>
-                      )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditorPreviewMode('edit');
+                          setTimeout(() => {
+                            document.getElementById('admin_rich_editor_textarea')?.focus();
+                          }, 100);
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-sm cursor-pointer transition-all"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        <span>Switch to Write &amp; Edit Studio</span>
+                      </button>
                     </div>
+                  ) : (
+                    <div className="p-6 sm:p-8 rounded-2xl bg-white border-2 border-sky-200 shadow-2xs space-y-5">
+                      <div className="border-b border-sky-100 pb-4">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-800 bg-sky-100 px-2.5 py-0.5 rounded-md border border-sky-200">
+                          {editorContentType.replace('_', ' ')}
+                        </span>
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2 tracking-tight">
+                          {docMeta.title}
+                        </h2>
+                        {docMeta.subtitle && docMeta.subtitle.toLowerCase() !== 'summary' && (
+                          <p className="text-xs sm:text-sm text-slate-600 mt-1.5 font-medium leading-relaxed">
+                            {docMeta.subtitle}
+                          </p>
+                        )}
+                      </div>
 
-                    <div className="text-xs sm:text-sm text-slate-800 max-w-none space-y-3 leading-relaxed">
-                      <FormattedDocumentRenderer
-                        content={editorContent}
-                        skipTitleAndSubtitle={true}
-                      />
+                      <div className="text-xs sm:text-sm text-slate-800 max-w-none space-y-3 leading-relaxed">
+                        <FormattedDocumentRenderer
+                          content={editorContent}
+                          skipTitleAndSubtitle={true}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )
                 )}
               </div>
 
@@ -2987,6 +3074,15 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
 
               {/* Submit & Publish CTA */}
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-sky-100">
+                {editingResourceId && (
+                  <button
+                    type="button"
+                    onClick={handleResetToNewBlankDocument}
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer border border-slate-300 shadow-2xs"
+                  >
+                    Cancel Editing
+                  </button>
+                )}
                 <button
                   type="submit"
                   disabled={isPublishing}
@@ -2998,7 +3094,9 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
                     <Check className="w-4 h-4" />
                   )}
                   <span>
-                    {editorContentType === 'INDUSTRY_NEWS'
+                    {editingResourceId
+                      ? 'Update Resource & Save Changes'
+                      : editorContentType === 'INDUSTRY_NEWS'
                       ? 'Publish News to Platform Telemetry Feed'
                       : 'Publish Technical Learning Resource'}
                   </span>
@@ -3077,13 +3175,7 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
                   </button>
                   <button
                     onClick={() => {
-                      setEditingResourceId(null);
-                      setEditorTitle('');
-                      setEditorShortDesc('');
-                      setEditorContent('');
-                      setAttachedLinks([]);
-                      setEditorTags([]);
-                      setTagInputText('');
+                      handleResetToNewBlankDocument();
                       setActiveSection('resource_editor');
                     }}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold cursor-pointer shadow-md shadow-sky-600/25 hover:shadow-lg transition-all"
@@ -3217,6 +3309,8 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
                                 }
                                 setEditorContent(fullDoc);
                                 setEditorContentType((res.resource_type as any) || 'LEARNING_RESOURCE');
+                                setEditorCategory(res.category || 'Technology');
+                                setEditorPreviewMode('edit');
                                 setAttachedLinks(res.attached_links || (res.original_url ? [{
                                   id: `link-${Date.now()}`,
                                   platform: detectPlatform(res.original_url),
@@ -3228,7 +3322,8 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
                                 setEditorTags(loadedTags);
                                 setTagInputText('');
                                 setActiveSection('resource_editor');
-                                addToast(`Loaded "${res.title}" in Editor with related links & tags`, 'info');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                addToast(`Loaded "${res.title}" in Editor (Write & Edit Mode)`, 'info');
                               }}
                               className="px-2.5 py-1 rounded-lg bg-white hover:bg-sky-100 text-slate-700 hover:text-sky-800 text-[11px] font-bold inline-flex items-center gap-1 border border-sky-200 cursor-pointer shadow-2xs"
                             >

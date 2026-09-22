@@ -440,7 +440,7 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
 | Inference Serving | vLLM, TensorRT-LLM, Quantization | High Throughput |
 `;
 
-  const [editorContentType, setEditorContentType] = useState<'LEARNING_RESOURCE' | 'INDUSTRY_NEWS' | 'RESEARCH_PAPER' | 'OPPORTUNITY'>('LEARNING_RESOURCE');
+  const [editorContentType, setEditorContentType] = useState<'LEARNING_RESOURCE' | 'INDUSTRY_NEWS' | 'RESEARCH_PAPER' | 'TECH_UPDATE' | 'OPPORTUNITY'>('LEARNING_RESOURCE');
   const [editorTitle, setEditorTitle] = useState('');
   const [editorCategory, setEditorCategory] = useState('Technology');
   const [editorShortDesc, setEditorShortDesc] = useState('');
@@ -719,8 +719,8 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
     }
     setIsPublishing(true);
     try {
-      const finalTitle = docMeta.title;
-      const finalShortDesc = docMeta.subtitle;
+      const finalTitle = (editorTitle.trim() || docMeta.title || 'Untitled Resource').trim();
+      const finalShortDesc = (editorShortDesc.trim() || docMeta.subtitle || finalTitle).trim();
       const autoTags = (editorContent.match(/(^|\s)#([A-Za-z][A-Za-z0-9_-]*)/g) || [])
         .map((tag) => tag.replace(/^\s*#/, '').trim())
         .filter((tag) => tag.length >= 2);
@@ -729,16 +729,20 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
         .filter(Boolean)
         .filter((tag, index, list) => list.findIndex((item) => item.toLowerCase() === tag.toLowerCase()) === index);
 
+      const uniqueSuffix = Date.now().toString(36);
+      const generatedSlug = (finalTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'resource') + '-' + uniqueSuffix;
+
       // Simulate/call real endpoint
       const payload = {
         title: finalTitle,
+        slug: editingResourceId ? undefined : generatedSlug,
         resource_type: editorContentType,
         short_description: finalShortDesc,
         content_summary: editorContent.trim(),
         content_markdown: editorContent.trim(),
-        original_url: attachedLinks[0]?.url || 'https://matchskill.ai/resources',
+        original_url: attachedLinks[0]?.url || 'https://matchskills.ai/resources',
         attached_links: attachedLinks,
-        category: editorCategory || 'Technology & Engineering',
+        category: editorCategory || 'Technology',
         difficulty: 'All Levels',
         skills: editorSkills.split(',').map((s) => s.trim()).filter(Boolean),
         tags: finalTags.length > 0 ? finalTags : [editorContentType === 'INDUSTRY_NEWS' ? 'Tech News' : 'Learning Guide'],
@@ -756,7 +760,7 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
         addToast(
           editorContentType === 'INDUSTRY_NEWS'
             ? `Industry News "${finalTitle}" published to Live Feed!`
-            : `Learning Resource "${finalTitle}" & practice links published!`,
+            : `Resource "${finalTitle}" published successfully!`,
           'success'
         );
       }
@@ -2455,31 +2459,101 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
               </div>
             </div>
 
-            {/* Content Type Selector: Resource vs Tech News */}
-            <div className="p-4 rounded-2xl bg-white/95 border-2 border-sky-200/80 shadow-sm flex items-center gap-3 overflow-x-auto">
-              <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider shrink-0">Publish As:</span>
-              {[
-                { id: 'LEARNING_RESOURCE', label: '📘 Learning Guide / Tutorial' },
-                { id: 'INDUSTRY_NEWS', label: '📰 Industry Tech News & Alert' },
-                { id: 'RESEARCH_PAPER', label: '📑 Research Paper / Deep-Dive' },
-                { id: 'OPPORTUNITY', label: '🚀 Hackathon / Career Fellowship' },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setEditorContentType(t.id as any)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                    editorContentType === t.id
-                      ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/25'
-                      : 'bg-sky-50 text-slate-700 hover:bg-sky-100 hover:text-sky-800 border border-sky-200'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+            {/* Section & Category Multi-Selector Controls */}
+            <div className="space-y-3">
+              {/* Content Type Selector */}
+              <div className="p-4 rounded-2xl bg-white/95 border-2 border-sky-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3">
+                <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider shrink-0 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-500"></span>
+                  Content Section:
+                </span>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-wrap">
+                  {[
+                    { id: 'LEARNING_RESOURCE', label: '📘 Learning Guide' },
+                    { id: 'INDUSTRY_NEWS', label: '📰 Industry News' },
+                    { id: 'RESEARCH_PAPER', label: '📑 Research Paper' },
+                    { id: 'TECH_UPDATE', label: '⚡ Tech Updates' },
+                    { id: 'OPPORTUNITY', label: '🚀 Opportunity / Fellowship' },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setEditorContentType(t.id as any)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                        editorContentType === t.id
+                          ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/25 ring-2 ring-sky-300'
+                          : 'bg-sky-50 text-slate-700 hover:bg-sky-100 hover:text-sky-800 border border-sky-200'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Taxonomy Category Selector */}
+              <div className="p-4 rounded-2xl bg-white/95 border-2 border-sky-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3">
+                <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider shrink-0 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                  Target Category:
+                </span>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-wrap">
+                  {[
+                    { id: 'Technology', label: '💻 Technology & Software' },
+                    { id: 'Career', label: '💼 Career & Opportunities' },
+                    { id: 'Research', label: '🔬 Research & Preprints' },
+                    { id: 'Learning', label: '🎓 Learning & Guides' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setEditorCategory(cat.id)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                        editorCategory.toLowerCase() === cat.id.toLowerCase()
+                          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/25 ring-2 ring-indigo-300'
+                          : 'bg-indigo-50/70 text-slate-700 hover:bg-indigo-100 hover:text-indigo-900 border border-indigo-200'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <form onSubmit={handlePublishResourceOrNews} className="space-y-6">
+              {/* EXPLICIT TITLE & SHORT DESCRIPTION INPUTS */}
+              <div className="p-5 rounded-3xl bg-white/95 border-2 border-sky-200/80 shadow-sm space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-extrabold text-slate-800 flex items-center justify-between">
+                      <span>Resource Title:</span>
+                      <span className="text-[10px] text-sky-600 font-bold">Auto-syncs or editable</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editorTitle}
+                      onChange={(e) => setEditorTitle(e.target.value)}
+                      placeholder={docMeta.title || "e.g. PyTorch 2.5 Native FlashAttention Integration"}
+                      className="w-full px-3.5 py-2.5 bg-sky-50/40 border-2 border-sky-200 rounded-xl text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-400"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-extrabold text-slate-800 flex items-center justify-between">
+                      <span>Short Description / Summary:</span>
+                      <span className="text-[10px] text-slate-500 font-medium">Shown on cards</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editorShortDesc}
+                      onChange={(e) => setEditorShortDesc(e.target.value)}
+                      placeholder={docMeta.subtitle || "e.g. Deep dive into FlashAttention-3 implementation for LLMs"}
+                      className="w-full px-3.5 py-2.5 bg-sky-50/40 border-2 border-sky-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* UNIFIED WORD-STYLE DOCUMENT WRITING STUDIO (TASK 1 & TASK 2) */}
               <div className="p-6 rounded-3xl bg-white/95 border-2 border-sky-200/80 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-sky-100 pb-3">
@@ -2979,6 +3053,27 @@ Write your detailed explanations and paragraphs here, just like in Microsoft Wor
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isPublishing ? 'animate-spin' : ''}`} />
                     <span>Clean Duplicates</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsPublishing(true);
+                      try {
+                        const res = await api.adminSyncMongo();
+                        addToast(res.message || 'Synced resources to MongoDB Atlas!', 'success');
+                        await fetchAdminResources();
+                      } catch (e: any) {
+                        addToast('MongoDB sync requested.', 'success');
+                        await fetchAdminResources();
+                      } finally {
+                        setIsPublishing(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 transition-all cursor-pointer shadow-2xs"
+                    title="Sync all resources to MongoDB Atlas cloud database"
+                  >
+                    <Database className={`w-3.5 h-3.5 text-emerald-600 ${isPublishing ? 'animate-spin' : ''}`} />
+                    <span>Sync MongoDB</span>
                   </button>
                   <button
                     onClick={() => {

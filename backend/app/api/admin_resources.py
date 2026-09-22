@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -11,6 +12,7 @@ from backend.app.api.auth import require_admin
 from backend.app.services.resource_service import resource_service, slugify
 from backend.app.services.metadata_extractor import metadata_extractor
 from backend.app.services.resource_ingestion import arxiv_adapter
+from backend.app.services.resource_mongo_service import resource_mongo_service
 from backend.app.schemas.resource import (
     ResourceResponse, ResourceCreate, ResourceUpdate, ResourceListResponse,
     ResourceMetadataFetchRequest, ResourceMetadataFetchResponse, ResourceAnalyticsResponse
@@ -196,58 +198,45 @@ def admin_cleanup_resources(
     remaining = db.query(Resource).count()
     return {"status": "success", "message": "Dummy and duplicate resources purged.", "total_remaining": remaining}
 
+@router.post("/sync-mongo")
+def admin_sync_resources_to_mongo(
+    current_admin: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Sync all SQL resources into MongoDB Atlas resources collection."""
+    synced_count = resource_mongo_service.sync_all_from_sql(db)
+    mongo_count = resource_mongo_service.count_resources()
+    return {
+        "status": "success",
+        "synced_count": synced_count,
+        "mongo_total_resources": mongo_count,
+        "message": f"Successfully synced {synced_count} resources to MongoDB Atlas."
+    }
+
 @router.post("", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED)
 def admin_create_resource(
     data: ResourceCreate,
     current_admin: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    clean_title = data.title.strip()
+    clean_title = data.title.strip() if data.title else "Untitled Resource"
     orig_url = str(data.original_url or "https://matchskills.ai/resources").strip()
     if not orig_url:
         orig_url = "https://matchskills.ai/resources"
 
-    # 1. Deduplication check: If resource with exact same title or non-default url exists, update and return it!
-    existing = None
-    if orig_url and orig_url != "https://matchskills.ai/resources":
-        existing = db.query(Resource).filter(Resource.original_url == orig_url).first()
-    if not existing:
-        existing = db.query(Resource).filter(func.lower(Resource.title) == clean_title.lower()).first()
-
     desc = (data.short_description or data.title or "Learning Resource").strip()
 
-    if existing:
-        existing.short_description = desc
-        if data.content_summary:
-            existing.content_summary = data.content_summary
-        if data.content_markdown:
-            existing.content_markdown = data.content_markdown
-        if data.attached_links:
-            existing.attached_links = data.attached_links
-        if data.skills:
-            existing.skills = data.skills
-        if data.tags:
-            existing.tags = data.tags
-        if data.category:
-            existing.category = data.category
-        if data.resource_type:
-            existing.resource_type = data.resource_type
-        existing.is_verified = True
-        existing.verification_status = "VERIFIED"
-        existing.status = data.status or "PUBLISHED"
-        existing.updated_at = datetime.now(timezone.utc)
-        db.commit()
-        db.refresh(existing)
-        return existing
-
+    # Generate unique slug for every new resource created
+    unique_suffix = uuid.uuid4().hex[:6]
     base_slug = data.slug or slugify(clean_title)
-    slug = base_slug
-    counter = 1
+    if not base_slug:
+        base_slug = f"resource-{unique_suffix}"
+    slug = f"{base_slug}-{unique_suffix}"
     while db.query(Resource).filter(Resource.slug == slug).first():
-        slug = f"{base_slug}-{counter}"
-        counter += 1
+        slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
 
     resource = Resource(
+        id=str(uuid.uuid4()),
         title=clean_title,
         slug=slug,
         resource_type=data.resource_type or "LEARNING_RESOURCE",
@@ -286,6 +275,13 @@ def admin_create_resource(
     db.add(resource)
     db.commit()
     db.refresh(resource)
+
+    # Persist to MongoDB Atlas
+    try:
+        resource_mongo_service.save_resource(resource)
+    except Exception as e:
+        print(f"[AdminCreateResource] Note on MongoDB persistence: {e}")
+
     return resource
 
 @router.put("/{id}", response_model=ResourceResponse)
@@ -311,6 +307,13 @@ def admin_update_resource(
     resource.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(resource)
+
+    # Sync update to MongoDB Atlas
+    try:
+        resource_mongo_service.save_resource(resource)
+    except Exception as e:
+        print(f"[AdminUpdateResource] Note on MongoDB sync: {e}")
+
     return resource
 
 @router.delete("/{id}")
@@ -322,8 +325,18 @@ def admin_delete_resource(
     resource = db.query(Resource).filter((Resource.id == id) | (Resource.slug == id)).first()
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    
+    res_id = resource.id
+    res_slug = resource.slug
     db.delete(resource)
     db.commit()
+
+    # Sync deletion to MongoDB Atlas
+    try:
+        resource_mongo_service.delete_resource(res_id, res_slug)
+    except Exception as e:
+        print(f"[AdminDeleteResource] Note on MongoDB delete: {e}")
+
     return {"status": "success", "message": "Resource deleted"}
 
 @router.post("/{id}/publish")

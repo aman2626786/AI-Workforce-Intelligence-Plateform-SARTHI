@@ -104,12 +104,24 @@ class MongoDBClientManager:
             # Crawler Sync Meta
             db.crawler_sync_meta.create_index([("sync_date", DESCENDING)])
 
-            # Activity / Audit Logs
-            db.activity_logs.create_index([("timestamp", DESCENDING)])
+            # Resources collection (Full Resource Intelligence persistence)
+            db.resources.create_index([("id", ASCENDING)], unique=True)
+            db.resources.create_index([("slug", ASCENDING)], unique=True)
+            db.resources.create_index([("resource_type", ASCENDING)])
+            db.resources.create_index([("category", ASCENDING)])
+            db.resources.create_index([("status", ASCENDING)])
+            db.resources.create_index([("created_at", DESCENDING)])
 
             logger.info("MongoDB collection indexes validated.")
         except Exception as e:
             logger.warning(f"Error ensuring MongoDB indexes: {e}")
+
+    def get_db_safe(self) -> Optional[Database]:
+        try:
+            return self.get_db()
+        except Exception as e:
+            logger.warning(f"MongoDB not reachable: {e}")
+            return None
 
 mongo_manager = MongoDBClientManager()
 
@@ -117,6 +129,12 @@ def get_mongo_db() -> Database:
     return mongo_manager.get_db()
 
 # Collection Accessors
+def get_resources_col() -> Optional[Collection]:
+    db = mongo_manager.get_db_safe()
+    if db is not None:
+        return db["resources"]
+    return None
+
 def get_users_col() -> Collection:
     return get_mongo_db()["users"]
 

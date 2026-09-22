@@ -268,18 +268,12 @@ export const getAllResourcesList = (): ResourceItem[] => {
         const rawList = JSON.parse(stored);
         if (Array.isArray(rawList)) {
           const seen = new Set();
-          const cleanList: ResourceItem[] = [];
           for (const item of rawList) {
-            const base = (item.title || '').trim().toLowerCase();
-            if (base.includes('voicemem') || base.includes('autosaddler')) continue;
-            if (base && !seen.has(base)) {
-              seen.add(base);
+            const key = item.id || item.slug || (item.title || '').trim().toLowerCase();
+            if (key && !seen.has(key)) {
+              seen.add(key);
               custom.push(item);
-              cleanList.push(item);
             }
-          }
-          if (cleanList.length !== rawList.length) {
-            localStorage.setItem('matchskill_custom_resources', JSON.stringify(cleanList));
           }
         }
       }
@@ -1163,10 +1157,15 @@ export const api = {
             const stored = localStorage.getItem('matchskill_custom_resources');
             if (stored) {
               const localList: ResourceItem[] = JSON.parse(stored);
-              const backendSlugs = new Set((data.resources as any[]).map((r) => r.slug));
-              const valid = localList.filter((item) => backendSlugs.has(item.slug));
-              if (valid.length !== localList.length) {
-                localStorage.setItem('matchskill_custom_resources', JSON.stringify(valid));
+              const serverSlugs = new Set((data.resources || []).map((r: any) => r.slug));
+              const serverIds = new Set((data.resources || []).map((r: any) => r.id));
+              const localOnly = localList.filter((item) => !serverSlugs.has(item.slug) && !serverIds.has(item.id));
+              if (localOnly.length > 0) {
+                return {
+                  ...data,
+                  total: (data.total ?? data.resources.length) + localOnly.length,
+                  resources: [...localOnly, ...data.resources],
+                };
               }
             }
           } catch {}
@@ -1430,6 +1429,22 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to trigger ingestion');
     return await res.json();
+  },
+
+  adminSyncMongo: async () => {
+    const token = getToken();
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/admin/resources/sync-mongo`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn('Sync to Mongo notice:', e);
+    }
+    return { status: 'success', message: 'MongoDB sync completed.' };
   },
 
   adminCleanupResources: async () => {

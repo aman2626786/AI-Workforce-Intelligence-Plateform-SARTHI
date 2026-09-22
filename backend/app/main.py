@@ -81,32 +81,12 @@ def run_migrations():
 import threading
 
 def cleanup_duplicates_and_dummy_resources():
-    """Removes dummy seed data and deletes duplicate resources created with -1, -2 suffixes."""
+    """Removes obsolete mock resources safely without affecting user posts."""
     from backend.app.data.seed_resources import purge_seed_dummy_resources
-    import re
     db = SessionLocal()
     try:
-        # 1. Purge pre-seeded dummy resources
+        # Purge legacy mock seed URLs only if marked as dummy
         purge_seed_dummy_resources(db)
-
-        # 2. Deduplicate resources with identical titles or base slugs
-        all_res = db.query(Resource).order_by(Resource.updated_at.desc(), Resource.created_at.desc()).all()
-        seen_keys = set()
-        to_delete = []
-
-        for r in all_res:
-            norm_title = r.title.strip().lower()
-            base_slug = re.sub(r'-\d+$', '', r.slug)
-            key = (norm_title, base_slug)
-            if key in seen_keys:
-                to_delete.append(r.id)
-            else:
-                seen_keys.add(key)
-
-        if to_delete:
-            deleted_dups = db.query(Resource).filter(Resource.id.in_(to_delete)).delete(synchronize_session=False)
-            db.commit()
-            print(f"[Cleanup] Successfully purged {deleted_dups} duplicate resource entries.")
     except Exception as e:
         print(f"[Cleanup] Note on duplicate cleanup: {e}")
         db.rollback()
@@ -122,6 +102,20 @@ def _init_db_in_background():
         seed_skills_if_empty()
         seed_resources_if_empty()  # Only initializes taxonomy categories
         cleanup_duplicates_and_dummy_resources()
+
+        # Background sync existing resources to MongoDB Atlas
+        try:
+            from backend.app.services.resource_mongo_service import resource_mongo_service
+            db = SessionLocal()
+            try:
+                synced = resource_mongo_service.sync_all_from_sql(db)
+                if synced > 0:
+                    print(f"[Startup] Background synced {synced} resources to MongoDB Atlas.")
+            finally:
+                db.close()
+        except Exception as e:
+            print(f"[Startup] Note on MongoDB resource sync: {e}")
+
         print("[Startup] Database initialization, migrations and cleanups completed.")
     except Exception as e:
         print(f"[Startup] Background DB init note: {e}")

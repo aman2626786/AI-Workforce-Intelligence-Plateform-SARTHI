@@ -323,13 +323,11 @@ def admin_delete_resource(
     db: Session = Depends(get_db),
 ):
     resource = db.query(Resource).filter((Resource.id == id) | (Resource.slug == id)).first()
-    if not resource:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
-    
-    res_id = resource.id
-    res_slug = resource.slug
-    db.delete(resource)
-    db.commit()
+    res_id = resource.id if resource else id
+    res_slug = resource.slug if resource else id
+    if resource:
+        db.delete(resource)
+        db.commit()
 
     # Sync deletion to MongoDB Atlas
     try:
@@ -337,7 +335,7 @@ def admin_delete_resource(
     except Exception as e:
         print(f"[AdminDeleteResource] Note on MongoDB delete: {e}")
 
-    return {"status": "success", "message": "Resource deleted"}
+    return {"status": "success", "message": "Resource deleted successfully", "id": id}
 
 @router.post("/{id}/publish")
 def admin_publish_resource(

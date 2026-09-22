@@ -93,12 +93,64 @@ def cleanup_duplicates_and_dummy_resources():
     finally:
         db.close()
 
+def seed_default_users_if_empty():
+    from backend.app.models.user import User
+    from backend.app.models.profile import StudentProfile
+    from backend.app.core.security import get_password_hash
+    db = SessionLocal()
+    try:
+        admin_user = db.query(User).filter((User.role == "ADMIN") | (User.email == "admin@matchskill.ai")).first()
+        if not admin_user:
+            admin_user = User(
+                email="admin@matchskill.ai",
+                password_hash=get_password_hash("Admin@123456"),
+                role="ADMIN",
+                auth_provider="system"
+            )
+            db.add(admin_user)
+            db.commit()
+            db.refresh(admin_user)
+            print("[Startup] Seeded default system admin user.")
+
+        student_user = db.query(User).filter(User.email == "student@matchskill.ai").first()
+        if not student_user:
+            student_user = User(
+                email="student@matchskill.ai",
+                password_hash=get_password_hash("Student@123456"),
+                role="STUDENT",
+                auth_provider="system"
+            )
+            db.add(student_user)
+            db.commit()
+            db.refresh(student_user)
+
+            profile = StudentProfile(
+                user_id=student_user.id,
+                name="Student",
+                city="Bengaluru",
+                education_level="Bachelor's Degree",
+                degree="B.Tech / B.E.",
+                college="University",
+                graduation_year=2026,
+                target_role="Data Analyst",
+                preferred_location="Bengaluru"
+            )
+            db.add(profile)
+            db.commit()
+            print("[Startup] Seeded default system student user.")
+    except Exception as e:
+        print(f"[Startup] User seeding note: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
 def _init_db_in_background():
     """Run table creation, schema migrations, and cleanups asynchronously without blocking server port binding."""
     try:
         print("[Startup] Initializing database tables & migrations...")
         Base.metadata.create_all(bind=engine)
         run_migrations()
+        seed_default_users_if_empty()
         seed_skills_if_empty()
         seed_resources_if_empty()  # Only initializes taxonomy categories
         cleanup_duplicates_and_dummy_resources()

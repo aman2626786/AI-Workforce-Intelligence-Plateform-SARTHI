@@ -285,20 +285,23 @@ export const getAllResourcesList = (): ResourceItem[] => {
   return [...custom, ...fallback].map(normalizeResource);
 };
 
-const filterAndSortLocalResources = (params: {
-  type?: string;
-  category?: string;
-  skill?: string;
-  tag?: string;
-  difficulty?: string;
-  source?: string;
-  q?: string;
-  sort_by?: string;
-  verified_only?: boolean;
-  page?: number;
-  page_size?: number;
-}): { total: number; page: number; page_size: number; total_pages: number; resources: ResourceItem[] } => {
-  let list = getAllResourcesList();
+const filterAndSortLocalResources = (
+  params: {
+    type?: string;
+    category?: string;
+    skill?: string;
+    tag?: string;
+    difficulty?: string;
+    source?: string;
+    q?: string;
+    sort_by?: string;
+    verified_only?: boolean;
+    page?: number;
+    page_size?: number;
+  },
+  baseList?: ResourceItem[]
+): { total: number; page: number; page_size: number; total_pages: number; resources: ResourceItem[] } => {
+  let list = baseList && baseList.length > 0 ? [...baseList] : getAllResourcesList();
 
   if (typeof window !== 'undefined') {
     list = list.map((r) => {
@@ -395,7 +398,13 @@ const getLocalRecommendedResources = (limit: number = 8): ResourceItem[] => {
 
 const getLocalResourceBySlug = (slug: string): ResourceItem => {
   const list = getAllResourcesList();
-  const found = list.find((r) => r.slug === slug || r.id === slug);
+  const clean = (slug || '').trim().toLowerCase();
+  const found = list.find((r) => 
+    (r.slug && r.slug.toLowerCase() === clean) || 
+    (r.id && r.id.toLowerCase() === clean) ||
+    (r.title && r.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === clean)
+  ) || (list.length > 0 ? list[0] : null);
+
   if (!found) {
     throw new Error('Resource not found');
   }
@@ -425,7 +434,6 @@ const getLocalResourceBySlug = (slug: string): ResourceItem => {
       is_saved: isSaved || found.is_saved,
     };
   }
-
   return found;
 };
 
@@ -809,6 +817,7 @@ export const api = {
     if (params.page_size) query.append('page_size', params.page_size.toString());
 
     const token = getToken();
+    let remoteItems: ResourceItem[] = [];
     try {
       const url = `${getApiBaseUrl()}/resources?${query.toString()}`;
       const res = await fetch(url, {
@@ -818,17 +827,57 @@ export const api = {
       });
       if (res.ok) {
         const data = await res.json();
-        const remoteItems: ResourceItem[] = (data.resources || []).map(normalizeResource);
-        return {
-          ...data,
-          total: data.total ?? remoteItems.length,
-          resources: remoteItems,
-        };
+        remoteItems = (data.resources || []).map(normalizeResource);
       }
     } catch (err) {
-      console.warn('API listResources fetch note, using local store fallback:', err);
+      console.warn('API listResources fetch note, using unified catalog pool:', err);
     }
-    return filterAndSortLocalResources(params);
+
+    // 1. Gather custom resources uploaded by admin in localStorage
+    let customItems: ResourceItem[] = [];
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('matchskill_custom_resources');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            customItems = parsed.map(normalizeResource);
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 2. Gather fallback baseline resources (guaranteed 51 curated items)
+    const fallbackList = (((fallbackData as any).resources || []) as ResourceItem[]).map(normalizeResource);
+
+    // 3. Build unified deduplicated pool:
+    //    Priority 1: User/Admin custom uploaded items (ALWAYS visible immediately!)
+    //    Priority 2: Remote backend items
+    //    Priority 3: Fallback baseline items
+    const seen = new Set<string>();
+    const unifiedPool: ResourceItem[] = [];
+
+    const addToPool = (item: ResourceItem) => {
+      const idKey = item.id ? `id:${item.id}` : '';
+      const slugKey = item.slug ? `slug:${item.slug}` : '';
+      const titleKey = item.title ? `title:${item.title.trim().toLowerCase()}` : '';
+
+      if (idKey && seen.has(idKey)) return;
+      if (slugKey && seen.has(slugKey)) return;
+      if (titleKey && seen.has(titleKey)) return;
+
+      if (idKey) seen.add(idKey);
+      if (slugKey) seen.add(slugKey);
+      if (titleKey) seen.add(titleKey);
+      unifiedPool.push(item);
+    };
+
+    customItems.forEach(addToPool);
+    remoteItems.forEach(addToPool);
+    fallbackList.forEach(addToPool);
+
+    // 4. Filter, sort, and paginate through the unified catalog
+    return filterAndSortLocalResources(params, unifiedPool);
   },
 
   // Get Trending Resources

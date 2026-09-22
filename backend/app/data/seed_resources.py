@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import datetime, timezone, timedelta
 from backend.app.core.database import SessionLocal, engine, Base
 import backend.app.models  # Ensure all models are registered
@@ -1549,7 +1550,7 @@ def seed_resources_if_empty():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        # Seed categories
+        # 1. Seed taxonomy categories
         for cat in CATEGORIES_TAXONOMY:
             existing_cat = db.query(ResourceCategory).filter(ResourceCategory.id == cat["id"]).first()
             if not existing_cat:
@@ -1562,23 +1563,60 @@ def seed_resources_if_empty():
                 ))
         db.commit()
         print("[SeedResources] Verified categories taxonomy initialized.")
+
+        # 2. Seed baseline verified resources if table has fewer than 10 records
+        existing_count = db.query(Resource).count()
+        if existing_count < 10:
+            existing_slugs = {r[0] for r in db.query(Resource.slug).all()}
+            for item in SEED_RESOURCES:
+                slug = slugify(item["title"])
+                if slug not in existing_slugs:
+                    existing_slugs.add(slug)
+                    r = Resource(
+                        id=str(uuid.uuid4()),
+                        title=item["title"],
+                        slug=slug,
+                        resource_type=item.get("resource_type", "LEARNING_RESOURCE"),
+                        short_description=item.get("short_description", item["title"]),
+                        content_summary=item.get("content_summary", item.get("short_description", item["title"])),
+                        content_markdown=item.get("content_markdown", item.get("content_summary", item["title"])),
+                        original_url=item.get("original_url", "https://matchskills.ai/resources"),
+                        source_name=item.get("source_name", "MatchSkill Intelligence"),
+                        source_domain=item.get("source_domain", "matchskills.ai"),
+                        author=item.get("author", "MatchSkill Editorial"),
+                        organization=item.get("organization", "MatchSkill"),
+                        publisher=item.get("publisher", "MatchSkill"),
+                        published_at=item.get("published_at") or datetime.now(timezone.utc),
+                        thumbnail_url=item.get("thumbnail_url"),
+                        language=item.get("language", "en"),
+                        difficulty=item.get("difficulty", "All Levels"),
+                        category=item.get("category", "Technology"),
+                        subcategory=item.get("subcategory"),
+                        skills=item.get("skills", []),
+                        target_roles=item.get("target_roles", []),
+                        tags=item.get("tags", []),
+                        hashtags=item.get("hashtags", []),
+                        keywords=item.get("keywords", []),
+                        is_verified=True,
+                        verification_status="VERIFIED",
+                        status="PUBLISHED",
+                        view_count=item.get("view_count", 0),
+                        like_count=item.get("like_count", 0),
+                        save_count=item.get("save_count", 0),
+                        share_count=item.get("share_count", 0),
+                    )
+                    db.add(r)
+            db.commit()
+            print(f"[SeedResources] Seeded rich resources into database. Total count: {db.query(Resource).count()}")
     except Exception as e:
-        print(f"[SeedResources] Error during categories initialization: {e}")
+        print(f"[SeedResources] Error during categories and resource initialization: {e}")
         db.rollback()
     finally:
         db.close()
 
 def purge_seed_dummy_resources(db: SessionLocal):
-    """Purge pre-seeded mock resources from the database."""
-    try:
-        seed_urls = {item["original_url"] for item in SEED_RESOURCES}
-        deleted_count = db.query(Resource).filter(Resource.original_url.in_(seed_urls)).delete(synchronize_session=False)
-        db.commit()
-        if deleted_count > 0:
-            print(f"[PurgeDummy] Successfully purged {deleted_count} dummy seed resources from database.")
-    except Exception as e:
-        print(f"[PurgeDummy] Note on dummy purge: {e}")
-        db.rollback()
+    """Safe no-op so that verified seed resources are preserved."""
+    pass
 
 if __name__ == "__main__":
     seed_resources_if_empty()

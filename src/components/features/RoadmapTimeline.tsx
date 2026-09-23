@@ -2,14 +2,15 @@
 
 import React from 'react';
 import { RoadmapItem } from '@/data/roadmap';
-import { CheckCircle2, Clock, Sparkles, ArrowRight, BookOpen } from 'lucide-react';
+import { CheckCircle2, Clock, Sparkles, ArrowRight, BookOpen, Trash2 } from 'lucide-react';
 
 interface RoadmapTimelineProps {
   items: RoadmapItem[];
   onToggleStatus: (id: string) => void;
+  onDeleteItem?: (id: string) => void;
 }
 
-export const RoadmapTimeline: React.FC<RoadmapTimelineProps> = ({ items, onToggleStatus }) => {
+export const RoadmapTimeline: React.FC<RoadmapTimelineProps> = ({ items, onToggleStatus, onDeleteItem }) => {
   const stages: ('FOUNDATION' | 'CORE SKILLS' | 'INDUSTRY SKILLS' | 'JOB READY')[] = [
     'FOUNDATION',
     'CORE SKILLS',
@@ -52,7 +53,12 @@ export const RoadmapTimeline: React.FC<RoadmapTimelineProps> = ({ items, onToggl
             </div>
 
             {/* Items Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {stageItems.length === 0 ? (
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-500 font-medium italic">
+                No active milestones in this stage. Add gaps from Skill Gap Analysis or regenerate roadmap.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {stageItems.map((item) => {
                 const isCompleted = item.status === 'Completed';
                 const isInProgress = item.status === 'In Progress';
@@ -80,17 +86,29 @@ export const RoadmapTimeline: React.FC<RoadmapTimelineProps> = ({ items, onToggl
                         <h4 className="text-base sm:text-lg font-bold text-slate-900 mt-1.5">{item.skillName}</h4>
                       </div>
 
-                      <button
-                        onClick={() => onToggleStatus(item.id)}
-                        className={`py-1.5 px-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                          isCompleted
-                            ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-600 hover:text-emerald-600 hover:bg-emerald-50/50'
-                        }`}
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        {isCompleted ? 'Done' : 'Mark Done'}
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {onDeleteItem && (
+                          <button
+                            onClick={() => onDeleteItem(item.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                            title="Remove from Roadmap"
+                            aria-label={`Remove ${item.skillName} from roadmap`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onToggleStatus(item.id)}
+                          className={`py-1.5 px-3 rounded-xl border text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                            isCompleted
+                              ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 shadow-xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-600 hover:text-emerald-600 hover:bg-emerald-50/50'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          {isCompleted ? 'Done' : 'Mark Done'}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-3 text-sm text-slate-600 mb-3 font-medium">
@@ -128,6 +146,7 @@ export const RoadmapTimeline: React.FC<RoadmapTimelineProps> = ({ items, onToggl
                 );
               })}
             </div>
+            )}
           </div>
         );
       })}

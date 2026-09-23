@@ -23,6 +23,8 @@ import {
   Clock,
   ExternalLink,
   ChevronRight,
+  Heart,
+  MessageSquare,
 } from 'lucide-react';
 
 interface NotificationItem {
@@ -31,7 +33,7 @@ interface NotificationItem {
   description: string;
   timestamp: string;
   unread: boolean;
-  type: 'signal' | 'readiness' | 'resume' | 'roadmap';
+  type: string;
   href: string;
 }
 
@@ -89,22 +91,32 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
   const notificationsRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setMounted(true);
-
+  const fetchLiveNotifications = React.useCallback(() => {
     api.getNotifications().then((items) => {
-      if (items.length > 0) {
+      if (Array.isArray(items) && items.length > 0) {
         setNotifications(items.map((item: any) => ({
-          id: item.id,
+          id: item.id || `notif-${Math.random()}`,
           title: item.title,
           description: item.description,
           timestamp: item.created_at ? new Date(item.created_at).toLocaleString() : 'Recently',
           unread: Boolean(item.unread),
-          type: item.type || 'roadmap',
-          href: item.href || '/dashboard',
+          type: item.type || 'resource',
+          href: item.href || '/dashboard/resources',
         })));
       }
-    });
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+    fetchLiveNotifications();
+
+    // Listen for custom event triggered whenever a like, save, or comment occurs
+    const handleUpdate = () => fetchLiveNotifications();
+    window.addEventListener('notifications-updated', handleUpdate);
+
+    // Poll every 25 seconds for incoming real-time notifications
+    const interval = setInterval(fetchLiveNotifications, 25000);
 
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -122,8 +134,12 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('notifications-updated', handleUpdate);
+      clearInterval(interval);
+    };
+  }, [fetchLiveNotifications]);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
@@ -254,6 +270,23 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onOpenSidebar }) => {
                       }`}
                     >
                       <div className="shrink-0 mt-0.5">
+                        {item.type === 'resource' && (
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
+                            item.title.toLowerCase().includes('like')
+                              ? 'bg-rose-50 text-rose-600 border-rose-100'
+                              : item.title.toLowerCase().includes('comment')
+                              ? 'bg-sky-50 text-sky-600 border-sky-100'
+                              : 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                          }`}>
+                            {item.title.toLowerCase().includes('like') ? (
+                              <Heart className="w-4 h-4 fill-rose-600" />
+                            ) : item.title.toLowerCase().includes('comment') ? (
+                              <MessageSquare className="w-4 h-4" />
+                            ) : (
+                              <BookOpen className="w-4 h-4" />
+                            )}
+                          </div>
+                        )}
                         {item.type === 'signal' && (
                           <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
                             <Sparkles className="w-4 h-4" />

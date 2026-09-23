@@ -37,9 +37,25 @@ interface AppContextType {
   removeToast: (id: string) => void;
   refreshData: () => Promise<void>;
   updateTargetCareer: (role: string, location: string, company?: string) => Promise<void>;
-  updateProfileInfo: (updates: { name?: string; email?: string; targetRole?: string; targetLocation?: string; targetCompany?: string }) => Promise<void>;
+  updateProfileInfo: (updates: {
+    name?: string;
+    email?: string;
+    location?: string;
+    targetRole?: string;
+    targetLocation?: string;
+    targetCompany?: string;
+    education?: {
+      institution?: string;
+      degree?: string;
+      fieldOfStudy?: string;
+      graduationYear?: string;
+      cgpa?: string;
+    };
+  }) => Promise<void>;
   addSkillToRoadmap: (skill: IndustrySkill) => Promise<void>;
   toggleRoadmapStatus: (id: string) => Promise<void>;
+  deleteRoadmapItem: (id: string) => Promise<void>;
+  resetRoadmapForRole: (role?: string) => Promise<void>;
   logout: () => Promise<void>;
   addSelfReportedSkill: (name: string, category: string, level: 'Basic' | 'Intermediate' | 'Advanced') => Promise<void>;
 }
@@ -55,9 +71,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [roadmap, setRoadmap] = useState<RoadmapItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Deterministic SSR initial defaults to prevent hydration mismatch
-  const [activeRole, setActiveRole] = useState<string>('Robotics Engineer');
-  const [activeLocation, setActiveLocation] = useState<string>('Bengaluru');
+  // Helper to retrieve saved user target role or neutral fallback without hardcoded bias
+  const getInitialActiveRole = (): string => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('skillvantage_user_profile');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.targetRole) return parsed.targetRole;
+        }
+        const session = localStorage.getItem('skillvantage_user_session');
+        if (session) {
+          const s = JSON.parse(session);
+          const email = (s.email || s.user_id || '').toLowerCase().trim();
+          const prof = localStorage.getItem(`skillvantage_student_profile_${email}`);
+          if (prof) {
+            const p = JSON.parse(prof);
+            if (p.targetRole) return p.targetRole;
+          }
+        }
+      } catch (e) {}
+    }
+    return 'Software Engineer';
+  };
+
+  const getInitialActiveLocation = (): string => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('skillvantage_user_profile');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.preferredLocation || parsed.location) return parsed.preferredLocation || parsed.location;
+        }
+      } catch (e) {}
+    }
+    return 'Bengaluru';
+  };
+
+  const [activeRole, setActiveRole] = useState<string>(getInitialActiveRole);
+  const [activeLocation, setActiveLocation] = useState<string>(getInitialActiveLocation);
 
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState<boolean>(false);
   const [aiDrawerTopic, setAiDrawerTopic] = useState<string>('General Career Intelligence');
@@ -247,9 +299,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateProfileInfo = async (updates: {
     name?: string;
     email?: string;
+    location?: string;
     targetRole?: string;
     targetLocation?: string;
     targetCompany?: string;
+    education?: {
+      institution?: string;
+      degree?: string;
+      fieldOfStudy?: string;
+      graduationYear?: string;
+      cgpa?: string;
+    };
   }) => {
     if (updates.targetRole) setActiveRole(updates.targetRole);
     if (updates.targetLocation) setActiveLocation(updates.targetLocation);
@@ -288,6 +348,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     const updatedProfile = await careerService.getStudentProfile();
     setProfile(updatedProfile);
+  };
+
+  const deleteRoadmapItem = async (id: string) => {
+    const updated = await careerService.deleteRoadmapItem(id);
+    setRoadmap(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(getCacheKey(activeRole, 'roadmap'), JSON.stringify(updated));
+      } catch (e) {}
+    }
+    addToast('Roadmap milestone removed.', 'info');
+  };
+
+  const resetRoadmapForRole = async (roleOverride?: string) => {
+    const target = roleOverride || activeRole || 'Software Engineer';
+    const updated = await careerService.resetRoadmapForRole(target);
+    setRoadmap(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(getCacheKey(target, 'roadmap'), JSON.stringify(updated));
+      } catch (e) {}
+    }
+    addToast(`Roadmap regenerated for "${target}"!`, 'success');
   };
 
   const logout = async () => {
@@ -342,6 +425,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateProfileInfo,
         addSkillToRoadmap,
         toggleRoadmapStatus,
+        deleteRoadmapItem,
+        resetRoadmapForRole,
         logout,
         addSelfReportedSkill,
       }}

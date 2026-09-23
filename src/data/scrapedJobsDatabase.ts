@@ -131,7 +131,7 @@ export function generateScrapedJobsDatabase(): ScrapedJobRecord[] {
         sourceApi,
         status: i % 5 === 0 ? 'PROCESSED' : 'INDEXED',
         scrapedAt: `Today, 04:${(12 - (compIdx % 10)).toString().padStart(2, '0')} AM`,
-        applyUrl: `https://careers.${comp.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com/jobs/${counter}`,
+        applyUrl: `https://www.google.com/search?q=${encodeURIComponent(`${comp.name} ${baseTitle} jobs careers openings`)}`,
         jdSummary: `Seeking skilled candidates in ${roleSkills.slice(0, 3).join(', ')} to architect scalable solutions at ${comp.name} in ${comp.domain}.`,
       });
     }

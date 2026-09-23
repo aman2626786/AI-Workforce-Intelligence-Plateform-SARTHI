@@ -41,7 +41,7 @@ import { CAREER_ROLE_CATEGORIES } from '@/app/onboarding/page';
 type TabType = 'overview' | 'skills' | 'experience' | 'projects' | 'education';
 
 export default function StudentProfilePage() {
-  const { profile, addSelfReportedSkill, addToast, refreshData, setActiveRole } = useApp();
+  const { profile, addSelfReportedSkill, addToast, refreshData, setActiveRole, updateProfileInfo, activeRole } = useApp();
 
   // Active Tab State
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -55,6 +55,52 @@ export default function StudentProfilePage() {
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillCategory, setNewSkillCategory] = useState('Data Visualization');
   const [newSkillLevel, setNewSkillLevel] = useState<'Basic' | 'Intermediate' | 'Advanced'>('Intermediate');
+
+  // Edit Profile & Academic Info Modal State
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editCollege, setEditCollege] = useState('');
+  const [editDegree, setEditDegree] = useState('');
+  const [editBranch, setEditBranch] = useState('');
+  const [editGradYear, setEditGradYear] = useState('');
+  const [editTargetRole, setEditTargetRole] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const openEditProfileModal = () => {
+    setEditName(profile?.name || '');
+    setEditLocation(profile?.location || profile?.targetLocation || '');
+    setEditCollege(profile?.education?.institution || '');
+    setEditDegree(profile?.education?.degree || '');
+    setEditBranch(profile?.education?.fieldOfStudy || '');
+    setEditGradYear(profile?.education?.graduationYear || '');
+    setEditTargetRole(profile?.targetRole || activeRole || '');
+    setIsEditProfileOpen(true);
+  };
+
+  const handleSaveProfileDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingProfile(true);
+    try {
+      await updateProfileInfo({
+        name: editName.trim(),
+        location: editLocation.trim(),
+        targetRole: editTargetRole.trim(),
+        education: {
+          institution: editCollege.trim(),
+          degree: editDegree.trim(),
+          fieldOfStudy: editBranch.trim(),
+          graduationYear: editGradYear.trim(),
+        },
+      });
+      setIsEditProfileOpen(false);
+      addToast('Profile and academic details updated successfully!', 'success');
+    } catch (err: any) {
+      addToast(err?.message || 'Failed to update profile', 'error');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   // Target Career Switcher Modal State
   const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
@@ -284,6 +330,15 @@ export default function StudentProfilePage() {
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
           <button
+            type="button"
+            onClick={openEditProfileModal}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white border border-sky-300 hover:bg-sky-50 text-sky-700 font-bold text-xs shadow-2xs transition-all cursor-pointer"
+          >
+            <Edit3 className="w-3.5 h-3.5 text-sky-600" />
+            <span>Edit Profile Details</span>
+          </button>
+
+          <button
             onClick={() => setIsUpdateResumeOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-slate-900 text-white font-bold text-xs shadow-sm shadow-sky-600/20 transition-all cursor-pointer"
           >
@@ -350,11 +405,11 @@ export default function StudentProfilePage() {
               </div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-extrabold text-slate-900 truncate">
-                  {profile?.targetRole || 'Data Scientist'}
+                  {profile?.targetRole || activeRole || 'Target Role Pending'}
                 </span>
                 <button
                   onClick={() => {
-                    setSelectedRole(profile?.targetRole || '');
+                    setSelectedRole(profile?.targetRole || activeRole || '');
                     setIsCustomSelectedRole(false);
                     setIsEditRoleOpen(true);
                   }}
@@ -374,42 +429,54 @@ export default function StudentProfilePage() {
                 <span className="text-slate-500 flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" /> Current City
                 </span>
-                <strong className="text-slate-900 font-semibold">{profile?.location || 'Jaipur'}</strong>
+                <strong className="text-slate-900 font-semibold">{profile?.location || 'Not Specified'}</strong>
               </div>
               <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
                 <span className="text-slate-500 flex items-center gap-1.5">
                   <Building className="w-3.5 h-3.5 text-slate-400" /> Target Location
                 </span>
-                <strong className="text-slate-900 font-semibold">{profile?.targetLocation || 'Jaipur'}</strong>
+                <strong className="text-slate-900 font-semibold">{profile?.targetLocation || profile?.location || 'Pan India'}</strong>
               </div>
             </div>
           </div>
 
           {/* Academic Credentials Card */}
           <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-              <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center border border-sky-100">
-                <GraduationCap className="w-4 h-4" />
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center border border-sky-100">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Academic Education</h3>
+                  <p className="text-[11px] text-slate-500">Degree & Institution</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Academic Education</h3>
-                <p className="text-[11px] text-slate-500">Degree & Institution</p>
-              </div>
+              <button
+                type="button"
+                onClick={openEditProfileModal}
+                className="p-1.5 text-slate-400 hover:text-sky-700 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer"
+                title="Edit Academic Details"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </button>
             </div>
 
             <div className="space-y-2 text-xs">
               <h4 className="font-bold text-slate-900 text-xs">
-                {profile?.education?.institution || 'Arya College of Engineering & IT, Jaipur'}
+                {profile?.education?.institution || 'Institution Pending'}
               </h4>
               <p className="text-slate-600 font-medium">
-                {profile?.education?.degree || 'B.Tech'} in {profile?.education?.fieldOfStudy || 'Electronics and Communication Engineering'}
+                {profile?.education?.degree ? `${profile.education.degree}${profile.education.fieldOfStudy ? ` in ${profile.education.fieldOfStudy}` : ''}` : 'Degree Details Pending'}
               </p>
 
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 font-semibold text-slate-700">
-                <span className="text-slate-500">Class of {profile?.education?.graduationYear || '2022'}</span>
-                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">
-                  CGPA: {profile?.education?.cgpa || '7.8'}
-                </span>
+                <span className="text-slate-500">{profile?.education?.graduationYear ? `Class of ${profile.education.graduationYear}` : 'Year Pending'}</span>
+                {profile?.education?.cgpa ? (
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">
+                    CGPA: {profile.education.cgpa}
+                  </span>
+                ) : null}
               </div>
             </div>
           </div>
@@ -990,22 +1057,34 @@ export default function StudentProfilePage() {
                   <div className="flex items-center gap-2">
                     <GraduationCap className="w-5 h-5 text-sky-600" />
                     <h4 className="text-sm font-bold text-slate-900">
-                      {profile?.education?.institution || 'Arya College of Engineering & IT, Jaipur'}
+                      {profile?.education?.institution || 'Institution Pending'}
                     </h4>
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    CGPA: {profile?.education?.cgpa || '7.8'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {profile?.education?.cgpa ? (
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        CGPA: {profile.education.cgpa}
+                      </span>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={openEditProfileModal}
+                      className="p-1 text-slate-400 hover:text-sky-700 rounded transition-colors cursor-pointer"
+                      title="Edit Details"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 font-medium">
                   <div>
-                    <span className="text-slate-400">Degree:</span> {profile?.education?.degree || 'B.Tech'}
+                    <span className="text-slate-400">Degree:</span> {profile?.education?.degree || 'Undergraduate'}
                   </div>
                   <div>
-                    <span className="text-slate-400">Field:</span> {profile?.education?.fieldOfStudy || 'Electronics and Communication Engineering'}
+                    <span className="text-slate-400">Field:</span> {profile?.education?.fieldOfStudy || 'Technical / Engineering'}
                   </div>
                   <div>
-                    <span className="text-slate-400">Graduation:</span> Class of {profile?.education?.graduationYear || '2022'}
+                    <span className="text-slate-400">Graduation:</span> {profile?.education?.graduationYear ? `Class of ${profile.education.graduationYear}` : 'In Progress'}
                   </div>
                   <div>
                     <span className="text-slate-400">Status:</span> Completed
@@ -1433,6 +1512,140 @@ export default function StudentProfilePage() {
               ) : (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5" /> Save & Recalculate
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Student Profile & Academic Details Modal */}
+      <Modal
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+        title="Edit Profile & Academic Details"
+        subtitle="Update your personal details, institution, and career direction"
+      >
+        <form onSubmit={handleSaveProfileDetails} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Full Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Enter your full name"
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Current City <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={editLocation}
+                onChange={(e) => setEditLocation(e.target.value)}
+                placeholder="Enter your current city"
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                College / University Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={editCollege}
+                onChange={(e) => setEditCollege(e.target.value)}
+                placeholder="Enter college or university name"
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Degree <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={editDegree}
+                onChange={(e) => setEditDegree(e.target.value)}
+                placeholder="e.g. B.Tech / BCA / MCA"
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Branch / Field of Study
+              </label>
+              <input
+                type="text"
+                value={editBranch}
+                onChange={(e) => setEditBranch(e.target.value)}
+                placeholder="e.g. Computer Science / Robotics"
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Graduation Year <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="number"
+                required
+                min={2020}
+                max={2035}
+                value={editGradYear}
+                onChange={(e) => setEditGradYear(e.target.value)}
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Target Role
+              </label>
+              <input
+                type="text"
+                value={editTargetRole}
+                onChange={(e) => setEditTargetRole(e.target.value)}
+                placeholder="e.g. Full Stack Developer"
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-slate-900"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsEditProfileOpen(false)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSavingProfile}
+              className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs shadow-md shadow-sky-600/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {isSavingProfile ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Save Changes
                 </>
               )}
             </button>

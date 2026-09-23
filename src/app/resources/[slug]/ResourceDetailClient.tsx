@@ -174,16 +174,20 @@ export default function ResourceDetailClient({ slug }: ResourceDetailClientProps
         const item = await api.getResourceBySlug(effectiveSlug);
         setResource(item);
         const storedLike = typeof window !== 'undefined'
-          ? localStorage.getItem(`matchskill_likes_${item.id}`) === 'true'
+          ? (localStorage.getItem(`matchskill_likes_${item.id}`) === 'true' ||
+             (item.slug ? localStorage.getItem(`matchskill_likes_${item.slug}`) === 'true' : false))
           : false;
         const initiallyLiked = Boolean(item.is_liked) || storedLike;
         setIsLiked(initiallyLiked);
-        setLikeCount(Math.max(Number(item.like_count) || 0, initiallyLiked ? 1 : 0));
+        const count = Number(item.like_count) || 0;
+        setLikeCount(Math.max(count, initiallyLiked ? 1 : 0));
         setIsSaved(Boolean(item.is_saved));
         setSaveCount(item.save_count || 0);
 
         if (typeof window !== 'undefined') {
-          const storedSave = localStorage.getItem(`matchskill_saved_${item.id}`);
+          const storedSave =
+            localStorage.getItem(`matchskill_saved_${item.id}`) ||
+            (item.slug ? localStorage.getItem(`matchskill_saved_${item.slug}`) : null);
           if (storedSave !== null) setIsSaved(storedSave === 'true');
         }
 
@@ -204,6 +208,20 @@ export default function ResourceDetailClient({ slug }: ResourceDetailClientProps
     }
     loadData();
   }, [effectiveSlug]);
+
+  useEffect(() => {
+    const handleEngagement = (e: any) => {
+      const detail = e.detail;
+      if (detail && (detail.resourceId === resource?.id || detail.resourceId === resource?.slug || detail.resourceId === effectiveSlug)) {
+        if (typeof detail.liked === 'boolean') setIsLiked(detail.liked);
+        if (typeof detail.likeCount === 'number') setLikeCount(detail.likeCount);
+        if (typeof detail.saved === 'boolean') setIsSaved(detail.saved);
+        if (typeof detail.saveCount === 'number') setSaveCount(detail.saveCount);
+      }
+    };
+    window.addEventListener('resource-engagement-updated', handleEngagement);
+    return () => window.removeEventListener('resource-engagement-updated', handleEngagement);
+  }, [resource?.id, resource?.slug, effectiveSlug]);
 
   // Track user-marked read articles history
   const [readSlugs, setReadSlugs] = useState<string[]>([]);

@@ -86,13 +86,13 @@ export const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({
     try {
       // 1. Direct deterministic parsing via Python engine
       const result = await api.parseResumeFile(resumeFile, {
-        name: profile?.name,
-        city: profile?.location || 'Jaipur',
+        name: profile?.name || '',
+        city: profile?.location || '',
         education_level: 'Undergraduate',
-        degree: profile?.education?.degree || 'B.Tech',
-        branch: profile?.education?.fieldOfStudy,
-        college: profile?.education?.institution || 'Arya College of Engineering & IT',
-        graduation_year: Number(profile?.education?.graduationYear) || 2026,
+        degree: profile?.education?.degree || '',
+        branch: profile?.education?.fieldOfStudy || '',
+        college: profile?.education?.institution || '',
+        graduation_year: Number(profile?.education?.graduationYear) || new Date().getFullYear(),
       });
 
       clearInterval(stageInterval);
@@ -107,21 +107,19 @@ export const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({
         source_section: s.source_section,
       }));
 
-      const firstEdu = result.education && result.education.length > 0 ? result.education[0] : null;
-
-      // 3. Sync live career profile
+      // 3. Sync live career profile - preserving student's personal info
       await careerService.syncOnboardingProfile({
-        name: result.personal_info?.name || profile?.name || 'Student',
-        email: result.personal_info?.email || profile?.email || 'student@university.edu',
-        city: result.personal_info?.city || profile?.location || 'Jaipur',
-        educationLevel: firstEdu?.education_level || 'Undergraduate',
-        degree: firstEdu?.degree || profile?.education?.degree || 'B.Tech',
-        branch: firstEdu?.field || profile?.education?.fieldOfStudy || 'Technical',
-        college: firstEdu?.institution || profile?.education?.institution || 'Arya College of Engineering & IT',
-        graduationYear: firstEdu?.graduation_year || Number(profile?.education?.graduationYear) || 2026,
-        cgpa: firstEdu?.cgpa ? String(firstEdu.cgpa) : (firstEdu?.percentage ? `${firstEdu.percentage}%` : (profile?.education?.cgpa || '')),
+        name: profile?.name || 'Student',
+        email: profile?.email || '',
+        city: profile?.location || '',
+        educationLevel: 'Undergraduate',
+        degree: profile?.education?.degree || '',
+        branch: profile?.education?.fieldOfStudy || '',
+        college: profile?.education?.institution || '',
+        graduationYear: Number(profile?.education?.graduationYear) || new Date().getFullYear(),
+        cgpa: profile?.education?.cgpa || '',
         targetRole: profile?.targetRole || activeRole,
-        preferredLocation: profile?.targetLocation,
+        preferredLocation: profile?.targetLocation || profile?.location || '',
         linkedin: result.personal_info?.linkedin || profile?.linkedin,
         github: result.personal_info?.github || profile?.github,
         portfolio: result.personal_info?.portfolio || profile?.portfolio,

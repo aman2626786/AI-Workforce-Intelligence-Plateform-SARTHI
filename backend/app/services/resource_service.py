@@ -317,38 +317,87 @@ class ResourceService:
 
     @staticmethod
     def toggle_like(db: Session, resource_id: str, user_id: str) -> Dict[str, Any]:
-        resource = db.query(Resource).filter(Resource.id == resource_id).first()
+        resource = db.query(Resource).filter(
+            (Resource.id == resource_id) | (Resource.slug == resource_id)
+        ).first()
         if not resource:
             raise ValueError("Resource not found")
 
+        # Get liker profile or user info for clear notification text
+        actor_user = db.query(User).filter(User.id == user_id).first()
+        actor_profile = db.query(StudentProfile).filter(StudentProfile.user_id == user_id).first()
+        actor_name = actor_profile.name if actor_profile and actor_profile.name else (actor_user.email if actor_user else "Student")
+
         existing = db.query(ResourceLike).filter(
-            ResourceLike.user_id == user_id, ResourceLike.resource_id == resource_id
+            ResourceLike.user_id == user_id, ResourceLike.resource_id == resource.id
         ).first()
 
         if existing:
             db.delete(existing)
             resource.like_count = max(0, (resource.like_count or 0) - 1)
             db.commit()
-            db.add(Notification(user_id=user_id, title="Like removed", description=f"Your like was removed from {resource.title}.", notification_type="resource", href=f"/resources/{resource.slug}"))
+            db.add(Notification(
+                user_id=user_id,
+                title="Like removed",
+                description=f"Your like was removed from {resource.title}.",
+                notification_type="resource",
+                href=f"/resources/{resource.slug}"
+            ))
             db.commit()
+            try:
+                from backend.app.services.resource_mongo_service import resource_mongo_service
+                resource_mongo_service.save_resource(resource)
+            except Exception:
+                pass
             return {"liked": False, "like_count": resource.like_count}
         else:
-            new_like = ResourceLike(user_id=user_id, resource_id=resource_id)
+            new_like = ResourceLike(user_id=user_id, resource_id=resource.id)
             db.add(new_like)
             resource.like_count = (resource.like_count or 0) + 1
             db.commit()
-            db.add(Notification(user_id=user_id, title="Resource liked", description=f"You liked {resource.title}.", notification_type="resource", href=f"/resources/{resource.slug}"))
+
+            # User confirmation notification
+            db.add(Notification(
+                user_id=user_id,
+                title="Resource liked",
+                description=f"You liked {resource.title}.",
+                notification_type="resource",
+                href=f"/resources/{resource.slug}"
+            ))
+
+            # Real-time Admin notification
+            admins = db.query(User).filter(
+                (User.role == "ADMIN") | (User.email == "admin@matchskill.ai")
+            ).all()
+            for admin in admins:
+                if admin.id != user_id:
+                    db.add(Notification(
+                        user_id=admin.id,
+                        title="New Resource Like",
+                        description=f"{actor_name} liked \"{resource.title}\".",
+                        notification_type="resource",
+                        href=f"/resources/{resource.slug}"
+                    ))
             db.commit()
+
+            try:
+                from backend.app.services.resource_mongo_service import resource_mongo_service
+                resource_mongo_service.save_resource(resource)
+            except Exception:
+                pass
+
             return {"liked": True, "like_count": max(1, resource.like_count or 0)}
 
     @staticmethod
     def toggle_save(db: Session, resource_id: str, user_id: str) -> Dict[str, Any]:
-        resource = db.query(Resource).filter(Resource.id == resource_id).first()
+        resource = db.query(Resource).filter(
+            (Resource.id == resource_id) | (Resource.slug == resource_id)
+        ).first()
         if not resource:
             raise ValueError("Resource not found")
 
         existing = db.query(SavedResource).filter(
-            SavedResource.user_id == user_id, SavedResource.resource_id == resource_id
+            SavedResource.user_id == user_id, SavedResource.resource_id == resource.id
         ).first()
 
         if existing:
@@ -357,19 +406,31 @@ class ResourceService:
             db.commit()
             db.add(Notification(user_id=user_id, title="Resource unsaved", description=f"You removed {resource.title} from saved resources.", notification_type="resource", href=f"/resources/{resource.slug}"))
             db.commit()
+            try:
+                from backend.app.services.resource_mongo_service import resource_mongo_service
+                resource_mongo_service.save_resource(resource)
+            except Exception:
+                pass
             return {"saved": False, "save_count": resource.save_count}
         else:
-            new_save = SavedResource(user_id=user_id, resource_id=resource_id)
+            new_save = SavedResource(user_id=user_id, resource_id=resource.id)
             db.add(new_save)
             resource.save_count = (resource.save_count or 0) + 1
             db.commit()
             db.add(Notification(user_id=user_id, title="Resource saved", description=f"{resource.title} was added to your saved resources.", notification_type="resource", href=f"/resources/{resource.slug}"))
             db.commit()
+            try:
+                from backend.app.services.resource_mongo_service import resource_mongo_service
+                resource_mongo_service.save_resource(resource)
+            except Exception:
+                pass
             return {"saved": True, "save_count": resource.save_count}
 
     @staticmethod
     def increment_share(db: Session, resource_id: str) -> int:
-        resource = db.query(Resource).filter(Resource.id == resource_id).first()
+        resource = db.query(Resource).filter(
+            (Resource.id == resource_id) | (Resource.slug == resource_id)
+        ).first()
         if not resource:
             return 0
         resource.share_count = (resource.share_count or 0) + 1
@@ -378,10 +439,19 @@ class ResourceService:
 
     @staticmethod
     def get_comments(db: Session, resource_id: str) -> List[Dict[str, Any]]:
+        resource = db.query(Resource).filter(
+            (Resource.id == resource_id) | (Resource.slug == resource_id)
+        ).first()
+        target_id = resource.id if resource else resource_id
+        target_slug = resource.slug if resource else resource_id
+
         comments = (
             db.query(ResourceComment, StudentProfile.name)
             .outerjoin(StudentProfile, StudentProfile.user_id == ResourceComment.user_id)
-            .filter(ResourceComment.resource_id == resource_id, ResourceComment.status == "APPROVED")
+            .filter(
+                (ResourceComment.resource_id == target_id) | (ResourceComment.resource_id == target_slug),
+                ResourceComment.status == "APPROVED"
+            )
             .order_by(ResourceComment.created_at.desc())
             .all()
         )
@@ -401,7 +471,9 @@ class ResourceService:
 
     @staticmethod
     def add_comment(db: Session, resource_id: str, user_id: str, content: str) -> Dict[str, Any]:
-        resource = db.query(Resource).filter(Resource.id == resource_id).first()
+        resource = db.query(Resource).filter(
+            (Resource.id == resource_id) | (Resource.slug == resource_id)
+        ).first()
         if not resource:
             raise ValueError("Resource not found")
 
@@ -413,7 +485,7 @@ class ResourceService:
         clean_content = re.sub(r"<[^>]*>", "", clean_content)
 
         comment = ResourceComment(
-            resource_id=resource_id,
+            resource_id=resource.id,
             user_id=user_id,
             content=clean_content,
             status="APPROVED"
@@ -423,15 +495,46 @@ class ResourceService:
         db.commit()
         db.refresh(comment)
 
-        db.add(Notification(user_id=user_id, title="Comment posted", description=f"Your comment was posted on {resource.title}.", notification_type="resource", href=f"/resources/{resource.slug}"))
+        actor_user = db.query(User).filter(User.id == user_id).first()
+        profile = db.query(StudentProfile).filter(StudentProfile.user_id == user_id).first()
+        actor_name = profile.name if profile and profile.name else (actor_user.email if actor_user else "Student")
+
+        # User confirmation notification
+        db.add(Notification(
+            user_id=user_id,
+            title="Comment posted",
+            description=f"Your comment was posted on {resource.title}.",
+            notification_type="resource",
+            href=f"/resources/{resource.slug}"
+        ))
+
+        # Real-time Admin notification
+        admins = db.query(User).filter(
+            (User.role == "ADMIN") | (User.email == "admin@matchskill.ai")
+        ).all()
+        for admin in admins:
+            if admin.id != user_id:
+                comment_preview = clean_content[:75] + ("..." if len(clean_content) > 75 else "")
+                db.add(Notification(
+                    user_id=admin.id,
+                    title="New Resource Comment",
+                    description=f"{actor_name} commented on \"{resource.title}\": \"{comment_preview}\"",
+                    notification_type="resource",
+                    href=f"/resources/{resource.slug}"
+                ))
         db.commit()
 
-        profile = db.query(StudentProfile).filter(StudentProfile.user_id == user_id).first()
+        try:
+            from backend.app.services.resource_mongo_service import resource_mongo_service
+            resource_mongo_service.save_resource(resource)
+        except Exception:
+            pass
+
         return {
             "id": comment.id,
             "resource_id": comment.resource_id,
             "user_id": comment.user_id,
-            "user_name": profile.name if profile else "Student",
+            "user_name": actor_name,
             "content": comment.content,
             "status": comment.status,
             "created_at": comment.created_at,

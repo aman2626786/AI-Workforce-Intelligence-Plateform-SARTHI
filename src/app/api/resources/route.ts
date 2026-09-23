@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getStoredResources, replaceStoredResources } from '@/lib/resourceStore';
-import { getLikesForResource } from '@/lib/resourceLikeStore';
+import { getLikesForResource, checkUserLiked } from '@/lib/resourceLikeStore';
 import { getCommentsForResource } from '@/lib/resourceCommentStore';
 
 export const dynamic = 'force-dynamic';
@@ -70,14 +70,27 @@ export async function GET(request: Request) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.max(1, parseInt(searchParams.get('page_size') || '12', 10));
 
+    const userId = searchParams.get('user_id') || '';
+
     const { resources: allResources } = getStoredData();
     let list = allResources.map((r) => {
-      const likes = getLikesForResource(r.id);
-      const comments = getCommentsForResource(r.id);
+      const likesById = getLikesForResource(r.id);
+      const likesBySlug = r.slug && r.slug !== r.id ? getLikesForResource(r.slug) : { total: 0 };
+      const totalLikes = Math.max(Number(r.like_count) || 0, likesById.total, likesBySlug.total);
+
+      const commentsById = getCommentsForResource(r.id);
+      const commentsBySlug = r.slug && r.slug !== r.id ? getCommentsForResource(r.slug) : [];
+      const totalComments = Math.max(Number(r.comment_count) || 0, commentsById.length, commentsBySlug.length);
+
+      const isLiked = userId
+        ? (checkUserLiked(r.id, userId) || (r.slug ? checkUserLiked(r.slug, userId) : false))
+        : false;
+
       return {
         ...r,
-        like_count: Math.max(Number(r.like_count) || 0, likes.total),
-        comment_count: Math.max(Number(r.comment_count) || 0, comments.length),
+        like_count: totalLikes,
+        comment_count: totalComments,
+        ...(userId ? { is_liked: isLiked } : {}),
       };
     });
 

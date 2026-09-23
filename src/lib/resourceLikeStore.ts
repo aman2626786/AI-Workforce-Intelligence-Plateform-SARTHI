@@ -1,10 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import { addResourceActivity } from './resourceActivityStore';
+import { addNotification } from './notificationStore';
 
 export interface LikeRecord {
   id: string;
   resource_id: string;
+  resource_slug?: string;
+  resource_title?: string;
   user_id: string;
   user_name?: string;
   email?: string;
@@ -34,24 +37,30 @@ function writeLikesToDisk(likes: LikeRecord[]): void {
   }
 }
 
-function updateResourceLikeCount(_resourceId: string, _count: number): void {
-  // Counts are dynamically computed by API routes from getLikesForResource
-  // Disk writes to fallbackResources.json are omitted to avoid triggering Next.js Fast Refresh reload
+function matchesResource(like: LikeRecord, target: string): boolean {
+  if (!target) return false;
+  const cleanTarget = target.toLowerCase().trim();
+  const resId = (like.resource_id || '').toLowerCase().trim();
+  const resSlug = (like.resource_slug || '').toLowerCase().trim();
+  return resId === cleanTarget || resSlug === cleanTarget;
+}
+
+export function getAllResourceLikes(): LikeRecord[] {
+  return readLikesFromDisk();
 }
 
 export function getLikesForResource(resourceIdOrSlug: string): { total: number; userLiked: boolean } {
   const all = readLikesFromDisk();
-  const matching = all.filter((l) => l.resource_id === resourceIdOrSlug || l.resource_id.toLowerCase() === resourceIdOrSlug.toLowerCase());
+  const matching = all.filter((l) => matchesResource(l, resourceIdOrSlug));
   return { total: matching.length, userLiked: false };
 }
 
 export function checkUserLiked(resourceIdOrSlug: string, userId: string): boolean {
   if (!userId) return false;
+  const cleanUserId = userId.toLowerCase().trim();
   const all = readLikesFromDisk();
   return all.some(
-    (l) =>
-      (l.resource_id === resourceIdOrSlug || l.resource_id.toLowerCase() === resourceIdOrSlug.toLowerCase()) &&
-      l.user_id.toLowerCase() === userId.toLowerCase()
+    (l) => matchesResource(l, resourceIdOrSlug) && (l.user_id || '').toLowerCase().trim() === cleanUserId
   );
 }
 
@@ -62,56 +71,94 @@ export function toggleLikeForResource(payload: {
   user_id: string;
   user_name?: string;
   email?: string;
+  forceAction?: 'like' | 'unlike';
 }): { liked: boolean; like_count: number } {
   const all = readLikesFromDisk();
   const targetId = payload.resource_id;
+  const targetSlug = payload.resource_slug || payload.resource_id;
+  const targetTitle = payload.resource_title || 'Resource';
   const userId = payload.user_id || 'anonymous_user';
+  const userName = payload.user_name || 'Student';
+  const cleanUserId = userId.toLowerCase().trim();
 
   const existingIndex = all.findIndex(
-    (l) =>
-      (l.resource_id === targetId || l.resource_id.toLowerCase() === targetId.toLowerCase()) &&
-      l.user_id.toLowerCase() === userId.toLowerCase()
+    (l) => (matchesResource(l, targetId) || matchesResource(l, targetSlug)) &&
+           (l.user_id || '').toLowerCase().trim() === cleanUserId
   );
 
   let liked = false;
-  if (existingIndex !== -1) {
+
+  if (payload.forceAction === 'unlike' || (existingIndex !== -1 && payload.forceAction !== 'like')) {
     // Unlike
-    all.splice(existingIndex, 1);
+    if (existingIndex !== -1) {
+      all.splice(existingIndex, 1);
+    }
     liked = false;
   } else {
     // Like
-    const newLike: LikeRecord = {
-      id: `like_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      resource_id: targetId,
-      user_id: userId,
-      user_name: payload.user_name || 'Student',
-      email: payload.email,
-      created_at: new Date().toISOString(),
-    };
-    all.unshift(newLike);
-    liked = true;
-
-    // Add activity event for Admin
-    try {
-      addResourceActivity({
-        type: 'like',
-        user_id: userId,
-        user_name: payload.user_name || 'Student',
-        email: payload.email || 'student@matchskill.ai',
+    if (existingIndex === -1) {
+      const newLike: LikeRecord = {
+        id: `like_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         resource_id: targetId,
-        resource_title: payload.resource_title || 'Resource',
-        resource_slug: payload.resource_slug || targetId,
-      });
-    } catch {}
+        resource_slug: targetSlug,
+        resource_title: targetTitle,
+        user_id: userId,
+        user_name: userName,
+        email: payload.email,
+        created_at: new Date().toISOString(),
+      };
+      all.unshift(newLike);
+      liked = true;
+
+      // 1. Add activity event for Admin Dashboard Activity stream
+      try {
+        addResourceActivity({
+          type: 'like',
+          user_id: userId,
+          user_name: userName,
+          email: payload.email || 'student@matchskill.ai',
+          resource_id: targetId,
+          resource_title: targetTitle,
+          resource_slug: targetSlug,
+        });
+      } catch (err) {
+        console.warn('Failed to add resource activity:', err);
+      }
+
+      // 2. Add real-time Notification for Admin
+      try {
+        addNotification({
+          recipient_role: 'ADMIN',
+          title: 'New Resource Like',
+          description: `${userName} liked "${targetTitle}".`,
+          type: 'resource',
+          href: `/resources/${targetSlug}`,
+        });
+      } catch (err) {
+        console.warn('Failed to send admin like notification:', err);
+      }
+
+      // 3. Add personal notification for the liking user
+      try {
+        if (userId && userId !== 'anonymous_user') {
+          addNotification({
+            recipient_user_id: userId,
+            recipient_role: 'STUDENT',
+            title: 'Resource liked',
+            description: `You liked "${targetTitle}".`,
+            type: 'resource',
+            href: `/resources/${targetSlug}`,
+          });
+        }
+      } catch {}
+    } else {
+      liked = true;
+    }
   }
 
   writeLikesToDisk(all);
 
-  const totalLikesForThisResource = all.filter(
-    (l) => l.resource_id === targetId || l.resource_id.toLowerCase() === targetId.toLowerCase()
-  ).length;
+  const totalLikes = all.filter((l) => matchesResource(l, targetId) || matchesResource(l, targetSlug)).length;
 
-  updateResourceLikeCount(targetId, totalLikesForThisResource);
-
-  return { liked, like_count: totalLikesForThisResource };
+  return { liked, like_count: totalLikes };
 }

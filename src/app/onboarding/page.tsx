@@ -295,19 +295,10 @@ export default function OnboardingPage() {
     setCurrentStep(4);
     setAnalysisProgressIndex(0);
 
-    const stages = [
-      'Uploading resume file...',
-      'Extracting clean text via PyMuPDF...',
-      'Detecting canonical section boundaries...',
-      'Scanning local skill dictionary & project text...',
-      'Normalizing skill aliases and checking conflicts...',
-      'Building structured student profile...',
-    ];
-
-    for (let i = 0; i < stages.length; i++) {
-      setAnalysisProgressIndex(i);
-      await new Promise((r) => setTimeout(r, 450));
-    }
+    // Fast progressive ticker that advances smoothly while the async parsing request is in-flight
+    const stageInterval = setInterval(() => {
+      setAnalysisProgressIndex((prev) => (prev < 5 ? prev + 1 : prev));
+    }, 280);
 
     try {
       // 1. Direct deterministic parsing & analysis via local Python engine
@@ -324,19 +315,18 @@ export default function OnboardingPage() {
       };
 
       const result = await api.parseResumeFile(resumeFile, basicProfile);
+      clearInterval(stageInterval);
+      setAnalysisProgressIndex(5);
+
       setUploadedResumeId(result.resume_id);
       setAnalysisResult(result);
       setReviewSkills(result.skills);
 
-      if (result.inferred_target_role) {
-        setTargetRole(result.inferred_target_role);
-        setIsCustomRole(false);
-        addToast(`AI detected domain: "${result.inferred_domain || 'Robotics'}" → Suggested role: "${result.inferred_target_role}"`, 'info');
-      }
-
-      addToast('Resume parsed successfully!', 'success');
+      // Keep user's chosen target role intact; do NOT overwrite with inferred domain
+      addToast('Resume parsed successfully! Skills & projects extracted.', 'success');
       setCurrentStep(5);
     } catch (err: any) {
+      clearInterval(stageInterval);
       addToast(err.message || 'Error during parsing', 'warning');
       setCurrentStep(3);
     }
@@ -365,22 +355,33 @@ export default function OnboardingPage() {
 
   // Step 5 -> Step 6: Confirmation & Persist Live Profile
   const handleConfirmProfile = async () => {
-    // 1. Save to backend database API
+    const resolvedTargetRole = isCustomRole && customRoleInput.trim() ? customRoleInput.trim() : targetRole;
+
+    // 1. Save to backend database API with student entered data as absolute source of truth
     const payload = {
-      personal_info: analysisResult?.personal_info,
-      education: analysisResult?.education,
-      experience: analysisResult?.experience,
-      projects: analysisResult?.projects,
-      certifications: analysisResult?.certifications,
+      personal_info: {
+        name: name.trim(),
+        email: email.trim(),
+        city: city.trim(),
+        target_role: resolvedTargetRole,
+      },
+      education: [
+        {
+          institution: college.trim(),
+          degree: degree.trim(),
+          field: branch.trim(),
+          graduation_year: gradYear,
+        },
+      ],
+      experience: analysisResult?.experience || [],
+      projects: analysisResult?.projects || [],
+      certifications: analysisResult?.certifications || [],
       skills: reviewSkills,
-      resolved_conflicts: analysisResult?.conflicts || [],
     };
 
     if (uploadedResumeId) {
       await api.confirmProfile(uploadedResumeId, payload);
     }
-
-    const activeTargetRole = isCustomRole && customRoleInput.trim() ? customRoleInput.trim() : targetRole;
 
     // 2. DYNAMICALLY SYNC EXACT USER ENTERED & PARSED DATA INTO LIVE PROFILE
     const sessionUser = authService.getCurrentUser();
@@ -393,7 +394,7 @@ export default function OnboardingPage() {
       branch: branch.trim() || '',
       college: college.trim() || '',
       graduationYear: gradYear,
-      targetRole: activeTargetRole,
+      targetRole: resolvedTargetRole,
       preferredLocation: preferredLocation || city.trim() || '',
       linkedin,
       github,
@@ -420,7 +421,7 @@ export default function OnboardingPage() {
     });
 
     // 3. Update global AppContext state
-    setActiveRole(activeTargetRole);
+    setActiveRole(resolvedTargetRole);
     setActiveLocation(preferredLocation);
     await refreshData();
 
@@ -975,26 +976,6 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* CONFLICT WARNING BANNER IF USER INPUT != RESUME */}
-              {analysisResult?.conflicts && analysisResult.conflicts.length > 0 && (
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
-                  <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                    Priority Resolution: Your Input Preserved
-                  </div>
-                  {analysisResult.conflicts.map((conf, idx) => (
-                    <div key={idx} className="text-xs text-amber-800 bg-white/80 p-2.5 rounded-xl border border-amber-200/60 flex items-start justify-between gap-4">
-                      <div>
-                        <strong>{conf.field_name}:</strong> You entered <span className="font-extrabold text-slate-900 underline">{conf.user_value}</span>, while resume mentions <em>"{conf.resume_value}"</em>.
-                        <p className="text-[11px] text-amber-700 mt-0.5">Your input is preserved per strict student-first priority.</p>
-                      </div>
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
-                        Preserved
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
 
               {/* Primary Target Career Path Confirmation */}
               <div className="p-5 rounded-2xl bg-gradient-to-r from-brand-950 via-slate-900 to-slate-950 text-white shadow-soft-sm space-y-3 border border-brand-900/50">

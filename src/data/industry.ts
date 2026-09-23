@@ -53,7 +53,7 @@ export interface IndustryOverview {
 }
 
 export const industryData: IndustryOverview = {
-  targetRole: 'Robotics Engineer',
+  targetRole: 'Software Engineer',
   totalJobSignals: 1840,
   lastUpdated: 'Live Feed Today',
   timeframe: 'Last 6 Months',

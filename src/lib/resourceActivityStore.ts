@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 export interface ResourceActivityEvent {
   id: string;
   type: 'like' | 'save' | 'comment';
@@ -11,9 +14,31 @@ export interface ResourceActivityEvent {
   created_at: string;
 }
 
-let events: ResourceActivityEvent[] = [];
+const ACTIVITIES_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'resourceActivities.json');
+
+function readActivitiesFromDisk(): ResourceActivityEvent[] {
+  try {
+    if (fs.existsSync(ACTIVITIES_FILE_PATH)) {
+      const raw = fs.readFileSync(ACTIVITIES_FILE_PATH, 'utf-8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.error('Error reading resourceActivities.json:', err);
+  }
+  return [];
+}
+
+function writeActivitiesToDisk(items: ResourceActivityEvent[]): void {
+  try {
+    fs.writeFileSync(ACTIVITIES_FILE_PATH, JSON.stringify(items, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error writing resourceActivities.json:', err);
+  }
+}
 
 export function addResourceActivity(event: Omit<ResourceActivityEvent, 'id' | 'created_at'>): ResourceActivityEvent {
+  const events = readActivitiesFromDisk();
   const normContent = (event.content || '').trim().toLowerCase();
   const normUser = (event.user_name || event.user_id || '').trim().toLowerCase();
   const resId = (event.resource_id || '').toLowerCase();
@@ -49,12 +74,13 @@ export function addResourceActivity(event: Omit<ResourceActivityEvent, 'id' | 'c
     created_at: new Date().toISOString(),
   };
 
-  events = [next, ...events].slice(0, 500);
+  const updated = [next, ...events].slice(0, 500);
+  writeActivitiesToDisk(updated);
   return next;
 }
 
 export function getResourceActivity(): ResourceActivityEvent[] {
-  // Deduplicate on retrieval to ensure no duplicates are presented to the admin
+  const events = readActivitiesFromDisk();
   const seen = new Set<string>();
   const unique: ResourceActivityEvent[] = [];
 
@@ -74,14 +100,16 @@ export function getResourceActivity(): ResourceActivityEvent[] {
 }
 
 export function removeResourceActivity(idOrContent: string) {
-  events = events.filter(
+  const events = readActivitiesFromDisk();
+  const filtered = events.filter(
     (event) =>
       event.id !== idOrContent &&
       event.content !== idOrContent &&
       !(idOrContent && event.id.includes(idOrContent))
   );
+  writeActivitiesToDisk(filtered);
 }
 
 export function resetResourceActivity(newEvents?: ResourceActivityEvent[]) {
-  events = newEvents || [];
+  writeActivitiesToDisk(newEvents || []);
 }

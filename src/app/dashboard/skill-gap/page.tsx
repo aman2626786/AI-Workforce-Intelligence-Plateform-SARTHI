@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function SkillGapPage() {
-  const { skills, profile, addSkillToRoadmap, activeRole, roadmap } = useApp();
+  const { skills, profile, addSkillToRoadmap, activeRole, roadmap, isLoading } = useApp();
 
   const roadmapSkillKeys = useMemo(() => {
     return new Set(roadmap.map((r) => r.skillName.toLowerCase().replace(/[^a-z0-9]/g, '')));
@@ -33,9 +33,15 @@ export default function SkillGapPage() {
   const partialGaps = useMemo(() => skills.filter((s) => s.gapSeverity === 'Partial'), [skills]);
   const metSkills = useMemo(() => skills.filter((s) => s.gapSeverity === 'Met'), [skills]);
 
-  // Accurate weighted match score calculation
+  // Accurate weighted match score calculation without artificial 10% floor
   const calculatedMatchScore = useMemo(() => {
-    if (!skills.length) return profile?.readinessScore || 30;
+    if (!skills.length) {
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem(`matchskill_score_${activeRole}`);
+        if (cached) return Number(cached);
+      }
+      return profile?.readinessScore || 0;
+    }
     let totalWeight = 0;
     let earnedWeight = 0;
     skills.forEach((s) => {
@@ -45,8 +51,12 @@ export default function SkillGapPage() {
       else if (s.studentLevel === 'Intermediate') earnedWeight += weight * 0.65;
       else if (s.studentLevel === 'Basic') earnedWeight += weight * 0.35;
     });
-    return Math.max(10, Math.round((earnedWeight / Math.max(1, totalWeight)) * 100));
-  }, [skills, profile?.readinessScore]);
+    const score = Math.round((earnedWeight / Math.max(1, totalWeight)) * 100);
+    if (typeof window !== 'undefined' && score > 0) {
+      localStorage.setItem(`matchskill_score_${activeRole}`, String(score));
+    }
+    return score;
+  }, [skills, profile?.readinessScore, activeRole]);
 
   // Filter skills based on search, tier, and severity
   const filteredSkills = useMemo(() => {

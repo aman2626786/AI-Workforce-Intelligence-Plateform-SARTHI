@@ -294,28 +294,57 @@ class CareerService {
   async updateProfileInfo(updates: {
     name?: string;
     email?: string;
+    location?: string;
     targetRole?: string;
     targetLocation?: string;
     targetCompany?: string;
+    education?: {
+      institution?: string;
+      degree?: string;
+      fieldOfStudy?: string;
+      graduationYear?: string;
+      cgpa?: string;
+    };
   }): Promise<StudentProfile> {
     this.profile = {
       ...this.profile,
       ...(updates.name !== undefined ? { name: updates.name } : {}),
       ...(updates.email !== undefined ? { email: updates.email } : {}),
+      ...(updates.location !== undefined ? { location: updates.location } : {}),
       ...(updates.targetRole !== undefined ? { targetRole: updates.targetRole } : {}),
       ...(updates.targetLocation !== undefined ? { targetLocation: updates.targetLocation } : {}),
       ...(updates.targetCompany !== undefined ? { targetCompany: updates.targetCompany } : {}),
+      ...(updates.education
+        ? {
+            education: {
+              ...this.profile.education,
+              ...updates.education,
+            },
+          }
+        : {}),
     };
     this.saveToStorage();
 
-    if (updates.targetRole) {
-      try {
-        const { api } = await import('./api');
+    try {
+      const { api } = await import('./api');
+      if (updates.targetRole) {
         await api.updateTargetCareer(updates.targetRole, updates.targetLocation || this.profile.targetLocation);
         await api.recalculateIntelligence();
-      } catch (e) {
-        console.warn('Backend updateProfileInfo sync error:', e);
       }
+      // Sync basic profile data with backend API
+      await api.saveBasicProfile({
+        name: this.profile.name,
+        city: this.profile.location,
+        education_level: 'Undergraduate',
+        degree: this.profile.education?.degree || '',
+        branch: this.profile.education?.fieldOfStudy || '',
+        college: this.profile.education?.institution || '',
+        graduation_year: Number(this.profile.education?.graduationYear) || new Date().getFullYear(),
+        target_role: this.profile.targetRole,
+        preferred_location: this.profile.targetLocation,
+      });
+    } catch (e) {
+      console.warn('Backend updateProfileInfo sync error:', e);
     }
     return { ...this.profile };
   }
@@ -576,10 +605,361 @@ class CareerService {
     });
   }
 
+  private getRoadmapStorageKey(role?: string): string {
+    const roleSlug = (role || this.profile.targetRole || 'default')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '_');
+    return `${this.getStorageKey()}_roadmap_${roleSlug}`;
+  }
+
+  generateRoadmapForRole(role: string): RoadmapItem[] {
+    const r = (role || '').toLowerCase();
+    if (r.includes('robot') || r.includes('autonom') || r.includes('mechatron') || r.includes('embedded')) {
+      return [
+        {
+          id: 'rm_rob_1',
+          stage: 'FOUNDATION',
+          stageOrder: 1,
+          skillName: 'ROS / ROS2 Core Architecture',
+          currentLevel: 'Intermediate',
+          targetLevel: 'Advanced',
+          priority: 'Critical',
+          estimatedHours: 20,
+          status: 'In Progress',
+          learningObjective: 'Master ROS2 DDS node communications, action servers, and custom message types.',
+          recommendedResources: [
+            { title: 'ROS2 Navigation & Node Mastery', type: 'Course', estTime: '12 hrs' },
+            { title: 'Autonomous Rover Teleoperation Capstone', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+        {
+          id: 'rm_rob_2',
+          stage: 'CORE SKILLS',
+          stageOrder: 2,
+          skillName: 'Visual SLAM & LiDAR Mapping',
+          currentLevel: 'Basic',
+          targetLevel: 'Advanced',
+          priority: 'High',
+          estimatedHours: 25,
+          status: 'Not Started',
+          learningObjective: 'Implement Cartographer and Gmapping with Kalman Filter sensor fusion.',
+          recommendedResources: [
+            { title: 'LiDAR SLAM & Point Cloud Processing', type: 'Course', estTime: '15 hrs' },
+            { title: 'Indoor Autonomous Navigation Lab', type: 'Project', estTime: '10 hrs' },
+          ],
+        },
+        {
+          id: 'rm_rob_3',
+          stage: 'INDUSTRY SKILLS',
+          stageOrder: 3,
+          skillName: 'Gazebo Simulation & MoveIt Kinematics',
+          currentLevel: 'None',
+          targetLevel: 'Advanced',
+          priority: 'Medium',
+          estimatedHours: 18,
+          status: 'Not Started',
+          learningObjective: 'Design URDF robotic arm models and execute inverse kinematics trajectories in MoveIt.',
+          recommendedResources: [
+            { title: 'Robotics Dynamics & MoveIt Trajectory Planning', type: 'Course', estTime: '10 hrs' },
+            { title: 'Multi-Axis Robotic Arm Simulator', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+        {
+          id: 'rm_rob_4',
+          stage: 'JOB READY',
+          stageOrder: 4,
+          skillName: 'RTOS & Embedded Microcontrollers',
+          currentLevel: 'Intermediate',
+          targetLevel: 'Advanced',
+          priority: 'High',
+          estimatedHours: 22,
+          status: 'Not Started',
+          learningObjective: 'Deploy real-time motor controller loops and CAN bus communication on STM32 / FreeRTOS.',
+          recommendedResources: [
+            { title: 'STM32 FreeRTOS Motor Control Architecture', type: 'Course', estTime: '14 hrs' },
+            { title: 'Hardware-in-the-Loop Autonomous Test Rig', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+      ];
+    } else if (r.includes('data sci') || r.includes('machine learn') || r.includes('ai') || r.includes('deep learn') || r.includes('mlops')) {
+      return [
+        {
+          id: 'rm_ai_1',
+          stage: 'FOUNDATION',
+          stageOrder: 1,
+          skillName: 'Python & Vectorized Data Manipulation',
+          currentLevel: 'Intermediate',
+          targetLevel: 'Advanced',
+          priority: 'Critical',
+          estimatedHours: 15,
+          status: 'In Progress',
+          learningObjective: 'Vectorized computing with NumPy, Pandas data wrangling, and algorithmic data structures.',
+          recommendedResources: [
+            { title: 'Applied Python for Scientific Computing', type: 'Course', estTime: '10 hrs' },
+            { title: 'High-Performance Data Pipeline Lab', type: 'Project', estTime: '5 hrs' },
+          ],
+        },
+        {
+          id: 'rm_ai_2',
+          stage: 'CORE SKILLS',
+          stageOrder: 2,
+          skillName: 'Statistical Machine Learning & Scikit-Learn',
+          currentLevel: 'Basic',
+          targetLevel: 'Advanced',
+          priority: 'High',
+          estimatedHours: 25,
+          status: 'Not Started',
+          learningObjective: 'Formulate predictive models with cross-validation, gradient boosting (XGBoost/LightGBM), and feature engineering.',
+          recommendedResources: [
+            { title: 'Machine Learning Specialization in Python', type: 'Course', estTime: '15 hrs' },
+            { title: 'End-to-End Churn & Retention Predictor', type: 'Project', estTime: '10 hrs' },
+          ],
+        },
+        {
+          id: 'rm_ai_3',
+          stage: 'INDUSTRY SKILLS',
+          stageOrder: 3,
+          skillName: 'Deep Learning & PyTorch Transformers',
+          currentLevel: 'None',
+          targetLevel: 'Intermediate',
+          priority: 'High',
+          estimatedHours: 30,
+          status: 'Not Started',
+          learningObjective: 'Train and fine-tune convolutional neural networks and transformer architectures using PyTorch and Hugging Face.',
+          recommendedResources: [
+            { title: 'Deep Learning with PyTorch', type: 'Course', estTime: '20 hrs' },
+            { title: 'LLM Fine-Tuning on Custom Domain Corpus', type: 'Project', estTime: '10 hrs' },
+          ],
+        },
+        {
+          id: 'rm_ai_4',
+          stage: 'JOB READY',
+          stageOrder: 4,
+          skillName: 'MLOps, Docker & FastAPI Production Serving',
+          currentLevel: 'None',
+          targetLevel: 'Advanced',
+          priority: 'Critical',
+          estimatedHours: 20,
+          status: 'Not Started',
+          learningObjective: 'Containerize ML models with Docker, serve low-latency inference via FastAPI, and track experiments via MLflow.',
+          recommendedResources: [
+            { title: 'Production Machine Learning Systems', type: 'Course', estTime: '12 hrs' },
+            { title: 'Live Model API Deployment on Cloud', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+      ];
+    } else if (r.includes('full stack') || r.includes('frontend') || r.includes('backend') || r.includes('software') || r.includes('web')) {
+      return [
+        {
+          id: 'rm_swe_1',
+          stage: 'FOUNDATION',
+          stageOrder: 1,
+          skillName: 'Modern TypeScript & Frontend Architecture',
+          currentLevel: 'Intermediate',
+          targetLevel: 'Advanced',
+          priority: 'Critical',
+          estimatedHours: 20,
+          status: 'In Progress',
+          learningObjective: 'Master TypeScript strict type safety, asynchronous patterns, state management, and Next.js / React 19.',
+          recommendedResources: [
+            { title: 'Enterprise TypeScript & Modern React', type: 'Course', estTime: '12 hrs' },
+            { title: 'Dynamic Interactive SaaS Dashboard', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+        {
+          id: 'rm_swe_2',
+          stage: 'CORE SKILLS',
+          stageOrder: 2,
+          skillName: 'Scalable REST & GraphQL Backend APIs',
+          currentLevel: 'Basic',
+          targetLevel: 'Advanced',
+          priority: 'High',
+          estimatedHours: 25,
+          status: 'Not Started',
+          learningObjective: 'Architect modular backend microservices with Express/Node or FastAPI, JWT authentication, and rate limiting.',
+          recommendedResources: [
+            { title: 'Backend API Engineering & Security', type: 'Course', estTime: '15 hrs' },
+            { title: 'Multi-Tenant Collaborative Workspace API', type: 'Project', estTime: '10 hrs' },
+          ],
+        },
+        {
+          id: 'rm_swe_3',
+          stage: 'INDUSTRY SKILLS',
+          stageOrder: 3,
+          skillName: 'Database Design & Caching (PostgreSQL & Redis)',
+          currentLevel: 'None',
+          targetLevel: 'Advanced',
+          priority: 'High',
+          estimatedHours: 20,
+          status: 'Not Started',
+          learningObjective: 'Index optimization, ACID transactions, relational data modeling in PostgreSQL, and Redis in-memory caching.',
+          recommendedResources: [
+            { title: 'High-Performance Relational Databases', type: 'Course', estTime: '12 hrs' },
+            { title: 'Distributed Cache & Session Store Lab', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+        {
+          id: 'rm_swe_4',
+          stage: 'JOB READY',
+          stageOrder: 4,
+          skillName: 'Docker, CI/CD Pipelines & Cloud Deployment',
+          currentLevel: 'Basic',
+          targetLevel: 'Advanced',
+          priority: 'Critical',
+          estimatedHours: 22,
+          status: 'Not Started',
+          learningObjective: 'Package full-stack applications with Docker, build automated GitHub Actions CI/CD workflows, and deploy to AWS/GCP.',
+          recommendedResources: [
+            { title: 'DevOps & Cloud Delivery for Software Engineers', type: 'Course', estTime: '14 hrs' },
+            { title: 'Production Cloud Deployment Capstone', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+      ];
+    } else if (r.includes('cloud') || r.includes('devops') || r.includes('sre')) {
+      return [
+        {
+          id: 'rm_cloud_1',
+          stage: 'FOUNDATION',
+          stageOrder: 1,
+          skillName: 'Linux Systems Administration & Bash Scripting',
+          currentLevel: 'Intermediate',
+          targetLevel: 'Advanced',
+          priority: 'Critical',
+          estimatedHours: 18,
+          status: 'In Progress',
+          learningObjective: 'Automate server provisioning, systemd services, networking protocols (TCP/IP, DNS), and shell scripts.',
+          recommendedResources: [
+            { title: 'Linux Command Line & Scripting Mastery', type: 'Course', estTime: '10 hrs' },
+            { title: 'Automated Server Hardening Script', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+        {
+          id: 'rm_cloud_2',
+          stage: 'CORE SKILLS',
+          stageOrder: 2,
+          skillName: 'Docker Containers & Kubernetes Orchestration',
+          currentLevel: 'Basic',
+          targetLevel: 'Advanced',
+          priority: 'High',
+          estimatedHours: 30,
+          status: 'Not Started',
+          learningObjective: 'Build multi-stage Dockerfiles and manage production Kubernetes deployments, ingresses, and Helm charts.',
+          recommendedResources: [
+            { title: 'Kubernetes for Cloud Professionals', type: 'Course', estTime: '18 hrs' },
+            { title: 'Microservices Cluster Deployment on K8s', type: 'Project', estTime: '12 hrs' },
+          ],
+        },
+        {
+          id: 'rm_cloud_3',
+          stage: 'INDUSTRY SKILLS',
+          stageOrder: 3,
+          skillName: 'Infrastructure as Code (Terraform) on AWS/GCP',
+          currentLevel: 'None',
+          targetLevel: 'Advanced',
+          priority: 'High',
+          estimatedHours: 25,
+          status: 'Not Started',
+          learningObjective: 'Declaratively manage cloud VPCs, IAM policies, and compute clusters using reusable Terraform modules.',
+          recommendedResources: [
+            { title: 'Terraform Cloud Infrastructure Automation', type: 'Course', estTime: '15 hrs' },
+            { title: 'Multi-Region High-Availability VPC Setup', type: 'Project', estTime: '10 hrs' },
+          ],
+        },
+        {
+          id: 'rm_cloud_4',
+          stage: 'JOB READY',
+          stageOrder: 4,
+          skillName: 'CI/CD Pipelines & Site Reliability (Prometheus/Grafana)',
+          currentLevel: 'None',
+          targetLevel: 'Advanced',
+          priority: 'Critical',
+          estimatedHours: 20,
+          status: 'Not Started',
+          learningObjective: 'Automate build-test-deploy pipelines and monitor uptime with Prometheus metrics, alertmanagers, and Grafana.',
+          recommendedResources: [
+            { title: 'Observability & SRE in Cloud Systems', type: 'Course', estTime: '12 hrs' },
+            { title: 'Automated Zero-Downtime Pipeline Lab', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+      ];
+    } else if (r.includes('cyber') || r.includes('security')) {
+      return [
+        {
+          id: 'rm_sec_1',
+          stage: 'FOUNDATION',
+          stageOrder: 1,
+          skillName: 'Network Security & Packet Analysis',
+          currentLevel: 'Intermediate',
+          targetLevel: 'Advanced',
+          priority: 'Critical',
+          estimatedHours: 20,
+          status: 'In Progress',
+          learningObjective: 'Inspect packet captures with Wireshark, analyze firewalls, TCP handshake vulnerabilities, and TLS ciphers.',
+          recommendedResources: [
+            { title: 'Network Security & Protocol Analysis', type: 'Course', estTime: '12 hrs' },
+            { title: 'Wireshark Threat Detection Lab', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+        {
+          id: 'rm_sec_2',
+          stage: 'CORE SKILLS',
+          stageOrder: 2,
+          skillName: 'Operating System Hardening & Identity Management',
+          currentLevel: 'Basic',
+          targetLevel: 'Advanced',
+          priority: 'High',
+          estimatedHours: 22,
+          status: 'Not Started',
+          learningObjective: 'Implement least-privilege RBAC, Active Directory security, PAM authentication, and auditd logging.',
+          recommendedResources: [
+            { title: 'Linux & Windows Enterprise Hardening', type: 'Course', estTime: '14 hrs' },
+            { title: 'Enterprise Access Control & Audit Rig', type: 'Project', estTime: '8 hrs' },
+          ],
+        },
+        {
+          id: 'rm_sec_3',
+          stage: 'INDUSTRY SKILLS',
+          stageOrder: 3,
+          skillName: 'Security Operations (SIEM & Splunk) & Incident Response',
+          currentLevel: 'None',
+          targetLevel: 'Advanced',
+          priority: 'High',
+          estimatedHours: 25,
+          status: 'Not Started',
+          learningObjective: 'Ingest enterprise server logs, detect anomalous lateral movement, and automate incident triage playbooks.',
+          recommendedResources: [
+            { title: 'SOC Analyst & SIEM Engineering', type: 'Course', estTime: '15 hrs' },
+            { title: 'Splunk Threat Hunting Simulation', type: 'Project', estTime: '10 hrs' },
+          ],
+        },
+        {
+          id: 'rm_sec_4',
+          stage: 'JOB READY',
+          stageOrder: 4,
+          skillName: 'Ethical Hacking & Web Penetration Testing (OWASP Top 10)',
+          currentLevel: 'None',
+          targetLevel: 'Advanced',
+          priority: 'Critical',
+          estimatedHours: 25,
+          status: 'Not Started',
+          learningObjective: 'Identify SQL injection, XSS, SSRF, and broken access controls using Burp Suite and Metasploit in legal labs.',
+          recommendedResources: [
+            { title: 'Practical Web Application Penetration Testing', type: 'Course', estTime: '15 hrs' },
+            { title: 'OWASP Vulnerability Assessment & Audit Report', type: 'Project', estTime: '10 hrs' },
+          ],
+        },
+      ];
+    } else {
+      // Default: Data Analyst & Business Intelligence
+      return [...initialRoadmap];
+    }
+  }
+
   private loadRoadmapFromStorage(role?: string) {
+    const targetRole = role || this.profile.targetRole || 'Software Engineer';
     if (typeof window !== 'undefined') {
       try {
-        const key = `${this.getStorageKey()}_roadmap`;
+        const key = this.getRoadmapStorageKey(targetRole);
         const saved = localStorage.getItem(key);
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -593,84 +973,15 @@ class CareerService {
       }
     }
 
-    const targetRoleLower = (role || this.profile.targetRole || 'Data Scientist').toLowerCase();
-    if (targetRoleLower.includes('robot') || targetRoleLower.includes('autonom') || targetRoleLower.includes('mechatron')) {
-      this.roadmap = [
-        {
-          id: 'rm_rob_1',
-          stage: 'FOUNDATION',
-          stageOrder: 1,
-          skillName: 'ROS & ROS2 Architecture',
-          currentLevel: 'Intermediate',
-          targetLevel: 'Advanced',
-          priority: 'High',
-          estimatedHours: 20,
-          status: 'In Progress',
-          learningObjective: 'Master ROS2 DDS node communications, action servers, and custom message types.',
-          recommendedResources: [
-            { title: 'ROS2 Navigation & Node Mastery', type: 'Course', estTime: '12 hrs' },
-            { title: 'Autonomous Rover Teleoperation Capstone', type: 'Project', estTime: '8 hrs' }
-          ]
-        },
-        {
-          id: 'rm_rob_2',
-          stage: 'CORE SKILLS',
-          stageOrder: 2,
-          skillName: 'Visual SLAM & LiDAR Mapping',
-          currentLevel: 'Basic',
-          targetLevel: 'Advanced',
-          priority: 'High',
-          estimatedHours: 25,
-          status: 'In Progress',
-          learningObjective: 'Implement Cartographer and Gmapping with Kalman Filter sensor fusion.',
-          recommendedResources: [
-            { title: 'LiDAR SLAM & Point Cloud Processing', type: 'Course', estTime: '15 hrs' },
-            { title: 'Indoor Autonomous Navigation Lab', type: 'Project', estTime: '10 hrs' }
-          ]
-        },
-        {
-          id: 'rm_rob_3',
-          stage: 'INDUSTRY SKILLS',
-          stageOrder: 3,
-          skillName: 'Gazebo Simulation & Kinematics',
-          currentLevel: 'None',
-          targetLevel: 'Advanced',
-          priority: 'Medium',
-          estimatedHours: 18,
-          status: 'In Progress',
-          learningObjective: 'Design URDF robotic arm models and execute inverse kinematics trajectories in MoveIt.',
-          recommendedResources: [
-            { title: 'Robotics Dynamics & MoveIt Trajectory Planning', type: 'Course', estTime: '10 hrs' },
-            { title: 'Multi-Axis Robotic Arm Simulator', type: 'Project', estTime: '8 hrs' }
-          ]
-        },
-        {
-          id: 'rm_rob_4',
-          stage: 'JOB READY',
-          stageOrder: 4,
-          skillName: 'RTOS & Embedded Microcontrollers',
-          currentLevel: 'Intermediate',
-          targetLevel: 'Advanced',
-          priority: 'High',
-          estimatedHours: 22,
-          status: 'In Progress',
-          learningObjective: 'Deploy real-time motor controller loops and CAN bus communication on STM32 / FreeRTOS.',
-          recommendedResources: [
-            { title: 'STM32 FreeRTOS Motor Control Architecture', type: 'Course', estTime: '14 hrs' },
-            { title: 'Hardware-in-the-Loop Autonomous Test Rig', type: 'Project', estTime: '8 hrs' }
-          ]
-        }
-      ];
-    } else {
-      this.roadmap = [...initialRoadmap];
-    }
-    this.roadmap = this.deduplicateRoadmap(this.roadmap);
+    this.roadmap = this.deduplicateRoadmap(this.generateRoadmapForRole(targetRole));
+    this.saveRoadmapToStorage(targetRole);
   }
 
-  private saveRoadmapToStorage() {
+  private saveRoadmapToStorage(role?: string) {
     if (typeof window !== 'undefined') {
       try {
-        const key = `${this.getStorageKey()}_roadmap`;
+        const targetRole = role || this.profile.targetRole || 'Software Engineer';
+        const key = this.getRoadmapStorageKey(targetRole);
         localStorage.setItem(key, JSON.stringify(this.roadmap));
       } catch (e) {
         console.warn('Could not save roadmap to localStorage:', e);
@@ -680,15 +991,26 @@ class CareerService {
 
   // --- Career Roadmap ---
   async getCareerRoadmap(role?: string): Promise<RoadmapItem[]> {
-    if (!this.roadmap || this.roadmap.length === 0) {
-      this.loadRoadmapFromStorage(role);
-    }
+    const targetRole = role || this.profile.targetRole || 'Software Engineer';
+    this.loadRoadmapFromStorage(targetRole);
     this.roadmap = this.deduplicateRoadmap(this.roadmap);
-    this.saveRoadmapToStorage();
+    this.saveRoadmapToStorage(targetRole);
 
     return new Promise((resolve) => {
       resolve([...this.roadmap]);
     });
+  }
+
+  async deleteRoadmapItem(id: string): Promise<RoadmapItem[]> {
+    this.roadmap = this.roadmap.filter((item) => item.id !== id);
+    this.saveRoadmapToStorage();
+    return [...this.roadmap];
+  }
+
+  async resetRoadmapForRole(role: string): Promise<RoadmapItem[]> {
+    this.roadmap = this.deduplicateRoadmap(this.generateRoadmapForRole(role));
+    this.saveRoadmapToStorage(role);
+    return [...this.roadmap];
   }
 
   async toggleRoadmapStatus(id: string): Promise<RoadmapItem[]> {

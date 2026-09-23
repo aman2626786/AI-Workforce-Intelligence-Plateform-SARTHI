@@ -156,6 +156,32 @@ export function addCommentToResource(payload: {
     console.warn('Failed to add to resourceActivityStore:', err);
   }
 
+  // Add real-time Notification for Admin
+  try {
+    const { addNotification } = require('./notificationStore');
+    const commentPreview = trimmedContent.length > 70 ? trimmedContent.slice(0, 70) + '...' : trimmedContent;
+    addNotification({
+      recipient_role: 'ADMIN',
+      title: 'New Resource Comment',
+      description: `${payload.user_name || 'Student'} commented on "${payload.resource_title || 'Resource'}": "${commentPreview}"`,
+      type: 'resource',
+      href: `/resources/${payload.resource_slug || payload.resource_id}`,
+    });
+
+    if (payload.user_id && payload.user_id !== 'anonymous') {
+      addNotification({
+        recipient_user_id: payload.user_id,
+        recipient_role: 'STUDENT',
+        title: 'Comment posted',
+        description: `Your comment was posted on "${payload.resource_title || 'Resource'}".`,
+        type: 'resource',
+        href: `/resources/${payload.resource_slug || payload.resource_id}`,
+      });
+    }
+  } catch (err) {
+    console.warn('Failed to send comment notification:', err);
+  }
+
   return newComment;
 }
 

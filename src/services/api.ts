@@ -16,6 +16,13 @@ export const getApiBaseUrl = (): string => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+export const getNextApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    return '/api';
+  }
+  return 'http://127.0.0.1:3000/api';
+};
+
 export interface UserRegistrationData {
   name: string;
   email: string;
@@ -341,14 +348,20 @@ const filterAndSortLocalResources = (
 
   if (typeof window !== 'undefined') {
     list = list.map((r) => {
-      const isLiked = localStorage.getItem(`matchskill_likes_${r.id}`) === 'true';
-      const isSaved = localStorage.getItem(`matchskill_saved_${r.id}`) === 'true';
+      const isLiked =
+        localStorage.getItem(`matchskill_likes_${r.id}`) === 'true' ||
+        (r.slug ? localStorage.getItem(`matchskill_likes_${r.slug}`) === 'true' : false);
+      const isSaved =
+        localStorage.getItem(`matchskill_saved_${r.id}`) === 'true' ||
+        (r.slug ? localStorage.getItem(`matchskill_saved_${r.slug}`) === 'true' : false);
+      const baseLike = Number(r.like_count) || 0;
+      const baseSave = Number(r.save_count) || 0;
       return {
         ...r,
-        is_liked: isLiked || r.is_liked,
-        like_count: isLiked ? r.like_count + 1 : r.like_count,
-        is_saved: isSaved || r.is_saved,
-        save_count: isSaved ? r.save_count + 1 : r.save_count,
+        is_liked: isLiked || Boolean(r.is_liked),
+        like_count: Math.max(baseLike, isLiked ? 1 : 0),
+        is_saved: isSaved || Boolean(r.is_saved),
+        save_count: Math.max(baseSave, isSaved ? 1 : 0),
       };
     });
   }
@@ -869,6 +882,20 @@ export const api = {
       console.warn('API listResources fetch note, using unified catalog pool:', err);
     }
 
+    // If FastAPI backend returned 0 items or was unreachable, query Next.js internal API
+    if (remoteItems.length === 0) {
+      try {
+        const nextUrl = `${getNextApiBaseUrl()}/resources?${query.toString()}`;
+        const nextRes = await fetch(nextUrl);
+        if (nextRes.ok) {
+          const nextData = await nextRes.json();
+          if (nextData && Array.isArray(nextData.resources) && nextData.resources.length > 0) {
+            remoteItems = nextData.resources.map(normalizeResource);
+          }
+        }
+      } catch (err) {}
+    }
+
     // 1. Gather custom resources uploaded by admin in localStorage
     let customItems: ResourceItem[] = [];
     if (typeof window !== 'undefined') {
@@ -981,6 +1008,18 @@ export const api = {
         }
       }
     } catch {}
+
+    // Fallback: Query Next.js internal route /api/resources/[slug]
+    try {
+      const cleanSlug = encodeURIComponent(slug.trim());
+      const nextUrl = `${getNextApiBaseUrl()}/resources/${cleanSlug}`;
+      const nextRes = await fetch(nextUrl);
+      if (nextRes.ok) {
+        const nextData = await nextRes.json();
+        return normalizeResource(nextData);
+      }
+    } catch {}
+
     return getLocalResourceBySlug(slug);
   },
 
@@ -1010,105 +1049,190 @@ export const api = {
   toggleLikeResource: async (id: string, currentlyLiked: boolean): Promise<{ liked: boolean; like_count: number }> => {
     const token = getToken();
     requireAuthenticatedResourceAction();
+    const identity = getLocalActivityIdentity();
+
+    let serverLiked: boolean = !currentlyLiked;
+    let serverCount: number | null = null;
+
+    // 1. Try remote FastAPI backend if token exists
     if (token) {
       try {
-        const res = await fetch(`${getApiBaseUrl()}/resources/${id}/like`, {
+        const cleanId = encodeURIComponent(id.trim());
+        const res = await fetch(`${getApiBaseUrl()}/resources/${cleanId}/like`, {
           method: currentlyLiked ? 'DELETE' : 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            user_id: identity.user_id,
+            user_name: identity.user_name,
+            email: identity.email,
+          }),
         });
         if (res.ok) {
           const result = await res.json();
-          const key = `matchskill_likes_${id}`;
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(key, String(result.liked));
-          }
-          return {
-            liked: Boolean(result.liked),
-            like_count: Math.max(Number(result.like_count) || 0, result.liked ? 1 : 0),
-          };
+          serverLiked = Boolean(result.liked);
+          serverCount = Number(result.like_count);
         }
       } catch (e) {
-        console.warn('Backend like note:', e);
+        console.warn('Backend like notice (falling back to Next.js API):', e);
       }
     }
 
-    // Local state toggle with localStorage persistence fallback
-    const key = `matchskill_likes_${id}`;
-    const newLiked = !currentlyLiked;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(key, String(newLiked));
+    // 2. Always sync with Next.js persistent internal API route
+    try {
+      const cleanId = encodeURIComponent(id.trim());
+      const nextRes = await fetch(`${getNextApiBaseUrl()}/resources/${cleanId}/like`, {
+        method: currentlyLiked ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: identity.user_id || 'anonymous_user',
+          user_name: identity.user_name || 'Student',
+          email: identity.email,
+          action: currentlyLiked ? 'unlike' : 'like',
+        }),
+      });
+      if (nextRes.ok) {
+        const nextData = await nextRes.json();
+        serverLiked = Boolean(nextData.liked);
+        if (serverCount === null) {
+          serverCount = Number(nextData.like_count);
+        }
+      }
+    } catch (err) {
+      console.warn('Next.js like API notice:', err);
     }
+
+    const finalLiked = serverLiked;
     const all = getAllResourcesList();
-    const found = all.find((r) => r.id === id);
+    const found = all.find((r) => r.id === id || r.slug === id);
     const baseCount = found ? (found.like_count || 0) : 0;
-    return { liked: newLiked, like_count: newLiked ? Math.max(1, baseCount + 1) : Math.max(0, baseCount - 1) };
+    const finalCount = serverCount !== null
+      ? serverCount
+      : (finalLiked ? Math.max(1, baseCount + 1) : Math.max(0, baseCount - 1));
+
+    // Save current user's personal like state in localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`matchskill_likes_${id}`, String(finalLiked));
+      if (found && found.id && found.id !== id) {
+        localStorage.setItem(`matchskill_likes_${found.id}`, String(finalLiked));
+      }
+      if (found && found.slug && found.slug !== id) {
+        localStorage.setItem(`matchskill_likes_${found.slug}`, String(finalLiked));
+      }
+
+      // Dispatch engagement update so all UI cards, rows, modals, and navbar refresh instantly
+      window.dispatchEvent(new CustomEvent('resource-engagement-updated', {
+        detail: { resourceId: id, liked: finalLiked, likeCount: finalCount }
+      }));
+      window.dispatchEvent(new CustomEvent('notifications-updated'));
+    }
+
+    return { liked: finalLiked, like_count: finalCount };
   },
 
   // Toggle Save / Bookmark
   toggleSaveResource: async (id: string, currentlySaved: boolean): Promise<{ saved: boolean; save_count: number }> => {
     const token = getToken();
     requireAuthenticatedResourceAction();
+    const identity = getLocalActivityIdentity();
+
+    let serverSaved: boolean = !currentlySaved;
+    let serverCount: number | null = null;
+
     if (token) {
       try {
-        const res = await fetch(`${getApiBaseUrl()}/resources/${id}/save`, {
+        const cleanId = encodeURIComponent(id.trim());
+        const res = await fetch(`${getApiBaseUrl()}/resources/${cleanId}/save`, {
           method: currentlySaved ? 'DELETE' : 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            user_id: identity.user_id,
+            user_name: identity.user_name,
+            email: identity.email,
+          }),
         });
         if (res.ok) {
           const result = await res.json();
-          const key = `matchskill_saved_${id}`;
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(key, String(result.saved));
-          }
-          return {
-            saved: Boolean(result.saved),
-            save_count: Math.max(Number(result.save_count) || 0, result.saved ? 1 : 0),
-          };
+          serverSaved = Boolean(result.saved);
+          serverCount = Number(result.save_count);
         }
       } catch (e) {
-        console.warn('Backend save note:', e);
+        console.warn('Backend save notice:', e);
       }
     }
 
-    // Local state toggle with localStorage persistence
-    const key = `matchskill_saved_${id}`;
-    const newSaved = !currentlySaved;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(key, String(newSaved));
-    }
+    const finalSaved = serverSaved;
     const all = getAllResourcesList();
-    const found = all.find((r) => r.id === id);
+    const found = all.find((r) => r.id === id || r.slug === id);
     const baseCount = found ? (found.save_count || 0) : 0;
-    return { saved: newSaved, save_count: newSaved ? baseCount + 1 : Math.max(0, baseCount - 1) };
+    const finalCount = serverCount !== null
+      ? serverCount
+      : (finalSaved ? baseCount + 1 : Math.max(0, baseCount - 1));
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`matchskill_saved_${id}`, String(finalSaved));
+      if (found && found.id && found.id !== id) {
+        localStorage.setItem(`matchskill_saved_${found.id}`, String(finalSaved));
+      }
+      if (found && found.slug && found.slug !== id) {
+        localStorage.setItem(`matchskill_saved_${found.slug}`, String(finalSaved));
+      }
+
+      window.dispatchEvent(new CustomEvent('resource-engagement-updated', {
+        detail: { resourceId: id, saved: finalSaved, saveCount: finalCount }
+      }));
+    }
+
+    return { saved: finalSaved, save_count: finalCount };
   },
 
   // Share Resource
   shareResource: async (id: string): Promise<number> => {
     try {
-      const res = await fetch(`${getApiBaseUrl()}/resources/${id}/share`, { method: 'POST' });
+      const res = await fetch(`${getApiBaseUrl()}/resources/${encodeURIComponent(id)}/share`, { method: 'POST' });
       if (res.ok) {
         const json = await res.json();
         return json.share_count;
       }
     } catch {}
     const all = getAllResourcesList();
-    const found = all.find((r) => r.id === id);
+    const found = all.find((r) => r.id === id || r.slug === id);
     return found ? (found.share_count || 0) + 1 : 1;
   },
 
   // Comments (Public - visible to all users, guest and authenticated)
   getResourceComments: async (id: string): Promise<ResourceCommentItem[]> => {
     let serverComments: ResourceCommentItem[] = [];
+
+    // 1. Try FastAPI backend
     try {
-      const url = `${getApiBaseUrl()}/resources/${id}/comments`;
+      const cleanId = encodeURIComponent(id.trim());
+      const url = `${getApiBaseUrl()}/resources/${cleanId}/comments`;
       const res = await fetch(url);
       if (res.ok) {
         serverComments = await res.json();
       }
-    } catch (err) {
-      console.warn('Failed to fetch comments from server API:', err);
-    }
+    } catch (err) {}
 
+    // 2. Also try Next.js persistent comments route
+    try {
+      const cleanId = encodeURIComponent(id.trim());
+      const nextUrl = `${getNextApiBaseUrl()}/resources/${cleanId}/comments`;
+      const res = await fetch(nextUrl);
+      if (res.ok) {
+        const nextComments = await res.json();
+        if (Array.isArray(nextComments)) {
+          serverComments = [...serverComments, ...nextComments];
+        }
+      }
+    } catch (err) {}
+
+    // 3. Merge with local storage fallback
     let localComments: ResourceCommentItem[] = [];
     if (typeof window !== 'undefined') {
       try {
@@ -1126,31 +1250,52 @@ export const api = {
     requireAuthenticatedResourceAction();
     const token = getToken();
     const identity = getLocalActivityIdentity();
+    const cleanContent = content.trim();
 
     let createdComment: ResourceCommentItem | null = null;
+
+    // 1. Try FastAPI backend
     try {
-      const url = `${getApiBaseUrl()}/resources/${id}/comments`;
+      const cleanId = encodeURIComponent(id.trim());
+      const url = `${getApiBaseUrl()}/resources/${cleanId}/comments`;
       const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content: cleanContent }),
       });
       if (res.ok) {
         createdComment = await res.json();
       }
-    } catch (err) {
-      console.warn('Comment API notice:', err);
-    }
+    } catch (err) {}
+
+    // 2. Sync to Next.js persistent comments route
+    try {
+      const cleanId = encodeURIComponent(id.trim());
+      const nextUrl = `${getNextApiBaseUrl()}/resources/${cleanId}/comments`;
+      const res = await fetch(nextUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: identity.user_id || 'student',
+          user_name: identity.user_name || 'Student Contributor',
+          email: identity.email,
+          content: cleanContent,
+        }),
+      });
+      if (res.ok && !createdComment) {
+        createdComment = await res.json();
+      }
+    } catch (err) {}
 
     const newComment: ResourceCommentItem = createdComment || {
       id: `local-${Date.now()}`,
       resource_id: id,
       user_id: identity.user_id || 'current-user',
       user_name: identity.user_name || 'Student Contributor',
-      content,
+      content: cleanContent,
       status: 'APPROVED',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -1166,21 +1311,38 @@ export const api = {
           localStorage.setItem(key, JSON.stringify(list));
         }
       } catch {}
+
+      window.dispatchEvent(new CustomEvent('resource-engagement-updated', {
+        detail: { resourceId: id, commentCountDelta: 1 }
+      }));
+      window.dispatchEvent(new CustomEvent('notifications-updated'));
     }
+
     return newComment;
   },
 
   deleteOwnResourceComment: async (commentId: string, resourceId: string) => {
     requireAuthenticatedResourceAction();
     const token = getToken();
+
+    // 1. Try backend
     try {
-      const url = `${getApiBaseUrl()}/resources/comments/${commentId}`;
+      const cleanCommentId = encodeURIComponent(commentId.trim());
+      const url = `${getApiBaseUrl()}/resources/comments/${cleanCommentId}`;
       await fetch(url, {
         method: 'DELETE',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
+    } catch {}
+
+    // 2. Try Next.js route
+    try {
+      const cleanResId = encodeURIComponent(resourceId.trim());
+      const cleanCommentId = encodeURIComponent(commentId.trim());
+      const nextUrl = `${getNextApiBaseUrl()}/resources/${cleanResId}/comments?comment_id=${cleanCommentId}`;
+      await fetch(nextUrl, { method: 'DELETE' });
     } catch {}
 
     if (typeof window !== 'undefined') {
@@ -1193,8 +1355,13 @@ export const api = {
           localStorage.setItem(key, JSON.stringify(filtered));
         }
       } catch {}
+
+      window.dispatchEvent(new CustomEvent('resource-engagement-updated', {
+        detail: { resourceId, commentCountDelta: -1 }
+      }));
     }
-    return { status: 'success' };
+
+    return { status: 'success', comment_id: commentId };
   },
 
   // Saved / Bookmarked Library
@@ -1278,49 +1445,128 @@ export const api = {
     if (params.type && params.type !== 'ALL') query.set('type', params.type);
     if (params.dateFrom) query.set('date_from', params.dateFrom);
     if (params.dateTo) query.set('date_to', params.dateTo);
-    const res = await fetch(`${getApiBaseUrl()}/admin/resources/activity?${query.toString()}`, {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : { Authorization: 'Bearer admin_portal_access' }),
-      },
-    });
-    if (!res.ok) return { activity: [] };
-    return await res.json();
+
+    // 1. Try remote backend
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/admin/resources/activity?${query.toString()}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : { Authorization: 'Bearer admin_portal_access' }),
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.activity) && data.activity.length > 0) {
+          return data;
+        }
+      }
+    } catch (e) {}
+
+    // 2. Fallback to Next.js internal activity API
+    try {
+      const res = await fetch(`${getNextApiBaseUrl()}/admin/resources/activity?${query.toString()}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {}
+
+    return { activity: [] };
   },
 
   adminDeleteResourceComment: async (commentId: string) => {
     const token = getToken();
-    const res = await fetch(`${getApiBaseUrl()}/admin/resources/comments/${commentId}`, {
-      method: 'DELETE',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : { Authorization: 'Bearer admin_portal_access' }),
-      },
-    });
-    if (!res.ok) throw new Error('Failed to delete comment');
-    return await res.json();
+    const cleanCommentId = encodeURIComponent(commentId.trim());
+
+    // 1. Try remote backend
+    try {
+      await fetch(`${getApiBaseUrl()}/admin/resources/comments/${cleanCommentId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : { Authorization: 'Bearer admin_portal_access' }),
+        },
+      });
+    } catch (e) {}
+
+    // 2. Also delete from Next.js internal store
+    try {
+      await fetch(`${getNextApiBaseUrl()}/admin/resources/comments/${cleanCommentId}`, {
+        method: 'DELETE',
+      });
+    } catch (e) {}
+
+    return { status: 'success', comment_id: commentId };
   },
 
   getNotifications: async (limit: number = 30) => {
     const token = getToken();
-    if (!token) return [];
+    const identity = getLocalActivityIdentity();
+    const isAdmin =
+      typeof window !== 'undefined' &&
+      (sessionStorage.getItem('skillvantage_admin_session') === 'authenticated_super_admin' ||
+       Boolean(identity.email && identity.email.toLowerCase().includes('admin')));
+
+    // 1. Try remote FastAPI backend if token is available
+    if (token) {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/notifications?limit=${limit}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const items = await res.json();
+          if (Array.isArray(items) && items.length > 0) {
+            return items;
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Fetch from Next.js persistent notifications API route
     try {
-      const res = await fetch(`${getApiBaseUrl()}/notifications?limit=${limit}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const nextUrl = `${getNextApiBaseUrl()}/notifications?limit=${limit}&is_admin=${isAdmin}&user_id=${encodeURIComponent(identity.user_id || '')}`;
+      const res = await fetch(nextUrl, {
+        headers: {
+          ...(isAdmin ? { Authorization: 'Bearer admin_portal_access' } : {}),
+        },
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
     } catch {}
+
     return [];
   },
 
   markNotificationsRead: async () => {
     const token = getToken();
-    if (!token) return { status: 'success' };
+    const identity = getLocalActivityIdentity();
+    const isAdmin =
+      typeof window !== 'undefined' &&
+      (sessionStorage.getItem('skillvantage_admin_session') === 'authenticated_super_admin' ||
+       Boolean(identity.email && identity.email.toLowerCase().includes('admin')));
+
+    // 1. Try backend
+    if (token) {
+      try {
+        await fetch(`${getApiBaseUrl()}/notifications/read`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {}
+    }
+
+    // 2. Try Next.js
     try {
-      const res = await fetch(`${getApiBaseUrl()}/notifications/read`, {
+      const nextUrl = `${getNextApiBaseUrl()}/notifications/read?is_admin=${isAdmin}&user_id=${encodeURIComponent(identity.user_id || '')}`;
+      await fetch(nextUrl, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          ...(isAdmin ? { Authorization: 'Bearer admin_portal_access' } : {}),
+        },
       });
-      if (res.ok) return await res.json();
     } catch {}
+
     return { status: 'success' };
   },
 

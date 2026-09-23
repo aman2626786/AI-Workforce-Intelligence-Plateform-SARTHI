@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Bookmark,
@@ -32,6 +32,25 @@ export const ResourceRow: React.FC<ResourceRowProps> = ({
   const [likeCount, setLikeCount] = useState<number>(resource.like_count || 0);
   const [isSaved, setIsSaved] = useState<boolean>(resource.is_saved || false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsLiked(Boolean(resource.is_liked));
+    setLikeCount(resource.like_count || 0);
+    setIsSaved(Boolean(resource.is_saved));
+  }, [resource.is_liked, resource.like_count, resource.is_saved]);
+
+  useEffect(() => {
+    const handleEngagement = (e: any) => {
+      const detail = e.detail;
+      if (detail && (detail.resourceId === resource.id || detail.resourceId === resource.slug)) {
+        if (typeof detail.liked === 'boolean') setIsLiked(detail.liked);
+        if (typeof detail.likeCount === 'number') setLikeCount(detail.likeCount);
+        if (typeof detail.saved === 'boolean') setIsSaved(detail.saved);
+      }
+    };
+    window.addEventListener('resource-engagement-updated', handleEngagement);
+    return () => window.removeEventListener('resource-engagement-updated', handleEngagement);
+  }, [resource.id, resource.slug]);
 
   const getTypeLabel = (type: string) => {
     switch (type) {
